@@ -1,0 +1,165 @@
+{
+  "auth": {
+    "signIn": "Sign in",
+    "email": "Email address",
+    "password": "Password",
+    "forgotPassword": "Forgot your password?",
+    "sendMagicLink": "Send a sign-in link instead",
+    "useMagicLink": "We'll email you a sign-in link.",
+    "usePasswordInstead": "Use password instead",
+    "signingIn": "Signing in...",
+    "checking": "Checking...",
+    "signInButton": "Sign in",
+    "sendLinkButton": "Send sign-in link",
+    "passwordAccess": "Password access",
+    "passwordOnlyNote": "Access is restricted to invited users with a password. Magic links are disabled for this product.",
+    "securityCheckRequired": "Complete the security check to continue.",
+    "securityCheckFailed": "We could not validate the security check.",
+    "loginPrinciple": "Sign in to review context, board packs, decisions, and follow-ups in a protected governance workspace.",
+    "checkEmail": "Check your email",
+    "checkEmailBody": "We sent a sign-in link to {email}. Click it to continue.",
+    "noEmailNote": "Didn't get it? Check your spam folder, or",
+    "tryAgain": "try again",
+    "inviteOnly": "Access is currently invite-only.",
+    "tagline": "Governance operating system",
+    "welcomeBack": "Sign in to Board Governance OS",
+    "enterEmail": "Enter your email to continue."
+  },
+  "nav": {
+    "groups": {
+      "workspace": "Workspace",
+      "governance": "Governance",
+      "decisions": "Decisions",
+      "reference": "Reference",
+      "operations": "Operations"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "company": "Company Brain",
+      "intake": "Intake",
+      "governanceRun": "Governance Run",
+      "boardPack": "Board Pack",
+      "shadowBoard": "Shadow Board Review",
+      "decisions": "Decision Memory",
+      "followUps": "Follow-ups",
+      "designSystem": "Design System",
+      "mobile": "Mobile Behavior",
+      "admin": "Admin Control",
+      "adminUsers": "Users",
+      "adminSessions": "Sessions"
+    },
+    "mobile": {
+      "home": "Home",
+      "brain": "Brain",
+      "review": "Review",
+      "you": "You"
+    }
+  },
+  "shell": {
+    "search": "Search decisions, facts, board packs...",
+    "brainActive": "Board Brain active",
+    "founderRole": "Founder & CEO"
+  },
+  "companyBrain": {
+    "eyebrow": "02 - Company Brain",
+    "title": "Institutional memory",
+    "addToMemory": "+ Add to memory",
+    "startIntake": "Start intake",
+    "intakeDescription": "Capture chat, voice-ready notes, files, financials, risks, and company context before the governance cycle starts."
+  },
+  "intake": {
+    "eyebrow": "Company Brain Intake",
+    "title": "Build the board-level context",
+    "description": "Collect the facts, assumptions, files, and open questions that the Board Brain needs before a Governance Run.",
+    "saveDraft": "Save draft",
+    "sendToBrain": "Send to Company Brain",
+    "mockMode": "Local mock mode",
+    "liveMode": "Supabase live",
+    "savedLive": "Draft saved to Supabase",
+    "savedLiveDetail": "{inputs} inputs and {entries} memories saved",
+    "savedLiveWithFiles": "{inputs} inputs, {entries} memories, and {files} files saved",
+    "savedLiveWithFileErrors": "{inputs} inputs and {entries} memories saved. {files} files uploaded; {errors} failed.",
+    "saveFailed": "Could not save to Supabase",
+    "signInRequired": "Sign in to save to Supabase",
+    "score": "Input quality",
+    "completeness": "Completeness",
+    "sectionsComplete": "{complete} of {total} sections complete",
+    "tabs": {
+      "company": "Company",
+      "strategy": "Strategy",
+      "finance": "Finance",
+      "team": "Team",
+      "chat": "Chat",
+      "files": "Files",
+      "review": "Review"
+    },
+    "company": {
+      "title": "Company profile",
+      "description": "The basic operating context for the governance cycle.",
+      "name": "Company name",
+      "industry": "Industry",
+      "businessModel": "Business model",
+      "revenueRange": "Revenue range",
+      "employeeCount": "Employee count",
+      "stage": "Company stage",
+      "jurisdiction": "Jurisdiction"
+    },
+    "strategy": {
+      "title": "Strategy and challenge",
+      "description": "What the founder thinks the business needs and what the board should challenge.",
+      "goals": "Goals",
+      "mainChallenge": "Main challenge",
+      "currentPlan": "Current plan",
+      "strategicQuestions": "Questions for the board"
+    },
+    "finance": {
+      "title": "Financial snapshot",
+      "description": "Enough financial context to discuss cash, risk, and investment with discipline.",
+      "revenue": "Revenue",
+      "margin": "Margin",
+      "cashRunway": "Cash runway",
+      "topCustomerConcentration": "Top customer concentration",
+      "financialRisks": "Financial risks"
+    },
+    "team": {
+      "title": "Team and operating cadence",
+      "description": "Who owns execution and where the founder is still the bottleneck.",
+      "leadership": "Leadership team",
+      "keyRoles": "Key roles",
+      "operatingCadence": "Operating cadence",
+      "talentRisks": "Talent risks"
+    },
+    "chat": {
+      "title": "Chat intake",
+      "description": "Use this as the founder interview transcript. It can later become a live chat with Board Brain.",
+      "prompt": "What should the board understand before reviewing this company?",
+      "add": "Add note",
+      "placeholder": "Type a founder note, board question, or context fragment..."
+    },
+    "voice": {
+      "title": "Voice-ready intake",
+      "description": "No transcription service is connected yet. For now, paste voice notes or transcript text here.",
+      "placeholder": "Paste transcript or voice note summary..."
+    },
+    "files": {
+      "title": "Files and source material",
+      "description": "Queue PDFs, decks, spreadsheets, documents, and CSVs for later Supabase storage and extraction.",
+      "upload": "Choose files",
+      "queued": "Queued locally",
+      "noFiles": "No files queued yet",
+      "status": {
+        "queued": "Queued",
+        "ready_for_upload": "Ready for upload",
+        "uploaded": "Uploaded to Supabase",
+        "failed": "Upload failed"
+      }
+    },
+    "review": {
+      "title": "Review before governance run",
+      "description": "This is the local payload that will later be persisted to Company Brain.",
+      "missing": "Missing context",
+      "ready": "Ready for first Governance Run",
+      "notReady": "Needs more context before the run"
+    }
+  }
+}

@@ -1,0 +1,165 @@
+{
+  "auth": {
+    "signIn": "Entrar",
+    "email": "Email",
+    "password": "Senha",
+    "forgotPassword": "Esqueceu sua senha?",
+    "sendMagicLink": "Enviar link de acesso",
+    "useMagicLink": "Vamos enviar um link de acesso por email.",
+    "usePasswordInstead": "Usar senha",
+    "signingIn": "Entrando...",
+    "checking": "Verificando...",
+    "signInButton": "Entrar",
+    "sendLinkButton": "Enviar link",
+    "passwordAccess": "Acesso com senha",
+    "passwordOnlyNote": "Acesso restrito a usuarios convidados com senha definida. Links magicos estao desativados para este produto.",
+    "securityCheckRequired": "Complete a verificacao de seguranca para continuar.",
+    "securityCheckFailed": "Nao foi possivel validar a verificacao de seguranca.",
+    "loginPrinciple": "Entre para revisar contexto, board packs, decisoes e follow-ups em um ambiente de governanca protegido.",
+    "checkEmail": "Verifique seu email",
+    "checkEmailBody": "Enviamos um link de acesso para {email}.",
+    "noEmailNote": "Nao recebeu? Verifique o spam, ou",
+    "tryAgain": "tente novamente",
+    "inviteOnly": "O acesso esta disponivel apenas por convite.",
+    "tagline": "Sistema operacional de governanca",
+    "welcomeBack": "Entrar no Board Governance OS",
+    "enterEmail": "Digite seu email para continuar."
+  },
+  "nav": {
+    "groups": {
+      "workspace": "Workspace",
+      "governance": "Governanca",
+      "decisions": "Decisoes",
+      "reference": "Referencia",
+      "operations": "Operacoes"
+    },
+    "items": {
+      "dashboard": "Dashboard",
+      "company": "Company Brain",
+      "intake": "Intake",
+      "governanceRun": "Governance Run",
+      "boardPack": "Board Pack",
+      "shadowBoard": "Shadow Board Review",
+      "decisions": "Decision Memory",
+      "followUps": "Follow-ups",
+      "designSystem": "Design System",
+      "mobile": "Mobile",
+      "admin": "Admin",
+      "adminUsers": "Usuarios",
+      "adminSessions": "Sessoes"
+    },
+    "mobile": {
+      "home": "Inicio",
+      "brain": "Brain",
+      "review": "Review",
+      "you": "Voce"
+    }
+  },
+  "shell": {
+    "search": "Buscar decisoes, fatos, board packs...",
+    "brainActive": "Board Brain ativo",
+    "founderRole": "Founder & CEO"
+  },
+  "companyBrain": {
+    "eyebrow": "02 - Company Brain",
+    "title": "Memoria institucional",
+    "addToMemory": "+ Adicionar memoria",
+    "startIntake": "Iniciar intake",
+    "intakeDescription": "Capture chat, notas de voz, arquivos, financeiros, riscos e contexto da empresa antes do ciclo de governanca."
+  },
+  "intake": {
+    "eyebrow": "Company Brain Intake",
+    "title": "Construir o contexto de conselho",
+    "description": "Colete fatos, premissas, arquivos e perguntas abertas que o Board Brain precisa antes de um Governance Run.",
+    "saveDraft": "Salvar rascunho",
+    "sendToBrain": "Enviar para Company Brain",
+    "mockMode": "Modo mock local",
+    "liveMode": "Supabase ativo",
+    "savedLive": "Rascunho salvo no Supabase",
+    "savedLiveDetail": "{inputs} inputs e {entries} memorias salvos",
+    "savedLiveWithFiles": "{inputs} inputs, {entries} memorias e {files} arquivos salvos",
+    "savedLiveWithFileErrors": "{inputs} inputs e {entries} memorias salvos. {files} arquivos enviados; {errors} falharam.",
+    "saveFailed": "Falha ao salvar no Supabase",
+    "signInRequired": "Faca login para salvar no Supabase",
+    "score": "Qualidade do input",
+    "completeness": "Completude",
+    "sectionsComplete": "{complete} de {total} secoes completas",
+    "tabs": {
+      "company": "Empresa",
+      "strategy": "Estrategia",
+      "finance": "Financeiro",
+      "team": "Time",
+      "chat": "Chat",
+      "files": "Arquivos",
+      "review": "Revisao"
+    },
+    "company": {
+      "title": "Perfil da empresa",
+      "description": "O contexto operacional basico para o ciclo de governanca.",
+      "name": "Nome da empresa",
+      "industry": "Setor",
+      "businessModel": "Modelo de negocio",
+      "revenueRange": "Faixa de receita",
+      "employeeCount": "Numero de funcionarios",
+      "stage": "Estagio da empresa",
+      "jurisdiction": "Jurisdicao"
+    },
+    "strategy": {
+      "title": "Estrategia e desafio",
+      "description": "O que o founder acredita que o negocio precisa e o que o conselho deve desafiar.",
+      "goals": "Objetivos",
+      "mainChallenge": "Principal desafio",
+      "currentPlan": "Plano atual",
+      "strategicQuestions": "Perguntas para o conselho"
+    },
+    "finance": {
+      "title": "Snapshot financeiro",
+      "description": "Contexto financeiro suficiente para discutir caixa, risco e investimento com disciplina.",
+      "revenue": "Receita",
+      "margin": "Margem",
+      "cashRunway": "Runway de caixa",
+      "topCustomerConcentration": "Concentracao no maior cliente",
+      "financialRisks": "Riscos financeiros"
+    },
+    "team": {
+      "title": "Time e cadencia operacional",
+      "description": "Quem e dono da execucao e onde o founder ainda e gargalo.",
+      "leadership": "Time de lideranca",
+      "keyRoles": "Papeis-chave",
+      "operatingCadence": "Cadencia operacional",
+      "talentRisks": "Riscos de talento"
+    },
+    "chat": {
+      "title": "Chat intake",
+      "description": "Use isto como a entrevista do founder. Depois pode virar chat ao vivo com Board Brain.",
+      "prompt": "O que o conselho precisa entender antes de revisar esta empresa?",
+      "add": "Adicionar nota",
+      "placeholder": "Digite uma nota do founder, pergunta de conselho ou fragmento de contexto..."
+    },
+    "voice": {
+      "title": "Intake pronto para voz",
+      "description": "Nenhum servico de transcricao esta conectado ainda. Por enquanto, cole notas de voz ou transcricoes aqui.",
+      "placeholder": "Cole transcricao ou resumo da nota de voz..."
+    },
+    "files": {
+      "title": "Arquivos e fontes",
+      "description": "Enfileire PDFs, decks, planilhas, documentos e CSVs para storage e extracao futura no Supabase.",
+      "upload": "Escolher arquivos",
+      "queued": "Na fila local",
+      "noFiles": "Nenhum arquivo na fila",
+      "status": {
+        "queued": "Na fila",
+        "ready_for_upload": "Pronto para upload",
+        "uploaded": "Enviado ao Supabase",
+        "failed": "Falha no upload"
+      }
+    },
+    "review": {
+      "title": "Revisar antes do governance run",
+      "description": "Este e o payload local que depois sera persistido no Company Brain.",
+      "missing": "Contexto faltante",
+      "ready": "Pronto para o primeiro Governance Run",
+      "notReady": "Precisa de mais contexto antes do run"
+    }
+  }
+}

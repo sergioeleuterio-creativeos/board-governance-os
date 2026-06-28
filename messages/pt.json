@@ -1,0 +1,23 @@
+{
+  "auth": {
+    "signIn": "Entrar",
+    "email": "Email",
+    "password": "Senha",
+    "forgotPassword": "Esqueceu sua senha?",
+    "sendMagicLink": "Enviar link de acesso",
+    "useMagicLink": "Vamos enviar um link de acesso por email.",
+    "usePasswordInstead": "Usar senha",
+    "signingIn": "Entrando...",
+    "checking": "Verificando...",
+    "signInButton": "Entrar",
+    "sendLinkButton": "Enviar link",
+    "checkEmail": "Verifique seu email",
+    "checkEmailBody": "Enviamos um link de acesso para {email}.",
+    "noEmailNote": "Nao recebeu? Verifique o spam, ou",
+    "tryAgain": "tente novamente",
+    "inviteOnly": "O acesso esta disponivel apenas por convite.",
+    "tagline": "Sistema operacional de governanca",
+    "welcomeBack": "Entrar no Board Governance OS",
+    "enterEmail": "Digite seu email para continuar."
+  }
+}
