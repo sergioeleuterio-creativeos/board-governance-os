@@ -668,6 +668,7 @@ Product decisions recorded:
 - Vercel production deployment is live; Sergio confirmed `https://www.board-os.ai/dashboard` works.
 - Current domain direction: Sergio will continue with the redirect to `www.board-os.ai`, so production canonical URL is `https://www.board-os.ai`.
 - Brand metadata is now wired for deployment: favicon/apple icon use `/brand/mark.png`; Open Graph/Twitter preview use `/brand/site-thumbnail.png`.
+- Public URL generation normalizes `https://board-os.ai` to canonical `https://www.board-os.ai` through `lib/shadow-board/site-url.ts`.
 - AI model routing decision: keep `AI_PROVIDER`, `AI_MODEL`, and `OPENAI_API_KEY` for now; future `OPENAI_MODEL_*` values should be real model IDs only and are not active until the router is implemented.
 - The uploaded Creative OS campaign planner can remain attached for now because this is still a mock/live prototype context.
 - Board Pack needs a first-class financial review area: DRE / Profit and Loss, OCF, working capital, cash conversion, debt/liquidity, budget vs actual, and board notes.

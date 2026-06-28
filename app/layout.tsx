@@ -4,8 +4,9 @@ import Navigation from '@/components/Navigation'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { PRODUCT } from '@/lib/shadow-board/product'
+import { getPublicAppUrl } from '@/lib/shadow-board/site-url'
 
-const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://www.board-os.ai'
+const appUrl = getPublicAppUrl()
 
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),

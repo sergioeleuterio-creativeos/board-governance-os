@@ -6,6 +6,7 @@ import {
   serviceClient,
 } from '@/lib/auth-server'
 import type { OrganizationRole } from '@/lib/shadow-board/domain'
+import { getPublicAppUrl } from '@/lib/shadow-board/site-url'
 
 const allowedRoles: OrganizationRole[] = [
   'owner',
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
   if (isAuthError(admin)) return admin
 
   const service = serviceClient()
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3001'
+  const appUrl = getPublicAppUrl()
   const { data, error } = await service.auth.admin.inviteUserByEmail(email, {
     redirectTo: `${appUrl}/auth/callback?next=${encodeURIComponent('/dashboard')}`,
   })
