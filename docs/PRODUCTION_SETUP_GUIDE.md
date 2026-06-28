@@ -45,7 +45,7 @@ Turnstile is optional locally and should be enabled before production.
 5. Add hostnames:
    - `localhost` for local testing.
    - `board-os.ai`.
-   - `www.board-os.ai` if used.
+   - `www.board-os.ai`.
    - the Vercel preview domain if we want preview testing with Turnstile.
 6. Copy the site key into `NEXT_PUBLIC_TURNSTILE_SITE_KEY`.
 7. Copy the secret key into `TURNSTILE_SECRET_KEY`.
@@ -97,10 +97,11 @@ The product should live on a subdomain, not a path under another app.
    - Stripe placeholders can remain blank until Stripe is ready.
 7. Deploy a preview.
 8. In Vercel Project Settings -> Domains, add `board-os.ai`.
-9. Add `www.board-os.ai` only if you want the www redirect.
+9. Add `www.board-os.ai`.
 10. In DNS, create the records Vercel requests.
-11. Update `NEXT_PUBLIC_APP_URL` in Vercel to `https://board-os.ai`.
-12. Update Supabase Auth redirect URLs and Cloudflare Turnstile hostnames with `board-os.ai`.
+11. If `www` is canonical, set `board-os.ai` to redirect to `www.board-os.ai`.
+12. Update `NEXT_PUBLIC_APP_URL` in Vercel to `https://www.board-os.ai`.
+13. Update Supabase Auth redirect URLs and Cloudflare Turnstile hostnames with both `board-os.ai` and `www.board-os.ai`.
 
 Official reference:
 - https://vercel.com/docs/projects/domains
