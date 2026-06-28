@@ -1,9 +1,13 @@
 import createNextIntlPlugin from 'next-intl/plugin'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts')
+const projectDir = path.dirname(fileURLToPath(import.meta.url))
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  outputFileTracingRoot: projectDir,
   serverExternalPackages: ['mammoth', 'pdf-parse'],
   webpack: (config) => {
     // Required for pdfjs-dist v5 in Next.js
