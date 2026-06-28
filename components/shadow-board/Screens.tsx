@@ -30,15 +30,12 @@ import {
   StatusPill,
 } from './ui'
 import Link from 'next/link'
+import { DashboardHeader } from './DashboardHeader'
 
 export function DashboardScreen() {
   return (
     <div className="space-y-6">
-      <PageHeader
-        eyebrow="Founder Dashboard"
-        title={`Good morning, ${companyContext.founder.split(' ')[0]}`}
-        description={`Next board meeting ${companyContext.nextMeeting}`}
-      />
+      <DashboardHeader />
 
       <Panel className="sb-principle">
         <p className="sb-eyebrow">Principle</p>

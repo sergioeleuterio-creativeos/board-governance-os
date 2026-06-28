@@ -696,6 +696,14 @@ Implementation completed:
 - Added production brand assets under `public/brand/`.
 - Added favicon/apple icon, Open Graph, Twitter card, manifest, robots, and sitemap routes.
 - Updated local canonical `NEXT_PUBLIC_APP_URL` to `https://www.board-os.ai`.
+- Confirmed production now serves canonical `https://www.board-os.ai` metadata, Open Graph/Twitter thumbnail, manifest, robots, sitemap, and public brand thumbnail.
+- Replaced the CSS-only sidebar mark with the real `/brand/mark.png` asset.
+- Added the real brand mark to the password-only login surface.
+- Added `npm run verify:production` for repeatable deployment checks against metadata, manifest, robots, sitemap, login, dashboard, and brand assets.
+- Sergio completed Resend domain/API setup, Cloudflare Turnstile widget setup, and Supabase Auth URL/redirect setup.
+- Made the navigation user card auth-aware so it uses the signed-in Supabase user/profile instead of the demo `Lucas Mares` placeholder.
+- Made the dashboard greeting auth-aware so it uses the signed-in user's first name when available and falls back to neutral copy.
+- Sergio moved the old Casa OS files out of this project context; no deletion action is needed from Codex.
 
 IBGC material inventory:
 - Source root: `/Users/Sergio/Documents/Pessoal/Cursos/IBGC`.
@@ -707,18 +715,16 @@ IBGC material inventory:
 
 Verification:
 - `npm run typecheck` passes.
-- Local dev server is currently running on `http://localhost:3002` because port `3001` was occupied by a stale/non-responding listener.
+- `npm run build` passes.
+- `node --check scripts/verify-production.mjs` passes.
+- Live production checks passed for dashboard metadata, `robots.txt`, `manifest.webmanifest`, and `/brand/site-thumbnail.png`.
+- A temporary local production server was started on port `3003` and then stopped; follow-up localhost curl probes were blocked by the Codex approval/usage gate.
 - Verified `HEAD /login` returns `200`.
 - Verified `HEAD /board-pack` returns `200`.
 - Verified empty POST to `/api/auth/turnstile` returns `400`.
 
 New backlog after 2026-06-28:
-- Decide final production subdomain.
-- Update `NEXT_PUBLIC_APP_URL` to the chosen canonical production URL once redirect direction is final.
-- Push project to a private GitHub repository before Vercel import.
 - Create OpenAI project/key and add `OPENAI_API_KEY`.
-- Create Cloudflare Turnstile widget and add site/secret keys.
-- Configure Resend sending domain and `EMAIL_FROM`.
 - Configure Google Workspace/Google OAuth only if calendar or Gmail integration becomes necessary.
 - Create Stripe account/products/prices later; then implement Checkout, portal, webhook, and usage enforcement.
 - Add OCR for scanned/image-heavy IBGC PDFs.
@@ -727,5 +733,4 @@ New backlog after 2026-06-28:
 - Build UI triggers for document extraction, governance run creation, founder approval, meeting minutes, and paid session lifecycle.
 
 Known issues:
-- Next dev warns about multiple lockfiles and infers `/Users/Sergio/package-lock.json` as the workspace root; add `outputFileTracingRoot` or remove the unrelated parent lockfile later.
-- Port `3001` may have a stale listener; `3002` is being used for the current local server.
+- Additional local/prod network smoke probes may need to wait if the Codex approval gate reports usage-limit exhaustion.

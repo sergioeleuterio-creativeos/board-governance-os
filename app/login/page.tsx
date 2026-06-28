@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { Suspense, useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
@@ -197,8 +198,16 @@ export default function LoginPage() {
       </section>
 
       <section className="sb-login-panel">
-        <div className="text-center space-y-2">
-          <span className="text-gold font-serif text-2xl font-bold tracking-tight">
+        <div className="text-center space-y-3">
+          <Image
+            src="/brand/mark.png"
+            alt=""
+            width={54}
+            height={54}
+            className="mx-auto sb-login-mark"
+            priority
+          />
+          <span className="block text-gold font-serif text-2xl font-bold tracking-tight">
             {PRODUCT.name}
           </span>
           <p className="text-xs font-mono text-muted tracking-widest uppercase">

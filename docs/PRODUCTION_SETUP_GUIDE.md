@@ -128,6 +128,10 @@ After changing brand assets or `NEXT_PUBLIC_APP_URL`, redeploy Vercel and test:
 - `https://www.board-os.ai/robots.txt`
 - `https://www.board-os.ai/sitemap.xml`
 
+Repeatable check:
+- Run `npm run verify:production` after a production deploy.
+- To check another host, run `npm run verify:production -- https://preview-or-custom-host`.
+
 ## Email
 
 Recommended split:

@@ -123,20 +123,19 @@
     text-transform: uppercase;
   }
 
-  .sb-diamond {
-    width: 30px;
-    height: 30px;
-    position: relative;
+  .sb-brand-mark {
+    width: 34px;
+    height: 34px;
     flex: 0 0 auto;
-    transform: rotate(45deg);
-    border: 2px solid var(--brass);
+    border-radius: 4px;
+    object-fit: cover;
   }
 
-  .sb-diamond::after {
-    content: "";
-    position: absolute;
-    inset: 9px;
-    background: var(--brass);
+  .sb-login-mark {
+    width: 54px;
+    height: 54px;
+    border-radius: 6px;
+    object-fit: cover;
   }
 
   .sb-rail-nav {

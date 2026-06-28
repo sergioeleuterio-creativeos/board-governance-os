@@ -1,10 +1,12 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { companyContext } from '@/lib/shadow-board/demo-data'
 import { PRODUCT } from '@/lib/shadow-board/product'
+import { useAuth } from '@/hooks/useAuth'
 
 const navGroups = [
   {
@@ -54,17 +56,48 @@ const mobileItems = [
   { href: '/decisions', key: 'you' },
 ]
 
+function userMetadataName(user: ReturnType<typeof useAuth>['user']): string | null {
+  const metadata = user?.user_metadata ?? {}
+  const name = metadata.full_name ?? metadata.name
+  return typeof name === 'string' && name.trim() ? name.trim() : null
+}
+
+function initialsFor(value: string): string {
+  const parts = value
+    .replace(/@.*/, '')
+    .split(/\s+|[._-]+/)
+    .map(part => part.trim())
+    .filter(Boolean)
+
+  return (parts[0]?.[0] ?? 'B').concat(parts[1]?.[0] ?? 'G').toUpperCase()
+}
+
 export default function Navigation() {
   const pathname = usePathname()
   const tNav = useTranslations('nav')
   const tShell = useTranslations('shell')
+  const { user, profile, isAdmin, loading } = useAuth()
   if (pathname === '/login') return null
+
+  const displayName = profile?.full_name
+    || userMetadataName(user)
+    || profile?.email
+    || user?.email
+    || (loading ? 'Carregando...' : 'Visitante')
+  const displayRole = user ? (isAdmin ? 'Admin' : tShell('founderRole')) : 'Preview'
 
   return (
     <>
       <aside className="sb-rail">
         <Link href="/dashboard" className="sb-brand">
-          <span className="sb-diamond" />
+          <Image
+            src="/brand/mark.png"
+            alt=""
+            width={34}
+            height={34}
+            className="sb-brand-mark"
+            priority
+          />
           <span>
             <strong>{PRODUCT.name}</strong>
             <em>{PRODUCT.moduleName}</em>
@@ -89,10 +122,10 @@ export default function Navigation() {
         </nav>
 
         <div className="sb-user-card">
-          <div className="sb-avatar">LM</div>
+          <div className="sb-avatar">{initialsFor(displayName)}</div>
           <div>
-            <p>{companyContext.founder}</p>
-            <span>{tShell('founderRole')}</span>
+            <p>{displayName}</p>
+            <span>{displayRole}</span>
           </div>
         </div>
       </aside>
