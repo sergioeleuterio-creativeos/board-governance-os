@@ -106,6 +106,28 @@ The product should live on a subdomain, not a path under another app.
 Official reference:
 - https://vercel.com/docs/projects/domains
 
+## Brand Metadata
+
+Deployment-facing brand assets are served from:
+- `/brand/mark.png`
+- `/brand/logo-light.png`
+- `/brand/logo-dark.png`
+- `/brand/site-thumbnail.png`
+
+The app metadata should expose:
+- favicon and Apple touch icon from `/brand/mark.png`
+- Open Graph and Twitter card image from `/brand/site-thumbnail.png`
+- canonical URL from `NEXT_PUBLIC_APP_URL`
+- web manifest at `/manifest.webmanifest`
+- robots file at `/robots.txt`
+- sitemap at `/sitemap.xml`
+
+After changing brand assets or `NEXT_PUBLIC_APP_URL`, redeploy Vercel and test:
+- `https://www.board-os.ai/brand/site-thumbnail.png`
+- `https://www.board-os.ai/manifest.webmanifest`
+- `https://www.board-os.ai/robots.txt`
+- `https://www.board-os.ai/sitemap.xml`
+
 ## Email
 
 Recommended split:

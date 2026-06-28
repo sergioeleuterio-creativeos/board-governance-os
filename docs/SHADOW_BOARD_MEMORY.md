@@ -667,6 +667,7 @@ Product decisions recorded:
 - Vercel project-name issue: if `board-governance-os` already exists, use project slug `board-os`; the custom domain remains `board-os.ai`.
 - Vercel production deployment is live; Sergio confirmed `https://www.board-os.ai/dashboard` works.
 - Current domain direction: Sergio will continue with the redirect to `www.board-os.ai`, so production canonical URL is `https://www.board-os.ai`.
+- Brand metadata is now wired for deployment: favicon/apple icon use `/brand/mark.png`; Open Graph/Twitter preview use `/brand/site-thumbnail.png`.
 - AI model routing decision: keep `AI_PROVIDER`, `AI_MODEL`, and `OPENAI_API_KEY` for now; future `OPENAI_MODEL_*` values should be real model IDs only and are not active until the router is implemented.
 - The uploaded Creative OS campaign planner can remain attached for now because this is still a mock/live prototype context.
 - Board Pack needs a first-class financial review area: DRE / Profit and Loss, OCF, working capital, cash conversion, debt/liquidity, budget vs actual, and board notes.
@@ -691,6 +692,9 @@ Implementation completed:
 - Added `docs/PRODUCTION_SETUP_GUIDE.md`.
 - Added `docs/IBGC_AGENT_TRAINING.md`.
 - Updated `docs/GOVERNANCE_PIPELINE.md`.
+- Added production brand assets under `public/brand/`.
+- Added favicon/apple icon, Open Graph, Twitter card, manifest, robots, and sitemap routes.
+- Updated local canonical `NEXT_PUBLIC_APP_URL` to `https://www.board-os.ai`.
 
 IBGC material inventory:
 - Source root: `/Users/Sergio/Documents/Pessoal/Cursos/IBGC`.

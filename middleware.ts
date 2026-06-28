@@ -16,6 +16,9 @@ const PUBLIC_PATHS = [
   '/design-system',
   '/mobile',
   '/auth/callback',
+  '/manifest.webmanifest',
+  '/robots.txt',
+  '/sitemap.xml',
   '/api/auth',
 ]
 
