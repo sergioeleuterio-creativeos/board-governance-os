@@ -60,6 +60,7 @@ export function FollowUpsLiveScreen() {
   const [followUps, setFollowUps] = useState<FollowUpRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState<string | null>(null)
+  const [referringId, setReferringId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
@@ -110,6 +111,32 @@ export function FollowUpsLiveScreen() {
     setNotice('Follow-up atualizado.')
     setSavingId(null)
     await loadFollowUps()
+  }
+
+  async function requestReferral(item: FollowUpRecord) {
+    setReferringId(item.id)
+    setError('')
+    setNotice('')
+
+    const response = await fetch('/api/referrals', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        follow_up_id: item.id,
+        recommended_by_agent_key: item.source_agent_key,
+        requested_category: item.source_agent_key === 'customer' ? 'Marketing / customer growth' : 'Vetted supplier',
+      }),
+    })
+    const payload = await response.json().catch(() => null) as { error?: string } | null
+
+    if (!response.ok) {
+      setError(payload?.error ?? 'Nao foi possivel solicitar a conexao.')
+      setReferringId(null)
+      return
+    }
+
+    setNotice('Pedido de conexao registrado para triagem admin.')
+    setReferringId(null)
   }
 
   useEffect(() => {
@@ -177,6 +204,14 @@ export function FollowUpsLiveScreen() {
                     <option key={status} value={status}>{status}</option>
                   ))}
                 </select>
+                <button
+                  className="sb-inline-link mt-2 block"
+                  type="button"
+                  onClick={() => void requestReferral(item)}
+                  disabled={referringId === item.id}
+                >
+                  {referringId === item.id ? 'Registrando' : 'Get connected'}
+                </button>
               </span>
             </div>
           ))}

@@ -1,6 +1,5 @@
-import { ShadowBoardReviewScreen } from '@/components/shadow-board/Screens'
+import { ShadowBoardReviewLiveScreen } from '@/components/shadow-board/ShadowBoardReviewLiveScreen'
 
 export default function ShadowBoardPage() {
-  return <ShadowBoardReviewScreen />
+  return <ShadowBoardReviewLiveScreen />
 }
-
