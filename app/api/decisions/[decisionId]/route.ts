@@ -3,6 +3,13 @@ import { isAuthError, requireAuth, requireCompanyAdmin, serviceClient } from '@/
 
 const allowedStatuses = ['candidate', 'approved', 'rejected', 'deferred', 'superseded', 'review_due', 'closed', 'open', 'reviewing', 'reversed'] as const
 const allowedClosures = ['commit', 'commit_with_conditions', 'defer', 'reject', 'request_more_data', 'escalate_human_review'] as const
+const actionToUpdate = {
+  approve: { status: 'approved', closure_recommendation: 'commit' },
+  approve_with_conditions: { status: 'approved', closure_recommendation: 'commit_with_conditions' },
+  defer: { status: 'deferred', closure_recommendation: 'defer' },
+  reject: { status: 'rejected', closure_recommendation: 'reject' },
+  request_more_data: { status: 'reviewing', closure_recommendation: 'request_more_data' },
+} as const
 
 type RouteContext = {
   params: Promise<{ decisionId: string }>
@@ -17,7 +24,7 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const service = serviceClient()
   const { data: existing, error: existingError } = await service
     .from('decisions')
-    .select('id, company_id')
+    .select('id, organization_id, company_id, metadata')
     .eq('id', decisionId)
     .maybeSingle()
 
@@ -32,7 +39,15 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   const access = await requireCompanyAdmin(existing.company_id)
   if (isAuthError(access)) return access
 
-  const updates: Record<string, string | null> = {}
+  const updates: Record<string, unknown> = {}
+  const action = typeof body?.action === 'string' && body.action in actionToUpdate
+    ? body.action as keyof typeof actionToUpdate
+    : null
+  const founderNote = typeof body?.founder_note === 'string' ? body.founder_note.trim() : ''
+
+  if (action) {
+    Object.assign(updates, actionToUpdate[action])
+  }
 
   if (typeof body?.status === 'string') {
     if (!allowedStatuses.includes(body.status)) {
@@ -53,6 +68,19 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   if (typeof body?.owner_label === 'string') updates.owner_label = body.owner_label.trim() || null
   if (typeof body?.review_date === 'string') updates.review_date = body.review_date.trim() || null
 
+  if (action || founderNote) {
+    const metadata = existing.metadata && typeof existing.metadata === 'object' && !Array.isArray(existing.metadata)
+      ? existing.metadata as Record<string, unknown>
+      : {}
+    updates.metadata = {
+      ...metadata,
+      last_founder_action: action,
+      last_founder_note: founderNote || null,
+      last_founder_action_at: new Date().toISOString(),
+      last_founder_action_by: user.id,
+    }
+  }
+
   if (!Object.keys(updates).length) {
     return NextResponse.json({ error: 'No supported fields to update' }, { status: 400 })
   }
@@ -67,6 +95,19 @@ export async function PATCH(request: NextRequest, { params }: RouteContext) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
+
+  await service.from('audit_events').insert({
+    organization_id: existing.organization_id,
+    company_id: existing.company_id,
+    actor_user_id: user.id,
+    event_type: action ? `decision.${action}` : 'decision.updated',
+    entity_type: 'decision',
+    entity_id: decisionId,
+    metadata: {
+      updates,
+      founder_note: founderNote || null,
+    },
+  })
 
   return NextResponse.json({ decision: data })
 }

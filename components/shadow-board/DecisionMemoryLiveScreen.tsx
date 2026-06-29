@@ -69,6 +69,7 @@ export function DecisionMemoryLiveScreen() {
   const [savingId, setSavingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
+  const [founderNote, setFounderNote] = useState('')
 
   const selected = decisions.find((decision) => decision.id === selectedId) ?? decisions[0] ?? null
   const metrics = useMemo(() => {
@@ -116,8 +117,17 @@ export function DecisionMemoryLiveScreen() {
     }
 
     setNotice('Decisao atualizada.')
+    setFounderNote('')
     setSavingId(null)
     await loadDecisions()
+  }
+
+  async function runDecisionAction(action: 'approve' | 'approve_with_conditions' | 'defer' | 'reject' | 'request_more_data') {
+    if (!selected) return
+    await updateDecision(selected.id, {
+      action,
+      founder_note: founderNote.trim() || null,
+    })
   }
 
   useEffect(() => {
@@ -201,11 +211,37 @@ export function DecisionMemoryLiveScreen() {
               <button
                 className="btn-primary self-end"
                 type="button"
-                onClick={() => void updateDecision(selected.id, { status: 'approved' })}
+                onClick={() => void runDecisionAction('approve')}
                 disabled={savingId === selected.id}
               >
                 Aprovar
               </button>
+            </div>
+
+            <div className="mt-4 grid gap-3">
+              <label>
+                <span className="field-label">Nota do founder</span>
+                <textarea
+                  className="field-input min-h-[86px] resize-y"
+                  value={founderNote}
+                  onChange={(event) => setFounderNote(event.target.value)}
+                  placeholder="Condição, objeção, pedido de dados ou contexto para registrar junto com a decisão..."
+                />
+              </label>
+              <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                <button className="btn-secondary" type="button" onClick={() => void runDecisionAction('approve_with_conditions')} disabled={savingId === selected.id}>
+                  Aprovar com condicoes
+                </button>
+                <button className="btn-secondary" type="button" onClick={() => void runDecisionAction('request_more_data')} disabled={savingId === selected.id}>
+                  Pedir dados
+                </button>
+                <button className="btn-secondary" type="button" onClick={() => void runDecisionAction('defer')} disabled={savingId === selected.id}>
+                  Adiar
+                </button>
+                <button className="btn-secondary" type="button" onClick={() => void runDecisionAction('reject')} disabled={savingId === selected.id}>
+                  Rejeitar
+                </button>
+              </div>
             </div>
 
             <DossierSection number="Racional" title="Por que esta decisao foi tomada">

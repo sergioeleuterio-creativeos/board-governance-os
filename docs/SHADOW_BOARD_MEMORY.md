@@ -1027,3 +1027,31 @@ Deployment checkpoint:
 - Code commit pushed to `main`: `41ced64` (`Ingest LANCE source pack and expand exports`).
 - `npm run verify:production` passed against `https://www.board-os.ai`.
 - Production homepage confirmed the new pt-BR copy: `Pensamento de conselho antes de poder bancar um conselho.`
+
+### 2026-06-29 - Access, account creation, guided intake, and founder decision workflow
+
+User asked whether invite members, new-account creation, and chat intake were ready.
+
+Status after implementation:
+- Invite route exists and now supports organization membership plus optional company membership.
+- Admin users API now supports password-ready account creation through `POST /api/admin/users`.
+- Account creation creates the Supabase Auth user, confirms email, writes `user_profiles`, assigns organization membership, optionally assigns company membership, and returns a one-time temporary password in the admin UI.
+- Admin users screen now has two separate flows:
+  - `Criar conta com senha`
+  - `Convidar usuario`
+- Admin users readout now includes companies so access can be scoped at company level.
+- Company Brain intake now has a guided deterministic Board Brain chat endpoint at `/api/company-brain/intake/chat`.
+- Chat intake UI sends founder messages to Board Brain, adds founder messages to the intake draft, and shows Board Brain follow-up questions inline.
+- Founder decision workflow now has explicit actions:
+  - approve
+  - approve with conditions
+  - request more data
+  - defer
+  - reject
+- Decision actions update status/closure recommendation, store the latest founder action/note in decision metadata, and write audit events.
+- Company Brain document relevance controls now let admins include/exclude uploaded documents from governance context without deleting the source file.
+- Excluding a document marks related Company Brain entries inactive; including it reactivates those entries.
+
+Verification:
+- `npm run build` passed with 48 app routes, including `/api/company-brain/intake/chat` and `/api/company-brain/documents/[documentId]`.
+- `npm run typecheck` passed after Next regenerated `.next/types`.

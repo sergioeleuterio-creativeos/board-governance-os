@@ -11,6 +11,13 @@ type OrganizationOption = {
   slug?: string | null
 }
 
+type CompanyOption = {
+  id: string
+  name: string
+  slug?: string | null
+  organization_id?: string | null
+}
+
 type UserMembership = {
   organization_id?: string | null
   organization_name?: string | null
@@ -36,6 +43,7 @@ type AdminUser = {
 type UsersResponse = {
   users: AdminUser[]
   organizations: OrganizationOption[]
+  companies: CompanyOption[]
 }
 
 type ErrorResponse = {
@@ -44,6 +52,7 @@ type ErrorResponse = {
 
 const statusOptions = ['active', 'inactive', 'archived'] as const
 const roleOptions = ['owner', 'admin', 'member', 'advisor_operator', 'partner_admin', 'super_admin'] as const
+const companyRoleOptions = ['founder', 'admin', 'member', 'viewer', 'advisor_operator'] as const
 
 function statusTone(status: string): StatusTone {
   if (status === 'active') return 'positive'
@@ -76,6 +85,7 @@ function isUsersResponse(payload: UsersResponse | ErrorResponse | null): payload
 export function AdminUsersClient() {
   const [users, setUsers] = useState<AdminUser[]>([])
   const [organizations, setOrganizations] = useState<OrganizationOption[]>([])
+  const [companies, setCompanies] = useState<CompanyOption[]>([])
   const [loading, setLoading] = useState(true)
   const [savingUserId, setSavingUserId] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -84,7 +94,16 @@ export function AdminUsersClient() {
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteOrganizationId, setInviteOrganizationId] = useState('')
   const [inviteRole, setInviteRole] = useState<(typeof roleOptions)[number]>('member')
+  const [inviteCompanyId, setInviteCompanyId] = useState('')
+  const [inviteCompanyRole, setInviteCompanyRole] = useState<(typeof companyRoleOptions)[number]>('member')
   const [inviting, setInviting] = useState(false)
+  const [createEmail, setCreateEmail] = useState('')
+  const [createFullName, setCreateFullName] = useState('')
+  const [createOrganizationId, setCreateOrganizationId] = useState('')
+  const [createOrganizationRole, setCreateOrganizationRole] = useState<(typeof roleOptions)[number]>('member')
+  const [createCompanyId, setCreateCompanyId] = useState('')
+  const [createCompanyRole, setCreateCompanyRole] = useState<(typeof companyRoleOptions)[number]>('member')
+  const [creating, setCreating] = useState(false)
 
   const metrics = useMemo(() => {
     const activeUsers = users.filter((user) => user.status === 'active').length
@@ -114,6 +133,7 @@ export function AdminUsersClient() {
 
     setUsers(payload.users)
     setOrganizations(payload.organizations)
+    setCompanies(payload.companies)
     setLoading(false)
   }
 
@@ -182,7 +202,9 @@ export function AdminUsersClient() {
       body: JSON.stringify({
         email: inviteEmail,
         organization_id: inviteOrganizationId || undefined,
-        role: inviteOrganizationId ? inviteRole : undefined,
+        role: inviteOrganizationId || inviteCompanyId ? inviteRole : undefined,
+        company_id: inviteCompanyId || undefined,
+        company_role: inviteCompanyId ? inviteCompanyRole : undefined,
       }),
     })
     const payload = await response.json().catch(() => null) as { error?: string } | null
@@ -196,6 +218,48 @@ export function AdminUsersClient() {
     setNotice('Convite enviado e perfil registrado.')
     setInviteEmail('')
     setInviting(false)
+    await loadUsers()
+  }
+
+  async function createUser(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setCreating(true)
+    setError('')
+    setNotice('')
+    setTemporaryPassword(null)
+
+    const response = await fetch('/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: createEmail,
+        full_name: createFullName,
+        organization_id: createOrganizationId || undefined,
+        organization_role: createOrganizationId || createCompanyId ? createOrganizationRole : undefined,
+        company_id: createCompanyId || undefined,
+        company_role: createCompanyId ? createCompanyRole : undefined,
+      }),
+    })
+    const payload = await response.json().catch(() => null) as {
+      error?: string
+      email?: string
+      temporary_password?: string
+    } | null
+
+    if (!response.ok || !payload?.temporary_password) {
+      setError(payload?.error ?? 'Nao foi possivel criar a conta.')
+      setCreating(false)
+      return
+    }
+
+    setTemporaryPassword({
+      email: payload.email ?? createEmail,
+      password: payload.temporary_password,
+    })
+    setNotice('Conta criada com senha temporaria. Ela aparece somente nesta tela.')
+    setCreateEmail('')
+    setCreateFullName('')
+    setCreating(false)
     await loadUsers()
   }
 
@@ -241,8 +305,94 @@ export function AdminUsersClient() {
       </section>
 
       <Panel>
+        <SectionTitle label="Criar conta com senha" />
+        <form className="grid gap-4 lg:grid-cols-[1fr_1fr_0.9fr_0.7fr] xl:grid-cols-[1fr_1fr_0.9fr_0.7fr_0.9fr_0.7fr_auto]" onSubmit={(event) => void createUser(event)}>
+          <label>
+            <span className="field-label">Nome</span>
+            <input
+              className="field-input"
+              value={createFullName}
+              onChange={(event) => setCreateFullName(event.target.value)}
+              placeholder="Nome Sobrenome"
+            />
+          </label>
+          <label>
+            <span className="field-label">Email</span>
+            <input
+              className="field-input"
+              type="email"
+              value={createEmail}
+              onChange={(event) => setCreateEmail(event.target.value)}
+              placeholder="nome@empresa.com"
+              required
+            />
+          </label>
+          <label>
+            <span className="field-label">Organizacao</span>
+            <select
+              className="field-input"
+              value={createOrganizationId}
+              onChange={(event) => setCreateOrganizationId(event.target.value)}
+            >
+              <option value="">Sem organizacao</option>
+              {organizations.map((organization) => (
+                <option key={organization.id} value={organization.id}>{organization.name}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="field-label">Role org</span>
+            <select
+              className="field-input"
+              value={createOrganizationRole}
+              onChange={(event) => setCreateOrganizationRole(event.target.value as (typeof roleOptions)[number])}
+              disabled={!createOrganizationId && !createCompanyId}
+            >
+              {roleOptions.map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="field-label">Empresa</span>
+            <select
+              className="field-input"
+              value={createCompanyId}
+              onChange={(event) => {
+                const companyId = event.target.value
+                setCreateCompanyId(companyId)
+                const company = companies.find((item) => item.id === companyId)
+                if (company?.organization_id && !createOrganizationId) setCreateOrganizationId(company.organization_id)
+              }}
+            >
+              <option value="">Sem empresa</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>{company.name}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="field-label">Role empresa</span>
+            <select
+              className="field-input"
+              value={createCompanyRole}
+              onChange={(event) => setCreateCompanyRole(event.target.value as (typeof companyRoleOptions)[number])}
+              disabled={!createCompanyId}
+            >
+              {companyRoleOptions.map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          </label>
+          <button className="btn-primary self-end" type="submit" disabled={creating}>
+            {creating ? 'Criando' : 'Criar conta'}
+          </button>
+        </form>
+      </Panel>
+
+      <Panel>
         <SectionTitle label="Convidar usuario" />
-        <form className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr_0.7fr_auto]" onSubmit={(event) => void inviteUser(event)}>
+        <form className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr_0.7fr] xl:grid-cols-[1.1fr_0.9fr_0.7fr_0.9fr_0.7fr_auto]" onSubmit={(event) => void inviteUser(event)}>
           <label>
             <span className="field-label">Email</span>
             <input
@@ -276,6 +426,37 @@ export function AdminUsersClient() {
               disabled={!inviteOrganizationId}
             >
               {roleOptions.map((role) => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="field-label">Empresa</span>
+            <select
+              className="field-input"
+              value={inviteCompanyId}
+              onChange={(event) => {
+                const companyId = event.target.value
+                setInviteCompanyId(companyId)
+                const company = companies.find((item) => item.id === companyId)
+                if (company?.organization_id && !inviteOrganizationId) setInviteOrganizationId(company.organization_id)
+              }}
+            >
+              <option value="">Sem empresa</option>
+              {companies.map((company) => (
+                <option key={company.id} value={company.id}>{company.name}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="field-label">Role empresa</span>
+            <select
+              className="field-input"
+              value={inviteCompanyRole}
+              onChange={(event) => setInviteCompanyRole(event.target.value as (typeof companyRoleOptions)[number])}
+              disabled={!inviteCompanyId}
+            >
+              {companyRoleOptions.map((role) => (
                 <option key={role} value={role}>{role}</option>
               ))}
             </select>

@@ -21,6 +21,7 @@ type UploadedDocument = {
   status: string
   summary: string | null
   created_at: string
+  metadata: Record<string, unknown>
 }
 
 const categories = ['fact', 'goal', 'financial', 'risk', 'team', 'decision', 'plan', 'question', 'customer', 'operations'] as const
@@ -62,7 +63,7 @@ export async function GET() {
         .limit(12),
       service
         .from('uploaded_documents')
-        .select('id, original_filename, file_ext, document_type, status, summary, created_at')
+        .select('id, original_filename, file_ext, document_type, status, summary, created_at, metadata')
         .eq('company_id', company.id)
         .neq('status', 'archived')
         .order('created_at', { ascending: false })

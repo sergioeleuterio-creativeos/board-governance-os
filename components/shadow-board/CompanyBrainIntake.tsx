@@ -42,6 +42,23 @@ interface IntakeFileUploadResponse {
   errors?: Array<{ clientFileId: string | null; error: string }>
 }
 
+type IntakeChatTurn = {
+  id: string
+  role: 'founder' | 'board_brain'
+  content: string
+  createdAt: string
+}
+
+interface IntakeChatResponse {
+  assistant?: {
+    id: string
+    role: 'board_brain'
+    content: string
+    created_at: string
+  }
+  error?: string
+}
+
 function id(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
@@ -51,12 +68,23 @@ export function CompanyBrainIntakeScreen() {
   const [draft, setDraft] = useState<CompanyBrainIntakeDraft>(() => createEmptyIntakeDraft())
   const [activeTab, setActiveTab] = useState<IntakeSectionKey>('company')
   const [chatNote, setChatNote] = useState('')
+  const [assistantTurns, setAssistantTurns] = useState<IntakeChatTurn[]>([])
+  const [chatSending, setChatSending] = useState(false)
   const [saveState, setSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [saveMessage, setSaveMessage] = useState('')
   const [fileObjects, setFileObjects] = useState<Record<string, File>>({})
 
   const quality = useMemo(() => scoreCompanyBrainIntake(draft), [draft])
   const result = useMemo(() => buildIntakeResult(draft), [draft])
+  const chatTimeline = useMemo(() => ([
+    ...draft.notes.map((note): IntakeChatTurn => ({
+      id: note.id,
+      role: 'founder',
+      content: note.content,
+      createdAt: note.createdAt,
+    })),
+    ...assistantTurns,
+  ].sort((a, b) => a.createdAt.localeCompare(b.createdAt))), [assistantTurns, draft.notes])
 
   function updateGroup<GroupKey extends 'company' | 'strategy' | 'finance' | 'team'>(
     groupKey: GroupKey,
@@ -92,6 +120,54 @@ export function CompanyBrainIntakeScreen() {
       updatedAt: new Date().toISOString(),
     }))
     if (mode === 'chat') setChatNote('')
+  }
+
+  async function sendChatMessage() {
+    const content = chatNote.trim()
+    if (!content) return
+
+    const note = {
+      id: id('note'),
+      mode: 'chat' as const,
+      content,
+      createdAt: new Date().toISOString(),
+    }
+    const nextDraft = {
+      ...draft,
+      notes: [...draft.notes, note],
+      updatedAt: new Date().toISOString(),
+    }
+
+    setDraft(nextDraft)
+    setChatNote('')
+    setChatSending(true)
+    setSaveState('idle')
+    setSaveMessage('')
+
+    const response = await fetch('/api/company-brain/intake/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ draft: nextDraft, message: content }),
+    })
+    const payload = await response.json().catch(() => null) as IntakeChatResponse | null
+
+    if (!response.ok || !payload?.assistant) {
+      setSaveState('error')
+      setSaveMessage(payload?.error ?? t('saveFailed'))
+      setChatSending(false)
+      return
+    }
+
+    setAssistantTurns(current => ([
+      ...current,
+      {
+        id: payload.assistant!.id,
+        role: 'board_brain',
+        content: payload.assistant!.content,
+        createdAt: payload.assistant!.created_at,
+      },
+    ]))
+    setChatSending(false)
   }
 
   function queueFiles(files: FileList | null) {
@@ -291,15 +367,17 @@ export function CompanyBrainIntakeScreen() {
           {activeTab === 'chat' && (
             <FieldGroup title={t('chat.title')} description={t('chat.description')}>
               <div className="sb-intake-chat">
-                {draft.notes.map(note => (
-                  <article key={note.id}>
-                    <p className="sb-code">{note.mode.toUpperCase()}</p>
-                    <p>{note.content}</p>
+                {chatTimeline.map(turn => (
+                  <article key={turn.id}>
+                    <p className="sb-code">{turn.role === 'board_brain' ? 'BOARD BRAIN' : 'FOUNDER'}</p>
+                    <p className="whitespace-pre-line">{turn.content}</p>
                   </article>
                 ))}
               </div>
               <TextArea label={t('chat.prompt')} value={chatNote} placeholder={t('chat.placeholder')} onChange={setChatNote} />
-              <button type="button" className="btn-secondary" onClick={() => addChatNote('chat')}>{t('chat.add')}</button>
+              <button type="button" className="btn-secondary" onClick={() => void sendChatMessage()} disabled={chatSending}>
+                {chatSending ? t('chat.thinking') : t('chat.send')}
+              </button>
               <TextArea label={t('voice.title')} value={draft.voiceTranscript} placeholder={t('voice.placeholder')} onChange={value => setDraft(current => ({ ...current, voiceTranscript: value }))} />
               <p className="sb-muted">{t('voice.description')}</p>
               <button type="button" className="btn-secondary" onClick={() => addChatNote('voice')}>{t('chat.add')}</button>

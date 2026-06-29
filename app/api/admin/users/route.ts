@@ -1,5 +1,7 @@
-import { NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
+import { NextRequest, NextResponse } from 'next/server'
 import { isAuthError, requireSuperAdmin, serviceClient } from '@/lib/auth-server'
+import type { CompanyRole, OrganizationRole } from '@/lib/shadow-board/domain'
 
 type ProfileRow = {
   id: string
@@ -25,6 +27,14 @@ type NamedRow = {
   id: string
   name: string
   slug?: string | null
+  organization_id?: string | null
+}
+
+const organizationRoles: OrganizationRole[] = ['owner', 'admin', 'member', 'advisor_operator', 'partner_admin', 'super_admin']
+const companyRoles: CompanyRole[] = ['founder', 'admin', 'member', 'viewer', 'advisor_operator']
+
+function makeTemporaryPassword() {
+  return `Bgo-${randomBytes(12).toString('base64url')}-${new Date().getFullYear()}!`
 }
 
 function groupByUser<T extends { user_id: string }>(rows: T[] | null) {
@@ -79,7 +89,7 @@ export async function GET() {
       .order('name', { ascending: true }),
     service
       .from('companies')
-      .select('id, name, slug')
+      .select('id, name, slug, organization_id')
       .order('name', { ascending: true }),
     service.auth.admin.listUsers({ page: 1, perPage: 1000 }),
   ])
@@ -154,5 +164,146 @@ export async function GET() {
   return NextResponse.json({
     users,
     organizations: organizationsResult.data ?? [],
+    companies: companiesResult.data ?? [],
   })
+}
+
+export async function POST(request: NextRequest) {
+  const admin = await requireSuperAdmin()
+  if (isAuthError(admin)) return admin
+
+  const body = await request.json().catch(() => null)
+  const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
+  const fullName = typeof body?.full_name === 'string' ? body.full_name.trim() : ''
+  const organizationId = typeof body?.organization_id === 'string' ? body.organization_id : ''
+  const companyId = typeof body?.company_id === 'string' ? body.company_id : ''
+  const organizationRole = organizationRoles.includes(body?.organization_role)
+    ? body.organization_role as OrganizationRole
+    : 'member'
+  const companyRole = companyRoles.includes(body?.company_role)
+    ? body.company_role as CompanyRole
+    : 'member'
+
+  if (!email || !email.includes('@')) {
+    return NextResponse.json({ error: 'Valid email is required' }, { status: 400 })
+  }
+
+  const service = serviceClient()
+  const { data: existingUsers, error: existingError } = await service.auth.admin.listUsers({ page: 1, perPage: 1000 })
+  if (existingError) return NextResponse.json({ error: existingError.message }, { status: 500 })
+
+  const existingUser = existingUsers.users.find((user) => user.email?.toLowerCase() === email)
+  if (existingUser) {
+    return NextResponse.json({ error: 'User already exists. Use invite or temporary password reset.' }, { status: 409 })
+  }
+
+  if (organizationId) {
+    const { data: organization, error } = await service
+      .from('organizations')
+      .select('id')
+      .eq('id', organizationId)
+      .maybeSingle()
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!organization) return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
+  }
+
+  let companyOrganizationId: string | null = null
+  if (companyId) {
+    const { data: company, error } = await service
+      .from('companies')
+      .select('id, organization_id')
+      .eq('id', companyId)
+      .maybeSingle()
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    if (!company) return NextResponse.json({ error: 'Company not found' }, { status: 404 })
+    companyOrganizationId = company.organization_id
+
+    if (organizationId && company.organization_id !== organizationId) {
+      return NextResponse.json({ error: 'Company does not belong to selected organization' }, { status: 400 })
+    }
+  }
+
+  const temporaryPassword = makeTemporaryPassword()
+  const { data: created, error: createError } = await service.auth.admin.createUser({
+    email,
+    password: temporaryPassword,
+    email_confirm: true,
+    user_metadata: fullName ? { full_name: fullName, name: fullName } : {},
+  })
+
+  if (createError || !created.user) {
+    return NextResponse.json({ error: createError?.message || 'Could not create user' }, { status: 500 })
+  }
+
+  const userId = created.user.id
+  const profilePayload = {
+    id: userId,
+    email,
+    full_name: fullName || null,
+    locale: 'pt-BR',
+    timezone: process.env.BOARD_GOVERNANCE_DEFAULT_TIMEZONE || 'America/Sao_Paulo',
+    is_super_admin: organizationRole === 'super_admin',
+    status: 'active',
+  }
+
+  const { error: profileError } = await service
+    .from('user_profiles')
+    .upsert(profilePayload, { onConflict: 'id' })
+  if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 })
+
+  const membershipOrganizationId = organizationId || companyOrganizationId
+  if (membershipOrganizationId) {
+    const { error: membershipError } = await service
+      .from('organization_memberships')
+      .upsert({
+        organization_id: membershipOrganizationId,
+        user_id: userId,
+        role: organizationRole,
+        status: 'active',
+        invited_by: admin.id,
+        invited_at: new Date().toISOString(),
+        accepted_at: new Date().toISOString(),
+      }, { onConflict: 'organization_id,user_id' })
+    if (membershipError) return NextResponse.json({ error: membershipError.message }, { status: 500 })
+  }
+
+  if (companyId) {
+    const { error: companyMembershipError } = await service
+      .from('company_memberships')
+      .upsert({
+        company_id: companyId,
+        user_id: userId,
+        role: companyRole,
+        status: 'active',
+      }, { onConflict: 'company_id,user_id' })
+    if (companyMembershipError) return NextResponse.json({ error: companyMembershipError.message }, { status: 500 })
+  }
+
+  await service.from('audit_events').insert({
+    organization_id: membershipOrganizationId,
+    company_id: companyId || null,
+    actor_user_id: admin.id,
+    event_type: 'admin.user_created',
+    entity_type: 'user_profile',
+    entity_id: userId,
+    metadata: {
+      email,
+      organization_id: membershipOrganizationId,
+      organization_role: organizationRole,
+      company_id: companyId || null,
+      company_role: companyId ? companyRole : null,
+    },
+  })
+
+  return NextResponse.json({
+    user_id: userId,
+    email,
+    full_name: fullName || null,
+    organization_id: membershipOrganizationId,
+    organization_role: membershipOrganizationId ? organizationRole : null,
+    company_id: companyId || null,
+    company_role: companyId ? companyRole : null,
+    temporary_password: temporaryPassword,
+    expires_note: 'Share this once through a secure channel. User should change it after first login.',
+  }, { status: 201 })
 }

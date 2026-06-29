@@ -141,6 +141,8 @@
       "description": "Use this as the founder interview transcript. It can later become a live chat with Board Brain.",
       "prompt": "What should the board understand before reviewing this company?",
       "add": "Add note",
+      "send": "Send to Board Brain",
+      "thinking": "Board Brain thinking...",
       "placeholder": "Type a founder note, board question, or context fragment..."
     },
     "voice": {

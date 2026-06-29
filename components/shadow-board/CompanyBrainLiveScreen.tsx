@@ -23,6 +23,7 @@ type UploadedDocument = {
   status: string
   summary: string | null
   created_at: string
+  metadata: Record<string, unknown>
 }
 
 type CompanyBrainReadout = {
@@ -84,6 +85,7 @@ export function CompanyBrainLiveScreen() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [extractingId, setExtractingId] = useState<string | null>(null)
+  const [updatingDocumentId, setUpdatingDocumentId] = useState<string | null>(null)
 
   const stats = useMemo(() => {
     const values = readout?.stats ?? {}
@@ -135,6 +137,31 @@ export function CompanyBrainLiveScreen() {
       payload?.result ? `${payload.result.memoryEntriesCreated} memoria criada` : null,
     ].filter(Boolean).join(' - '))
     setExtractingId(null)
+    await loadReadout()
+  }
+
+  async function setDocumentRelevance(documentId: string, relevance: 'included' | 'excluded') {
+    setUpdatingDocumentId(documentId)
+    setError('')
+    setNotice('')
+
+    const response = await fetch(`/api/company-brain/documents/${documentId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ relevance }),
+    })
+    const payload = await response.json().catch(() => null) as { error?: string } | null
+
+    if (!response.ok) {
+      setError(payload?.error ?? 'Nao foi possivel atualizar a relevancia do documento.')
+      setUpdatingDocumentId(null)
+      return
+    }
+
+    setNotice(relevance === 'included'
+      ? 'Documento incluido no contexto de governanca.'
+      : 'Documento excluido do contexto de governanca.')
+    setUpdatingDocumentId(null)
     await loadReadout()
   }
 
@@ -220,7 +247,12 @@ export function CompanyBrainLiveScreen() {
                   <span className="sb-file-type">{document.file_ext?.slice(0, 3).toUpperCase() || 'DOC'}</span>
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold">{document.original_filename}</p>
-                    <p className="sb-muted">{document.status} - {document.summary ?? document.document_type ?? 'sem resumo'}</p>
+                    <p className="sb-muted">
+                      {document.status}
+                      {document.metadata?.governance_relevance === 'excluded' ? ' - excluido do contexto' : ' - incluido no contexto'}
+                      {' - '}
+                      {document.summary ?? document.document_type ?? 'sem resumo'}
+                    </p>
                   </div>
                   <button
                     className="btn-secondary shrink-0"
@@ -229,6 +261,17 @@ export function CompanyBrainLiveScreen() {
                     onClick={() => void extractDocument(document.id)}
                   >
                     {extractingId === document.id || document.status === 'processing' ? 'Processando' : 'Reprocessar'}
+                  </button>
+                  <button
+                    className="btn-secondary shrink-0"
+                    type="button"
+                    disabled={updatingDocumentId === document.id}
+                    onClick={() => void setDocumentRelevance(
+                      document.id,
+                      document.metadata?.governance_relevance === 'excluded' ? 'included' : 'excluded'
+                    )}
+                  >
+                    {document.metadata?.governance_relevance === 'excluded' ? 'Incluir' : 'Excluir'}
                   </button>
                 </div>
               ))}

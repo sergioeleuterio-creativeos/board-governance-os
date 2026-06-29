@@ -141,6 +141,8 @@
       "description": "Use isto como a entrevista do founder. Depois pode virar chat ao vivo com Board Brain.",
       "prompt": "O que o conselho precisa entender antes de revisar esta empresa?",
       "add": "Adicionar nota",
+      "send": "Enviar ao Board Brain",
+      "thinking": "Board Brain pensando...",
       "placeholder": "Digite uma nota do founder, pergunta de conselho ou fragmento de contexto..."
     },
     "voice": {
