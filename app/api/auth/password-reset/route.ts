@@ -23,10 +23,16 @@ export async function POST(request: NextRequest) {
     }
   )
 
-  const redirectTo = `${getPublicAppUrl()}/auth/callback?type=recovery&next=/reset-password`
+  const redirectTo = `${getPublicAppUrl()}/auth/callback?next=/reset-password`
   const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
 
   if (error) {
+    console.error('Password reset request failed', {
+      status: error.status,
+      code: error.code,
+      name: error.name,
+      message: error.message,
+    })
     return NextResponse.json({ error: error.message }, { status: 400 })
   }
 

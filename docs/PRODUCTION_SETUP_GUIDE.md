@@ -70,8 +70,13 @@ Password-only decision:
 - Magic links are disabled in the Board Governance OS login UI.
 - Users need an invited Supabase Auth account with a password set.
 - If a user was created through a magic-link-only flow, set or reset their password in Supabase before asking them to log in.
-- Password recovery links should redirect through `https://www.board-os.ai/auth/callback?type=recovery&next=/reset-password`.
+- Password recovery links should redirect through `https://www.board-os.ai/auth/callback?next=/reset-password`.
 - The app also has a first-party password reset request flow from `/login`.
+
+Important email note:
+- Resend env vars power Board Governance OS product emails.
+- Supabase Auth password recovery emails are still sent by Supabase Auth unless Supabase SMTP is configured.
+- For production password recovery, configure Supabase Auth SMTP with Resend SMTP credentials, or replace Supabase recovery emails with a custom admin/invite flow.
 
 Production checklist:
 1. Supabase Dashboard -> Authentication -> URL Configuration.
@@ -158,6 +163,13 @@ Resend setup:
 3. Add the DNS records Resend gives you.
 4. Verify the domain in Resend.
 5. Add `RESEND_API_KEY` and `EMAIL_FROM="Board Governance OS <mail@board-os.ai>"` to `.env.local` and Vercel.
+
+Supabase Auth SMTP with Resend:
+1. In Resend, create SMTP credentials.
+2. In Supabase -> Project Settings -> Authentication -> SMTP Settings, enable custom SMTP.
+3. Use the Resend SMTP host, port, username, and password from Resend.
+4. Set sender details to `Board Governance OS <mail@board-os.ai>`.
+5. Re-test `/login` -> forgot password.
 
 Google setup, later:
 1. Create the Board Governance OS Google Cloud project.
