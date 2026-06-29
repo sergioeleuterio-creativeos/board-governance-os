@@ -766,8 +766,14 @@
     grid-template-columns: minmax(150px, 0.8fr) minmax(190px, 1fr) minmax(150px, 0.75fr) minmax(190px, 1fr) minmax(170px, 0.85fr) minmax(220px, 1fr);
   }
 
+  .sb-admin-referrals-table .sb-table-head,
+  .sb-admin-referrals-table .sb-table-row {
+    grid-template-columns: minmax(260px, 1.35fr) minmax(190px, 0.85fr) minmax(150px, 0.65fr) minmax(180px, 0.8fr);
+  }
+
   .sb-admin-users-table small,
-  .sb-admin-sessions-table small {
+  .sb-admin-sessions-table small,
+  .sb-admin-referrals-table small {
     display: block;
     margin-top: 4px;
     color: var(--ink-400);

@@ -52,7 +52,8 @@
       "mobile": "Mobile",
       "admin": "Admin",
       "adminUsers": "Usuarios",
-      "adminSessions": "Sessoes"
+      "adminSessions": "Sessoes",
+      "adminReferrals": "Conexoes"
     },
     "mobile": {
       "home": "Inicio",

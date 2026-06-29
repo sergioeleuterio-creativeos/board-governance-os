@@ -10,6 +10,7 @@ const countTables = [
   'uploaded_documents',
   'decisions',
   'follow_ups',
+  'referral_requests',
 ] as const
 
 async function tableCount(table: string) {

@@ -45,6 +45,7 @@ const navGroups = [
       { href: '/admin', code: 'AD', key: 'admin' },
       { href: '/admin/users', code: 'US', key: 'adminUsers' },
       { href: '/admin/sessions', code: 'SE', key: 'adminSessions' },
+      { href: '/admin/referrals', code: 'RF', key: 'adminReferrals' },
     ],
   },
 ]
