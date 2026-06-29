@@ -54,7 +54,7 @@ const checks = [
     const { response } = await assertOk('/', 'text/html')
     const html = await response.text()
     requireText(html, `<link rel="canonical" href="${baseUrl}`, 'home metadata')
-    requireText(html, 'Board-level thinking before you can afford a board.', 'home page')
+    requireText(html, 'Pensamento de conselho antes de poder bancar um conselho.', 'home page')
     return 'public home'
   },
   async () => {
