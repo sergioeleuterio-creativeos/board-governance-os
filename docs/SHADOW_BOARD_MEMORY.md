@@ -1055,3 +1055,50 @@ Status after implementation:
 Verification:
 - `npm run build` passed with 48 app routes, including `/api/company-brain/intake/chat` and `/api/company-brain/documents/[documentId]`.
 - `npm run typecheck` passed after Next regenerated `.next/types`.
+
+### 2026-06-29 - Shadow Board challenges, session closure, decision impact, and reminders
+
+User asked to continue sprints autonomously.
+
+Implemented Sprint 9:
+- Added `/api/shadow-board/challenges`.
+- The route loads the latest Board Pack and advisor reviews for the current company, creates or reuses a board session, generates deterministic advisor-to-advisor challenge rounds, persists them to `agent_conversations`, updates session closure fields, and records an audit event.
+- Existing Board Brain deep dives are preserved when challenge rounds regenerate.
+- `/api/board-pack/latest` now returns the latest `board_session` and saved `agent_conversations`.
+- Shadow Board Review now has a `Gerar desafios` action and a visible `Rodadas de desafio` section with agreement/opposition/neutrality, conflicts, and agreements.
+
+Implemented Sprint 10:
+- Added `/api/shadow-board/deep-dive`.
+- The route records a Board Brain to advisor deep dive as an `agent_conversations` row, using the advisor's saved review, questions, and recommendations.
+- Shadow Board Review advisor cards now include `Aprofundar`.
+- Added `/api/shadow-board/session/close`.
+- Closing a session creates or updates `board_meetings`, creates or updates `meeting_minutes`, writes decisions/conflicts into minutes, closes the board session, and records an audit event.
+- Shadow Board Review now includes `Encerrar sessao`.
+
+Implemented Sprint 11:
+- Decision actions now perform a lightweight future-impact/dependency check against the existing decision book.
+- Related decisions are persisted into `decision_dependencies` and stored in decision metadata under `future_impact_check`.
+- Decision Memory now displays `Dependencias e impacto futuro` in the decision dossier.
+- `/api/decisions` now returns decision metadata.
+
+Implemented Sprint 12 foundation:
+- Added `/api/follow-ups/[followUpId]/reminder`.
+- Follow-up reminders are scheduled into the existing `reminders` table, with audit events.
+- `/api/follow-ups` now returns next scheduled reminder metadata.
+- Follow-ups screen now shows the next reminder and supports `Agendar lembrete` / `Novo lembrete`.
+- Reminder delivery is not active yet; this is scheduling infrastructure only. Email/calendar sending remains backlog until notification policy and provider wiring are finalized.
+
+Verification:
+- `npm run typecheck` passed.
+- `npm run build` passed with 51 app routes, including:
+  - `/api/shadow-board/challenges`
+  - `/api/shadow-board/deep-dive`
+  - `/api/shadow-board/session/close`
+  - `/api/follow-ups/[followUpId]/reminder`
+
+Backlog carried forward:
+- Replace deterministic challenge/deep-dive generation with provider-routed OpenAI analysis when ready to spend credits.
+- Add paid-session limits for challenge/deep-dive depth once Stripe usage enforcement is active.
+- Add email/calendar delivery worker for scheduled reminders.
+- Add browser-level QA for the new Shadow Board Review controls after deployment.
+- Add richer decision dependency scoring once more real decision history exists.

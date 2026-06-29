@@ -17,7 +17,7 @@ export async function GET() {
     const service = serviceClient()
     const { data, error } = await service
       .from('decisions')
-      .select('id, title, decision, status, closure_recommendation, rationale, risks, expected_outcome, tradeoffs, risk_level, confidence_score, conditions, owner_label, owner, review_date, created_at, updated_at')
+      .select('id, title, decision, status, closure_recommendation, rationale, risks, expected_outcome, tradeoffs, risk_level, confidence_score, conditions, owner_label, owner, review_date, metadata, created_at, updated_at')
       .eq('company_id', company.id)
       .order('updated_at', { ascending: false })
       .limit(100)

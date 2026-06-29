@@ -16,6 +16,9 @@ type FollowUpRecord = {
   owner: string | null
   source_agent_key: string | null
   decision_id: string | null
+  next_reminder_at: string | null
+  next_reminder_channel: string | null
+  scheduled_reminders_count: number
 }
 
 type FollowUpsResponse = {
@@ -61,6 +64,7 @@ export function FollowUpsLiveScreen() {
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState<string | null>(null)
   const [referringId, setReferringId] = useState<string | null>(null)
+  const [remindingId, setRemindingId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
@@ -139,6 +143,40 @@ export function FollowUpsLiveScreen() {
     setReferringId(null)
   }
 
+  async function scheduleReminder(item: FollowUpRecord) {
+    if (!item.due_date) {
+      setError('Defina um prazo antes de agendar lembrete.')
+      return
+    }
+
+    setRemindingId(item.id)
+    setError('')
+    setNotice('')
+
+    const remindAt = new Date(`${item.due_date}T12:00:00.000Z`)
+    remindAt.setUTCDate(remindAt.getUTCDate() - 1)
+
+    const response = await fetch(`/api/follow-ups/${item.id}/reminder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        channel: 'email',
+        remind_at: remindAt.toISOString(),
+      }),
+    })
+    const payload = await response.json().catch(() => null) as { error?: string } | null
+
+    if (!response.ok) {
+      setError(payload?.error ?? 'Nao foi possivel agendar o lembrete.')
+      setRemindingId(null)
+      return
+    }
+
+    setNotice('Lembrete agendado.')
+    setRemindingId(null)
+    await loadFollowUps()
+  }
+
   useEffect(() => {
     void loadFollowUps()
   }, [])
@@ -192,7 +230,12 @@ export function FollowUpsLiveScreen() {
                 <small>{item.description ?? item.source_agent_key ?? 'Sem detalhe'}</small>
               </span>
               <span>{item.owner_label || item.owner || 'Sem responsavel'}</span>
-              <span><StatusPill tone={dueTone(item)}>{dateLabel(item.due_date)}</StatusPill></span>
+              <span>
+                <StatusPill tone={dueTone(item)}>{dateLabel(item.due_date)}</StatusPill>
+                {item.next_reminder_at && (
+                  <small>Lembrete {dateLabel(item.next_reminder_at)} - {item.next_reminder_channel}</small>
+                )}
+              </span>
               <span>
                 <select
                   className="field-input sb-compact-select"
@@ -211,6 +254,14 @@ export function FollowUpsLiveScreen() {
                   disabled={referringId === item.id}
                 >
                   {referringId === item.id ? 'Registrando' : 'Solicitar conexao'}
+                </button>
+                <button
+                  className="sb-inline-link mt-2 block"
+                  type="button"
+                  onClick={() => void scheduleReminder(item)}
+                  disabled={remindingId === item.id || item.status === 'done' || item.status === 'cancelled'}
+                >
+                  {remindingId === item.id ? 'Agendando' : item.scheduled_reminders_count ? 'Novo lembrete' : 'Agendar lembrete'}
                 </button>
               </span>
             </div>

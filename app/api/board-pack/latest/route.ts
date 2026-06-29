@@ -11,7 +11,7 @@ export async function GET() {
   try {
     const company = await getCurrentCompanyForUser(user)
     if (!company) {
-      return NextResponse.json({ company: null, board_pack: null, agent_reviews: [] })
+      return NextResponse.json({ company: null, board_pack: null, agent_reviews: [], board_session: null, agent_conversations: [] })
     }
 
     const service = serviceClient()
@@ -35,10 +35,34 @@ export async function GET() {
 
     if (agentReviewsError) throw new Error(agentReviewsError.message)
 
+    const { data: boardSession, error: boardSessionError } = boardPack
+      ? await service
+        .from('board_sessions')
+        .select('id, status, closure_recommendation, closure_summary, opened_at, closed_at, metadata, created_at')
+        .eq('board_pack_id', boardPack.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      : { data: null, error: null }
+
+    if (boardSessionError) throw new Error(boardSessionError.message)
+
+    const { data: agentConversations, error: agentConversationsError } = boardSession
+      ? await service
+        .from('agent_conversations')
+        .select('id, from_advisor_key, to_advisor_key, relationship, transcript, summary, conflicts, agreements, created_at')
+        .eq('board_session_id', boardSession.id)
+        .order('created_at', { ascending: true })
+      : { data: [], error: null }
+
+    if (agentConversationsError) throw new Error(agentConversationsError.message)
+
     return NextResponse.json({
       company,
       board_pack: boardPack ?? null,
+      board_session: boardSession ?? null,
       agent_reviews: agentReviews ?? [],
+      agent_conversations: agentConversations ?? [],
     })
   } catch (error) {
     return NextResponse.json(

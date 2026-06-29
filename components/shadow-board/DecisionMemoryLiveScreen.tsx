@@ -19,6 +19,7 @@ type DecisionRecord = {
   owner_label: string | null
   owner: string | null
   review_date: string | null
+  metadata: unknown
   created_at: string
   updated_at: string
 }
@@ -62,6 +63,21 @@ function jsonList(value: unknown) {
   })
 }
 
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+}
+
+function futureImpactFor(decision: DecisionRecord) {
+  const metadata = asRecord(decision.metadata)
+  const impact = asRecord(metadata.future_impact_check)
+  const related = Array.isArray(impact.related_decisions) ? impact.related_decisions : []
+  return {
+    riskNote: typeof impact.risk_note === 'string' ? impact.risk_note : 'Nenhuma checagem de impacto registrada ainda.',
+    reviewNote: typeof impact.review_note === 'string' ? impact.review_note : '',
+    related: related.map((item) => asRecord(item)),
+  }
+}
+
 export function DecisionMemoryLiveScreen() {
   const [decisions, setDecisions] = useState<DecisionRecord[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -72,6 +88,7 @@ export function DecisionMemoryLiveScreen() {
   const [founderNote, setFounderNote] = useState('')
 
   const selected = decisions.find((decision) => decision.id === selectedId) ?? decisions[0] ?? null
+  const selectedImpact = selected ? futureImpactFor(selected) : null
   const metrics = useMemo(() => {
     const approved = decisions.filter((decision) => decision.status === 'approved' || decision.status === 'closed').length
     const review = decisions.filter((decision) => ['candidate', 'review_due', 'reviewing', 'deferred'].includes(decision.status)).length
@@ -267,6 +284,24 @@ export function DecisionMemoryLiveScreen() {
               <ul className="sb-clean-list mt-3">
                 {jsonList(selected.conditions).map((item) => <li key={item}>{item}</li>)}
               </ul>
+            </DossierSection>
+            <DossierSection number="Impacto" title="Dependencias e impacto futuro">
+              <p>{selectedImpact?.riskNote}</p>
+              {selectedImpact?.reviewNote && <p className="sb-muted mt-2">{selectedImpact.reviewNote}</p>}
+              <div className="mt-3 grid gap-2">
+                {(selectedImpact?.related ?? []).map((decision) => (
+                  <article className="sb-row-card" key={String(decision.id)}>
+                    <p className="sb-code">{String(decision.relationship ?? 'future_impact')}</p>
+                    <h3 className="sb-row-title">{String(decision.title ?? 'Decisao relacionada')}</h3>
+                    <p className="sb-muted">
+                      {String(decision.status ?? 'sem status')} - score {String(decision.overlap_score ?? 0)}
+                    </p>
+                  </article>
+                ))}
+                {!(selectedImpact?.related ?? []).length && (
+                  <p className="sb-muted">A proxima acao do founder vai gerar esta checagem automaticamente.</p>
+                )}
+              </div>
             </DossierSection>
           </>
         )}

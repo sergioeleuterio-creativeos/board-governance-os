@@ -18,6 +18,18 @@ type AgentReview = {
   closure_recommendation: string | null
 }
 
+type AgentConversation = {
+  id: string
+  from_advisor_key: string
+  to_advisor_key: string
+  relationship: 'agreement' | 'opposition' | 'neutrality'
+  transcript: unknown
+  summary: string | null
+  conflicts: unknown
+  agreements: unknown
+  created_at: string
+}
+
 type BoardPackResponse = {
   company: { id: string; name: string } | null
   board_pack: {
@@ -26,7 +38,14 @@ type BoardPackResponse = {
     executive_summary: string | null
     decision_candidates: unknown
   } | null
+  board_session: {
+    id: string
+    status: string
+    closure_recommendation: string | null
+    closure_summary: string | null
+  } | null
   agent_reviews: AgentReview[]
+  agent_conversations: AgentConversation[]
 }
 
 type ErrorResponse = {
@@ -73,10 +92,30 @@ function stanceTone(stance: string | null): 'positive' | 'critical' | 'caution' 
   return 'neutral'
 }
 
+function relationshipTone(relationship: AgentConversation['relationship']): 'positive' | 'critical' | 'caution' {
+  if (relationship === 'agreement') return 'positive'
+  if (relationship === 'opposition') return 'critical'
+  return 'caution'
+}
+
+function relationshipLabel(relationship: AgentConversation['relationship']) {
+  if (relationship === 'agreement') return 'acordo'
+  if (relationship === 'opposition') return 'oposicao'
+  return 'neutralidade'
+}
+
+function advisorNameFromKey(key: string, reviews: AgentReview[]) {
+  return reviews.find((review) => review.advisor_key === key)?.advisor_name ?? key
+}
+
 export function ShadowBoardReviewLiveScreen() {
   const [readout, setReadout] = useState<BoardPackResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
+  const [closing, setClosing] = useState(false)
+  const [deepDivingKey, setDeepDivingKey] = useState<string | null>(null)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
 
   const boardBrain = readout?.agent_reviews.find((review) => review.advisor_key === 'board_brain') ?? null
   const advisors = readout?.agent_reviews.filter((review) => review.advisor_key !== 'board_brain') ?? []
@@ -108,6 +147,85 @@ export function ShadowBoardReviewLiveScreen() {
     setLoading(false)
   }
 
+  async function generateChallenges() {
+    setGenerating(true)
+    setError('')
+    setNotice('')
+
+    const response = await fetch('/api/shadow-board/challenges', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const payload = await response.json().catch(() => null) as ErrorResponse | { closure_summary?: string } | null
+
+    if (!response.ok) {
+      const errorMessage = payload && 'error' in payload ? payload.error : undefined
+      setError(errorMessage ?? 'Nao foi possivel gerar a rodada de desafios.')
+      setGenerating(false)
+      return
+    }
+
+    setNotice(payload && 'closure_summary' in payload && payload.closure_summary
+      ? payload.closure_summary
+      : 'Rodada de desafios gerada e registrada na memoria.')
+    await loadReview()
+    setGenerating(false)
+  }
+
+  async function closeSession() {
+    setClosing(true)
+    setError('')
+    setNotice('')
+
+    const response = await fetch('/api/shadow-board/session/close', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const payload = await response.json().catch(() => null) as ErrorResponse | {
+      decisions_presented?: number
+      conflicts_identified?: number
+    } | null
+
+    if (!response.ok) {
+      const errorMessage = payload && 'error' in payload ? payload.error : undefined
+      setError(errorMessage ?? 'Nao foi possivel encerrar a sessao.')
+      setClosing(false)
+      return
+    }
+
+    const decisionsPresented = payload && 'decisions_presented' in payload ? payload.decisions_presented ?? 0 : 0
+    const conflictsIdentified = payload && 'conflicts_identified' in payload ? payload.conflicts_identified ?? 0 : 0
+    setNotice(`Sessao encerrada com ${decisionsPresented} decisoes apresentadas e ${conflictsIdentified} conflitos registrados em ata.`)
+    await loadReview()
+    setClosing(false)
+  }
+
+  async function deepDiveAdvisor(advisorKey: string) {
+    setDeepDivingKey(advisorKey)
+    setError('')
+    setNotice('')
+
+    const response = await fetch('/api/shadow-board/deep-dive', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ advisor_key: advisorKey }),
+    })
+    const payload = await response.json().catch(() => null) as ErrorResponse | {
+      advisor_key?: string
+    } | null
+
+    if (!response.ok) {
+      const errorMessage = payload && 'error' in payload ? payload.error : undefined
+      setError(errorMessage ?? 'Nao foi possivel aprofundar o advisor.')
+      setDeepDivingKey(null)
+      return
+    }
+
+    setNotice('Aprofundamento registrado na memoria da sessao.')
+    await loadReview()
+    setDeepDivingKey(null)
+  }
+
   useEffect(() => {
     void loadReview()
   }, [])
@@ -130,11 +248,37 @@ export function ShadowBoardReviewLiveScreen() {
         eyebrow="05 - Shadow Board Review"
         title={readout?.company?.name ? `${readout.company.name} em sessao` : 'Board Pack em sessao'}
         description="Seis lentes de governanca revisam de forma independente, com sintese e recomendacao de closure do Board Brain."
+        action={
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn-gold"
+              onClick={generateChallenges}
+              disabled={generating || loading || !readout?.board_pack}
+            >
+              {generating ? 'Gerando...' : 'Gerar desafios'}
+            </button>
+            <button
+              type="button"
+              className="btn-chamber"
+              onClick={closeSession}
+              disabled={closing || loading || !readout?.board_session || readout.board_session.status === 'closed'}
+            >
+              {closing ? 'Encerrando...' : 'Encerrar sessao'}
+            </button>
+          </div>
+        }
       />
 
       {error && (
         <Panel>
           <p className="sb-error">{error}</p>
+        </Panel>
+      )}
+
+      {notice && (
+        <Panel>
+          <p className="sb-muted">{notice}</p>
         </Panel>
       )}
 
@@ -152,6 +296,14 @@ export function ShadowBoardReviewLiveScreen() {
                   <div className="flex flex-wrap items-center gap-2">
                     <h3>{review.advisor_name}</h3>
                     <StatusPill tone={stanceTone(review.stance)}>{review.stance ?? review.status}</StatusPill>
+                    <button
+                      type="button"
+                      className="btn-chamber-muted"
+                      onClick={() => void deepDiveAdvisor(review.advisor_key)}
+                      disabled={deepDivingKey === review.advisor_key || review.advisor_key === 'board_brain'}
+                    >
+                      {deepDivingKey === review.advisor_key ? 'Aprofundando...' : 'Aprofundar'}
+                    </button>
                   </div>
                   <p>{review.perspective ?? 'Analise em fila.'}</p>
                   <div className="mt-3 grid gap-3 md:grid-cols-2">
@@ -191,8 +343,12 @@ export function ShadowBoardReviewLiveScreen() {
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             {boardBrain?.closure_recommendation && <StatusPill>{boardBrain.closure_recommendation}</StatusPill>}
+            {readout?.board_session?.closure_recommendation && <StatusPill tone="positive">{readout.board_session.closure_recommendation}</StatusPill>}
             {readout?.board_pack?.status && <StatusPill>{readout.board_pack.status}</StatusPill>}
           </div>
+          {readout?.board_session?.closure_summary && (
+            <p className="sb-muted mt-4">{readout.board_session.closure_summary}</p>
+          )}
           <div className="mt-6 grid gap-2">
             <Link href="/decisions" className="btn-gold">Revisar candidatos de decisao</Link>
             <Link href="/board-pack" className="btn-chamber">Abrir Board Pack</Link>
@@ -200,6 +356,60 @@ export function ShadowBoardReviewLiveScreen() {
           </div>
         </Panel>
       </section>
+
+      <Panel tone="chamber">
+        <SectionTitle
+          label="Rodadas de desafio"
+          action={<StatusPill>{readout?.agent_conversations?.length ?? 0} conversas</StatusPill>}
+        />
+        <div className="grid gap-3 lg:grid-cols-3">
+          {(readout?.agent_conversations ?? []).map((conversation) => (
+            <article key={conversation.id} className="sb-review-card">
+              <div className="flex items-start gap-3">
+                <AdvisorMark
+                  code={advisorCodes[conversation.from_advisor_key] ?? 'AD'}
+                  color={advisorColors[conversation.from_advisor_key] ?? '#8A8478'}
+                />
+                <AdvisorMark
+                  code={advisorCodes[conversation.to_advisor_key] ?? 'AD'}
+                  color={advisorColors[conversation.to_advisor_key] ?? '#8A8478'}
+                />
+              </div>
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3>
+                    {advisorNameFromKey(conversation.from_advisor_key, readout?.agent_reviews ?? [])}
+                    {' x '}
+                    {advisorNameFromKey(conversation.to_advisor_key, readout?.agent_reviews ?? [])}
+                  </h3>
+                  <StatusPill tone={relationshipTone(conversation.relationship)}>
+                    {relationshipLabel(conversation.relationship)}
+                  </StatusPill>
+                </div>
+                <p>{conversation.summary ?? 'Conversa registrada sem resumo.'}</p>
+                <div className="mt-3 grid gap-3">
+                  <div>
+                    <p className="sb-code">Conflitos</p>
+                    {asArray(conversation.conflicts).slice(0, 2).map((conflict, index) => (
+                      <p key={`${conversation.id}-c-${index}`}>{textFromItem(conflict)}</p>
+                    ))}
+                    {!asArray(conversation.conflicts).length && <p className="sb-muted">Sem conflito material nesta rodada.</p>}
+                  </div>
+                  <div>
+                    <p className="sb-code">Acordos</p>
+                    {asArray(conversation.agreements).slice(0, 2).map((agreement, index) => (
+                      <p key={`${conversation.id}-a-${index}`}>{textFromItem(agreement)}</p>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </article>
+          ))}
+          {!loading && !readout?.agent_conversations?.length && (
+            <p className="sb-muted">Gere a rodada de desafios para registrar oposicoes, acordos e pontos neutros entre advisors.</p>
+          )}
+        </div>
+      </Panel>
     </div>
   )
 }
