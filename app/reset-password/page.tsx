@@ -17,8 +17,41 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const supabase = createAuthClient()
-    supabase.auth.getUser().then(({ data }) => {
+
+    async function prepareRecoverySession() {
+      const query = new URLSearchParams(window.location.search)
+      const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+      const code = query.get('code')
+      const accessToken = hash.get('access_token')
+      const refreshToken = hash.get('refresh_token')
+
+      if (code) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
+        if (exchangeError) {
+          setError(exchangeError.message)
+        }
+      } else if (accessToken && refreshToken) {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        })
+        if (sessionError) {
+          setError(sessionError.message)
+        }
+      }
+
+      if (code || accessToken || refreshToken || window.location.hash) {
+        window.history.replaceState(null, '', '/reset-password')
+      }
+
+      const { data } = await supabase.auth.getUser()
       setHasSession(Boolean(data.user))
+      setCheckingSession(false)
+    }
+
+    prepareRecoverySession().catch(() => {
+      setError('Nao foi possivel validar o link de recuperacao.')
+      setHasSession(false)
       setCheckingSession(false)
     })
   }, [])

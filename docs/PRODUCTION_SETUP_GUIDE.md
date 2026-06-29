@@ -70,7 +70,7 @@ Password-only decision:
 - Magic links are disabled in the Board Governance OS login UI.
 - Users need an invited Supabase Auth account with a password set.
 - If a user was created through a magic-link-only flow, set or reset their password in Supabase before asking them to log in.
-- Password recovery links should redirect through `https://www.board-os.ai/auth/callback?next=/reset-password`.
+- Password recovery links should redirect to `https://www.board-os.ai/reset-password`.
 - The app also has a first-party password reset request flow from `/login`.
 
 Important email note:
