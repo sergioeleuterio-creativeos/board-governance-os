@@ -731,6 +731,7 @@ Verification:
 - Verified `HEAD /board-pack` returns `200`.
 - Verified empty POST to `/api/auth/turnstile` returns `400`.
 - Verified locally that `/` returns `200`, `/dashboard` redirects to `/login?next=%2Fdashboard`, `/company/intake` redirects to login, protected APIs return `401`, robots disallows app routes, and sitemap only lists the public home page.
+- Verified production after deploy: `npm run verify:production` passes, `/dashboard` returns `307` to `/login?next=%2Fdashboard`, password reset endpoint validates missing email, and Turnstile rejects invalid tokens with `403` instead of missing configuration.
 
 New backlog after 2026-06-28:
 - Create OpenAI project/key and add `OPENAI_API_KEY`.
