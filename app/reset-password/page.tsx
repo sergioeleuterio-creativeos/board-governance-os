@@ -11,6 +11,7 @@ function wait(ms: number) {
 }
 
 export default function ResetPasswordPage() {
+  const [currentPassword, setCurrentPassword] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -120,6 +121,11 @@ export default function ResetPasswordPage() {
     setError('')
     setMessage('')
 
+    if (!currentPassword) {
+      setError('Digite sua senha atual ou temporaria.')
+      return
+    }
+
     if (password.length < 8) {
       setError('Use uma senha com pelo menos 8 caracteres.')
       return
@@ -132,7 +138,10 @@ export default function ResetPasswordPage() {
 
     setLoading(true)
     const supabase = createAuthClient()
-    const { error: updateError } = await supabase.auth.updateUser({ password })
+    const { error: updateError } = await supabase.auth.updateUser({
+      password,
+      current_password: currentPassword,
+    })
     setLoading(false)
 
     if (updateError) {
@@ -141,6 +150,7 @@ export default function ResetPasswordPage() {
     }
 
     setMessage('Senha atualizada. Voce ja pode entrar com a nova senha.')
+    setCurrentPassword('')
     setPassword('')
     setConfirmPassword('')
   }
@@ -185,13 +195,24 @@ export default function ResetPasswordPage() {
           ) : hasSession ? (
             <form onSubmit={handleSubmit} className="space-y-5">
               <label className="block">
+                <span className="field-label">Senha atual ou temporaria</span>
+                <input
+                  type="password"
+                  className="field-input"
+                  value={currentPassword}
+                  onChange={event => setCurrentPassword(event.target.value)}
+                  autoFocus
+                  required
+                />
+              </label>
+
+              <label className="block">
                 <span className="field-label">Nova senha</span>
                 <input
                   type="password"
                   className="field-input"
                   value={password}
                   onChange={event => setPassword(event.target.value)}
-                  autoFocus
                   required
                 />
               </label>
@@ -212,7 +233,7 @@ export default function ResetPasswordPage() {
 
               <button
                 type="submit"
-                disabled={loading || !password || !confirmPassword}
+                disabled={loading || !currentPassword || !password || !confirmPassword}
                 className="btn-gold w-full disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 {loading ? 'Atualizando...' : 'Atualizar senha'}
