@@ -53,7 +53,10 @@
       "admin": "Admin",
       "adminUsers": "Usuarios",
       "adminSessions": "Sesiones",
-      "adminReferrals": "Conexiones"
+      "adminReferrals": "Conexiones",
+      "adminDocuments": "Documentos",
+      "adminPartners": "Partners",
+      "adminAudit": "Auditoria"
     },
     "mobile": {
       "home": "Inicio",

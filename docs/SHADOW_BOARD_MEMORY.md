@@ -1176,3 +1176,79 @@ Backlog carried forward:
 - Add email templates for session status, board pack ready, and referral triage.
 - Add stronger document table extraction for XLSX/DRE layouts beyond line-based signal detection.
 - Add richer UI for billing plan selection and customer portal access.
+
+### 2026-06-29 - Cron config and non-billing production operations
+
+User clarified:
+- Stripe and billing enforcement are for later.
+- `CRON_SECRET` will be configured tonight.
+- Continue the rest of production builds that do not require user action.
+
+Implemented Sprint 12/17:
+- Added `vercel.json` with daily Vercel Cron:
+  - path: `/api/cron/reminders`
+  - schedule: `0 12 * * *`
+- This is 12:00 UTC, about 09:00 in Sao Paulo.
+- The route still requires `Authorization: Bearer <CRON_SECRET>`.
+
+Implemented Sprint 14:
+- Added Admin Documents API: `/api/admin/documents`.
+- Added Admin Documents page: `/admin/documents`.
+- Admin Documents shows:
+  - upload/extraction status
+  - company and organization
+  - uploader label
+  - extraction count/types
+  - summary preview
+  - reprocess action using `/api/company-brain/documents/extract`
+- Added Admin Audit API: `/api/admin/audit`.
+- Added Admin Audit page: `/admin/audit`.
+- Audit page supports filtering by event type and entity type.
+- Added Admin Partner Channels API:
+  - `GET/POST /api/admin/partners`
+  - `PATCH /api/admin/partners/[partnerId]`
+- Added Partner Channels page: `/admin/partners`.
+- Partner Channels page supports:
+  - creating partner/distribution/white-label/referral/internal channels
+  - updating status
+  - seeing organization/company/referral counts
+
+Implemented Sprint 15:
+- Partner/channel layer is now operational at admin level.
+- This supports Resenha or future partners without making the product partner-owned.
+- Existing schema fields for `partner_channel_id` can now be managed through UI.
+
+Implemented Sprint 16:
+- Audit events now have a browser-visible admin surface.
+- Document extraction/reprocessing queue is visible to super admins.
+- Admin navigation now includes Documents, Partners, and Audit.
+- Locale catalogs updated for pt-BR, en, es, and fallback pt.
+
+Verification:
+- `npm run typecheck` passed.
+- `npm run build` passed with 61 app routes, including:
+  - `/admin/audit`
+  - `/admin/documents`
+  - `/admin/partners`
+  - `/api/admin/audit`
+  - `/api/admin/documents`
+  - `/api/admin/partners`
+  - `/api/admin/partners/[partnerId]`
+
+CRON_SECRET setup steps for Sergio:
+1. Generate a long random secret.
+2. In Vercel, open the Board Governance OS project.
+3. Go to Settings -> Environment Variables.
+4. Add `CRON_SECRET` with the generated value for Production, Preview, and Development if desired.
+5. Redeploy production after adding the variable.
+6. The `vercel.json` cron should be detected from the repo on deploy.
+7. Test manually only after deploy with:
+   `curl -H "Authorization: Bearer YOUR_SECRET" https://www.board-os.ai/api/cron/reminders`
+
+Backlog carried forward:
+- Add actual Stripe price IDs and webhook endpoint later.
+- Keep `BILLING_ENFORCEMENT_ENABLED=false` until billing launch.
+- Add richer email templates for session status, board pack ready, and referral triage.
+- Add admin controls to associate companies/organizations with partner channels from the browser.
+- Add stronger XLSX financial table parsing beyond line-based signal detection.
+- Add backup/export strategy and data retention policy docs.

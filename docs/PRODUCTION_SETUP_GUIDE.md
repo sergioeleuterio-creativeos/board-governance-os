@@ -154,6 +154,8 @@ Only these surfaces should be public:
 - `/auth/callback`
 - metadata assets such as manifest, robots, sitemap, icon, and brand images
 - auth utility endpoints under `/api/auth`
+- Vercel Cron endpoint `/api/cron/reminders`, protected by `CRON_SECRET`
+- Stripe webhook endpoint `/api/billing/webhook`, protected by Stripe signature verification
 
 All product routes such as `/dashboard`, `/company`, `/board-pack`, `/shadow-board`, and `/decisions` must redirect unauthenticated visitors to `/login`.
 
@@ -185,6 +187,32 @@ Google setup, later:
 
 Official reference:
 - https://resend.com/docs/dashboard/domains/introduction
+
+## Cron Reminders
+
+The repo includes `vercel.json` with:
+- path: `/api/cron/reminders`
+- schedule: `0 12 * * *`
+
+This runs daily at 12:00 UTC, approximately 09:00 in Sao Paulo.
+
+Setup:
+1. Generate a long random secret.
+2. In Vercel, open the Board Governance OS project.
+3. Go to Settings -> Environment Variables.
+4. Add `CRON_SECRET` with the generated value.
+5. Apply it to Production. Preview/Development can also use it if needed.
+6. Redeploy production so Vercel picks up both `vercel.json` and the env var.
+7. After deploy, verify the route manually with:
+   `curl -H "Authorization: Bearer YOUR_SECRET" https://www.board-os.ai/api/cron/reminders`
+
+Expected behavior:
+- Without the header, the route returns `401`.
+- With the correct header and `RESEND_API_KEY`, due scheduled reminders are sent.
+- Sent reminders move to `sent`; failed reminders move to `failed`.
+
+Official reference:
+- https://vercel.com/docs/cron-jobs
 
 ## Stripe
 

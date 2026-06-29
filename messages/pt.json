@@ -19,5 +19,42 @@
     "tagline": "Sistema operacional de governanca",
     "welcomeBack": "Entrar no Board Governance OS",
     "enterEmail": "Digite seu email para continuar."
+  },
+  "nav": {
+    "groups": {
+      "workspace": "Workspace",
+      "governance": "Governanca",
+      "decisions": "Decisoes",
+      "reference": "Referencia",
+      "operations": "Operacoes"
+    },
+    "items": {
+      "dashboard": "Painel",
+      "company": "Company Brain",
+      "intake": "Intake",
+      "governanceRun": "Governance Run",
+      "boardPack": "Board Pack",
+      "shadowBoard": "Shadow Board Review",
+      "decisions": "Memoria de decisoes",
+      "followUps": "Follow-ups",
+      "admin": "Admin",
+      "adminUsers": "Usuarios",
+      "adminSessions": "Sessoes",
+      "adminReferrals": "Conexoes",
+      "adminDocuments": "Documentos",
+      "adminPartners": "Parceiros",
+      "adminAudit": "Auditoria"
+    },
+    "mobile": {
+      "home": "Inicio",
+      "brain": "Brain",
+      "review": "Review",
+      "you": "Voce"
+    }
+  },
+  "shell": {
+    "search": "Buscar decisoes, fatos, board packs...",
+    "brainActive": "Board Brain ativo",
+    "founderRole": "Founder & CEO"
   }
 }
