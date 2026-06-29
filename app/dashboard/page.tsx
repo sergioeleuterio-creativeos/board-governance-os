@@ -1,6 +1,5 @@
-import { DashboardScreen } from '@/components/shadow-board/Screens'
+import { DashboardLiveScreen } from '@/components/shadow-board/DashboardLiveScreen'
 
 export default function DashboardPage() {
-  return <DashboardScreen />
+  return <DashboardLiveScreen />
 }
-

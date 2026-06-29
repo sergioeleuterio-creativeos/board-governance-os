@@ -756,6 +756,57 @@
     grid-template-columns: 1.5fr 0.7fr 0.8fr 0.55fr;
   }
 
+  .sb-admin-users-table .sb-table-head,
+  .sb-admin-users-table .sb-table-row {
+    grid-template-columns: minmax(220px, 1.25fr) minmax(220px, 1.1fr) minmax(150px, 0.75fr) minmax(130px, 0.65fr) minmax(220px, 0.95fr);
+  }
+
+  .sb-admin-sessions-table .sb-table-head,
+  .sb-admin-sessions-table .sb-table-row {
+    grid-template-columns: minmax(150px, 0.8fr) minmax(190px, 1fr) minmax(150px, 0.75fr) minmax(190px, 1fr) minmax(170px, 0.85fr) minmax(220px, 1fr);
+  }
+
+  .sb-admin-users-table small,
+  .sb-admin-sessions-table small {
+    display: block;
+    margin-top: 4px;
+    color: var(--ink-400);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .sb-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .sb-row-actions .btn-secondary {
+    min-height: 32px;
+    padding: 0 10px;
+    font-size: 11px;
+  }
+
+  .sb-compact-select {
+    min-height: 34px;
+    max-width: 150px;
+    padding: 7px 9px;
+    font-size: 12px;
+  }
+
+  .sb-secret-box {
+    margin-top: 12px;
+    overflow-x: auto;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--ink-900);
+    color: var(--surface-base);
+    padding: 12px;
+    font-family: "IBM Plex Mono", Consolas, monospace;
+    font-size: 13px;
+    white-space: pre-wrap;
+  }
+
   .sb-pack-nav {
     min-height: 36px;
     display: flex;

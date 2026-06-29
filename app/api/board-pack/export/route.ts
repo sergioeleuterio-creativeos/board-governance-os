@@ -227,6 +227,10 @@ export async function POST(request: NextRequest) {
     },
   })
 
+  const { data: signedUrl } = await service.storage
+    .from('board-exports')
+    .createSignedUrl(storagePath, 60 * 60)
+
   return NextResponse.json({
     mode: 'live-supabase',
     artifact_id: artifact.id,
@@ -234,5 +238,6 @@ export async function POST(request: NextRequest) {
     storage_path: storagePath,
     export_type: exportType,
     content_type: contentTypes[exportType],
+    signed_url: signedUrl?.signedUrl ?? null,
   })
 }

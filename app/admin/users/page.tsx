@@ -1,5 +1,5 @@
-import { AdminUsersScreen } from '@/components/shadow-board/AdminScreens'
+import { AdminUsersClient } from '@/components/shadow-board/AdminUsersClient'
 
 export default function AdminUsersPage() {
-  return <AdminUsersScreen />
+  return <AdminUsersClient />
 }

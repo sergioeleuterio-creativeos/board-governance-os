@@ -1,6 +1,5 @@
-import { BoardPackScreen } from '@/components/shadow-board/Screens'
+import { BoardPackLiveScreen } from '@/components/shadow-board/BoardPackLiveScreen'
 
 export default function BoardPackPage() {
-  return <BoardPackScreen />
+  return <BoardPackLiveScreen />
 }
-

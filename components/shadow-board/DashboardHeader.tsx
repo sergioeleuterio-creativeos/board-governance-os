@@ -1,7 +1,7 @@
 'use client'
 
 import { useAuth } from '@/hooks/useAuth'
-import { companyContext } from '@/lib/shadow-board/demo-data'
+import { useWorkspace } from '@/hooks/useWorkspace'
 import { PageHeader } from './ui'
 
 function profileName(user: ReturnType<typeof useAuth>['user'], profile: ReturnType<typeof useAuth>['profile']): string | null {
@@ -17,14 +17,28 @@ function profileName(user: ReturnType<typeof useAuth>['user'], profile: ReturnTy
 
 export function DashboardHeader() {
   const { user, profile } = useAuth()
+  const { workspace } = useWorkspace()
   const name = profileName(user, profile)
   const firstName = name?.split(/\s+/)[0]
+  const nextMeeting = workspace?.latest_session?.opened_at
+    ?? workspace?.latest_session?.created_at
+    ?? null
+  const meetingLabel = nextMeeting
+    ? new Intl.DateTimeFormat('pt-BR', {
+      weekday: 'short',
+      day: '2-digit',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    }).format(new Date(nextMeeting))
+    : 'Nenhuma board session agendada'
+  const companyLabel = workspace?.company?.name ?? workspace?.organization?.name ?? 'workspace'
 
   return (
     <PageHeader
       eyebrow="Founder Dashboard"
       title={firstName ? `Good morning, ${firstName}` : 'Good morning'}
-      description={`Next board meeting ${companyContext.nextMeeting}`}
+      description={`${companyLabel} - ${meetingLabel}`}
     />
   )
 }

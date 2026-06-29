@@ -1,6 +1,5 @@
-import { DecisionMemoryScreen } from '@/components/shadow-board/Screens'
+import { DecisionMemoryLiveScreen } from '@/components/shadow-board/DecisionMemoryLiveScreen'
 
 export default function DecisionsPage() {
-  return <DecisionMemoryScreen />
+  return <DecisionMemoryLiveScreen />
 }
-

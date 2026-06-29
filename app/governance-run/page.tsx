@@ -1,6 +1,5 @@
-import { GovernanceRunScreen } from '@/components/shadow-board/Screens'
+import { GovernanceRunLiveScreen } from '@/components/shadow-board/GovernanceRunLiveScreen'
 
 export default function GovernanceRunPage() {
-  return <GovernanceRunScreen />
+  return <GovernanceRunLiveScreen />
 }
-

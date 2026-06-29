@@ -35,6 +35,16 @@ export async function GET() {
     .order('created_at', { ascending: false })
     .limit(10)
 
+  const companyIds = [...new Set((sessions ?? []).map((session) => session.company_id).filter(Boolean))]
+  const { data: companies } = companyIds.length
+    ? await service
+      .from('companies')
+      .select('id, name')
+      .in('id', companyIds)
+    : { data: [] }
+
+  const companiesById = new Map((companies ?? []).map((company) => [company.id, company.name]))
+
   const { data: users } = await service
     .from('user_profiles')
     .select('id, email, full_name, is_super_admin, status, created_at')
@@ -43,7 +53,10 @@ export async function GET() {
 
   return NextResponse.json({
     counts,
-    recent_sessions: sessions ?? [],
+    recent_sessions: (sessions ?? []).map((session) => ({
+      ...session,
+      company_name: companiesById.get(session.company_id) ?? null,
+    })),
     recent_users: users ?? [],
   })
 }

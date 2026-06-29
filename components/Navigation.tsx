@@ -4,9 +4,9 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { companyContext } from '@/lib/shadow-board/demo-data'
 import { PRODUCT } from '@/lib/shadow-board/product'
 import { useAuth } from '@/hooks/useAuth'
+import { useWorkspace } from '@/hooks/useWorkspace'
 
 const navGroups = [
   {
@@ -77,8 +77,14 @@ export default function Navigation() {
   const tNav = useTranslations('nav')
   const tShell = useTranslations('shell')
   const { user, profile, isAdmin, loading } = useAuth()
+  const { workspace } = useWorkspace()
   if (pathname === '/' || pathname === '/login' || pathname === '/reset-password') return null
 
+  const companyName = workspace?.company?.name ?? workspace?.organization?.name ?? 'Board Governance OS'
+  const companyInitials = initialsFor(companyName)
+  const periodLabel = workspace?.latest_session
+    ? `${workspace.latest_session.session_type} - ${workspace.latest_session.status}`
+    : workspace?.company?.stage ?? workspace?.organization_memberships[0]?.role ?? 'Workspace'
   const displayName = profile?.full_name
     || userMetadataName(user)
     || profile?.email
@@ -132,9 +138,9 @@ export default function Navigation() {
 
       <header className="sb-topbar">
         <button className="sb-company-switcher">
-          <span>NV</span>
-          {companyContext.company}
-          <small>{companyContext.period}</small>
+          <span>{companyInitials}</span>
+          {companyName}
+          <small>{periodLabel}</small>
         </button>
         <div className="sb-search">
           <span>{tShell('search')}</span>

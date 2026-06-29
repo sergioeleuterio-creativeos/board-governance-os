@@ -3,6 +3,7 @@ import { isAuthError, requireAuth, requireCompanyAdmin, serviceClient } from '@/
 import { runGovernanceAI } from '@/lib/board/ai'
 import type { BoardCompany, GovernanceAIOutput, GovernanceRunInput } from '@/lib/board/types'
 import type { AdvisorKey, ClosureRecommendation } from '@/lib/shadow-board/domain'
+import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
 
 export const maxDuration = 60
 
@@ -479,6 +480,77 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Unknown governance run error' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET() {
+  const user = await requireAuth()
+  if (isAuthError(user)) return user
+
+  try {
+    const company = await getCurrentCompanyForUser(user)
+    if (!company) {
+      return NextResponse.json({
+        company: null,
+        latest_run: null,
+        latest_business_plan: null,
+        latest_board_pack: null,
+        latest_session: null,
+      })
+    }
+
+    const access = await requireCompanyAdmin(company.id)
+    if (isAuthError(access)) return access
+
+    const service = serviceClient()
+    const [runResult, businessPlanResult, boardPackResult, sessionResult] = await Promise.all([
+      service
+        .from('governance_runs')
+        .select('id, title, period, risk_score, confidence_score, executive_summary, status, created_at')
+        .eq('company_id', company.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      service
+        .from('business_plans')
+        .select('id, diagnosis, completeness_score, quality_score, workstreams, priorities, status, updated_at')
+        .eq('company_id', company.id)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      service
+        .from('board_packs')
+        .select('id, version, status, executive_summary, strategic_questions, priority_ranking, created_at')
+        .eq('company_id', company.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+      service
+        .from('board_sessions')
+        .select('id, status, closure_recommendation, closure_summary, created_at')
+        .eq('company_id', company.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ])
+
+    if (runResult.error) throw new Error(runResult.error.message)
+    if (businessPlanResult.error) throw new Error(businessPlanResult.error.message)
+    if (boardPackResult.error) throw new Error(boardPackResult.error.message)
+    if (sessionResult.error) throw new Error(sessionResult.error.message)
+
+    return NextResponse.json({
+      company,
+      latest_run: runResult.data ?? null,
+      latest_business_plan: businessPlanResult.data ?? null,
+      latest_board_pack: boardPackResult.data ?? null,
+      latest_session: sessionResult.data ?? null,
+    })
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to load governance run readout' },
       { status: 500 }
     )
   }
