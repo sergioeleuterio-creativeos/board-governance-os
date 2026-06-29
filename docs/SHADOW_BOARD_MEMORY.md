@@ -1102,3 +1102,77 @@ Backlog carried forward:
 - Add email/calendar delivery worker for scheduled reminders.
 - Add browser-level QA for the new Shadow Board Review controls after deployment.
 - Add richer decision dependency scoring once more real decision history exists.
+
+### 2026-06-29 - AI routing, reminders delivery, billing scaffolding, document financial signals
+
+User asked to continue all implementation that does not need additional input.
+
+Implemented Sprint 8:
+- Added shared server-only model router in `lib/board/model-router.ts`.
+- Model purposes now exist for:
+  - default
+  - intake
+  - document extraction
+  - advisor review
+  - governance synthesis
+  - agent challenge
+  - final decision
+- Existing Governance Run AI now uses the shared router while preserving provider/model output.
+- Shadow Board challenge rounds now call the routed AI layer with purpose `agent_challenge` when AI is configured.
+- Shadow Board challenge route still falls back to deterministic challenge rounds if provider is mock or the model call fails.
+- Advisor deep dives now call the routed AI layer with purpose `advisor_review` and deterministic fallback.
+- Challenge/deep-dive provider, model, fallback, and error metadata are stored on the board session / audit events.
+
+Implemented Sprint 12:
+- Added `/api/cron/reminders`.
+- Cron route is protected by `CRON_SECRET` and opened through middleware only for `/api/cron`.
+- Due scheduled reminders are delivered through Resend when `RESEND_API_KEY` is configured.
+- Sent reminders become `sent`; failed reminders become `failed` with `last_error`.
+- Reminder send audit events are recorded.
+- `.env.local.example` now includes `CRON_SECRET`.
+
+Implemented Sprint 13:
+- Added Stripe server helper `lib/stripe-server.ts`.
+- Added `/api/billing/checkout` for Stripe Checkout sessions.
+- Added `/api/billing/portal` for Stripe customer portal sessions.
+- Added `/api/billing/webhook` with Stripe signature verification.
+- Webhook upserts `subscriptions` from subscription events.
+- Webhook creates `usage_packages` for `extra_session_pack` checkout completions.
+- Middleware allows only `/api/billing/webhook` as the public billing path; signature verification is still required.
+- Added dormant usage enforcement helper `lib/billing-usage.ts`.
+- `BILLING_ENFORCEMENT_ENABLED=false` by default.
+- If enabled, deep dives consume `deep_dive` usage and session closure consumes `session` usage from active usage packages.
+- `.env.local.example` now includes usage-package defaults for extra session packs.
+
+Implemented Sprint 5:
+- Document intelligence now creates a `financials` extraction row when uploaded documents contain board-relevant financial signals.
+- Detection is conservative and line-based for DRE/P&L, OCF, cash, revenue, margin, EBITDA, burn, CAC/LTV, churn, retention, ROI/ROAS, budget, cost, and related board metrics.
+- Financial signals are promoted into Company Brain as a separate financial memory entry when present.
+- Uploaded document metadata and audit events now record `financial_signals` counts.
+
+Implemented Sprint 14/16:
+- Admin readout now includes counts for reminders, subscriptions, and usage packages.
+- Admin control room now shows operational queues:
+  - open sessions
+  - due reminders
+  - failed reminders
+  - pending documents
+  - failed documents
+  - active subscriptions / usage packages
+- Production readiness panel now reflects AI router, billing scaffolding, reminder cron, exports, auth, domain, and admin operations.
+
+Verification:
+- `npm run typecheck` passed.
+- `npm run build` passed with 55 app routes, including:
+  - `/api/billing/checkout`
+  - `/api/billing/portal`
+  - `/api/billing/webhook`
+  - `/api/cron/reminders`
+
+Backlog carried forward:
+- Add actual Stripe price IDs and set webhook endpoint in Stripe Dashboard.
+- Add `CRON_SECRET` in Vercel and configure Vercel Cron for `/api/cron/reminders`.
+- Decide when to enable `BILLING_ENFORCEMENT_ENABLED=true`.
+- Add email templates for session status, board pack ready, and referral triage.
+- Add stronger document table extraction for XLSX/DRE layouts beyond line-based signal detection.
+- Add richer UI for billing plan selection and customer portal access.

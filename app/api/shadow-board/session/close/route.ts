@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { isAuthError, requireAuth, requireCompanyAdmin, serviceClient } from '@/lib/auth-server'
 import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
+import { consumeUsagePackageUnit } from '@/lib/billing-usage'
 
 type ConversationRow = {
   id: string
@@ -99,6 +100,15 @@ export async function POST() {
 
     if (sessionError) throw new Error(sessionError.message)
     if (!session) return NextResponse.json({ error: 'Nenhuma board session encontrada.' }, { status: 404 })
+
+    let usagePackageId: string | null = null
+    if (session.status !== 'closed') {
+      const usage = await consumeUsagePackageUnit(session.organization_id, 'session')
+      if (!usage.ok) {
+        return NextResponse.json({ error: usage.error ?? 'Pacote de sessoes indisponivel.' }, { status: 402 })
+      }
+      usagePackageId = usage.packageId
+    }
 
     const { data: boardPack, error: boardPackError } = session.board_pack_id
       ? await service
@@ -243,6 +253,7 @@ export async function POST() {
       minutes_generated_at: now,
       conflicts_identified: conflictsIdentified.length,
       decisions_presented: decisionsPresented.length,
+      consumed_usage_package_id: usagePackageId,
     }
 
     const { error: closeError } = await service

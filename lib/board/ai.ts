@@ -1,26 +1,8 @@
 import { BOARD_PERSONAS, BoardCompany, GovernanceAIOutput, GovernanceRunInput } from './types'
 import { INJECTION_GUARD, wrapUserContent } from '@/lib/prompts'
+import { callJSONAI } from './model-router'
 
-type Provider = 'openai' | 'anthropic' | 'mock'
-
-export function resolveAIProvider(): Provider {
-  const configured = process.env.AI_PROVIDER?.toLowerCase()
-  if (configured === 'openai' || configured === 'anthropic') return configured
-  if (process.env.OPENAI_API_KEY) return 'openai'
-  if (process.env.ANTHROPIC_API_KEY) return 'anthropic'
-  return 'mock'
-}
-
-export function resolveModel(provider: Provider, purpose: 'governance_synthesis' | 'default' = 'default'): string {
-  if (provider === 'openai' && purpose === 'governance_synthesis' && process.env.OPENAI_MODEL_BOARD_BRAIN_SYNTHESIS) {
-    return process.env.OPENAI_MODEL_BOARD_BRAIN_SYNTHESIS
-  }
-
-  if (process.env.AI_MODEL) return process.env.AI_MODEL
-  if (provider === 'openai') return 'gpt-4.1'
-  if (provider === 'anthropic') return 'claude-sonnet-4-6'
-  return 'mock-governance-v1'
-}
+export { resolveAIProvider, resolveModel } from './model-router'
 
 function buildPrompt(company: BoardCompany, input: GovernanceRunInput): string {
   return `You are Board Governance OS, an AI governance layer for founder-led companies.
@@ -84,61 +66,18 @@ Return one JSON object only. No markdown. Match this shape exactly:
 }`
 }
 
-function parseJSON(text: string): GovernanceAIOutput {
-  const cleaned = text.trim().replace(/^```(?:json)?\s*/i, '').replace(/```$/i, '').trim()
-  return JSON.parse(cleaned) as GovernanceAIOutput
-}
-
 export async function runGovernanceAI(company: BoardCompany, input: GovernanceRunInput) {
-  const provider = resolveAIProvider()
-  const model = resolveModel(provider, 'governance_synthesis')
-
-  if (provider === 'mock') {
-    return { provider, model, output: mockGovernanceOutput(company, input) }
-  }
-
   const prompt = buildPrompt(company, input)
   const system = `You produce structured governance analysis for founder-led companies. Return valid JSON only.${INJECTION_GUARD}`
-
-  if (provider === 'openai') {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: system },
-          { role: 'user', content: prompt },
-        ],
-      }),
-    })
-    if (!res.ok) throw new Error(await res.text())
-    const data = await res.json()
-    return { provider, model, output: parseJSON(data.choices?.[0]?.message?.content ?? '{}') }
-  }
-
-  const res = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY!,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 4096,
-      system,
-      messages: [{ role: 'user', content: prompt }],
-    }),
+  const result = await callJSONAI<GovernanceAIOutput>({
+    purpose: 'governance_synthesis',
+    system,
+    prompt,
+    fallback: () => mockGovernanceOutput(company, input),
+    fallbackOnError: false,
   })
-  if (!res.ok) throw new Error(await res.text())
-  const data = await res.json()
-  return { provider, model, output: parseJSON(data.content?.[0]?.text ?? '{}') }
+
+  return { provider: result.provider, model: result.model, output: result.output }
 }
 
 function mockGovernanceOutput(company: BoardCompany, input: GovernanceRunInput): GovernanceAIOutput {

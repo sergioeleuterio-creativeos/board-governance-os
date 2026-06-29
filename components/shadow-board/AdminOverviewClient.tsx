@@ -30,6 +30,16 @@ type RecentUser = {
 
 type AdminReadout = {
   counts: CountRow[]
+  operational_queues: {
+    open_sessions: number
+    due_reminders: number
+    failed_reminders: number
+    pending_documents: number
+    failed_documents: number
+    active_subscriptions: number
+    active_usage_packages: number
+    errors: string[]
+  }
   recent_sessions: RecentSession[]
   recent_users: RecentUser[]
 }
@@ -47,6 +57,9 @@ const countLabels: Record<string, string> = {
   uploaded_documents: 'Documentos',
   decisions: 'Decisoes',
   follow_ups: 'Follow-ups',
+  reminders: 'Lembretes',
+  subscriptions: 'Subscriptions',
+  usage_packages: 'Usage packages',
 }
 
 function isAdminReadout(payload: AdminReadout | ErrorResponse | null): payload is AdminReadout {
@@ -156,25 +169,54 @@ export function AdminOverviewClient() {
         </Panel>
 
         <Panel>
-          <SectionTitle label="Production readiness" />
+          <SectionTitle label="Filas criticas" />
           <div className="space-y-4">
             {[
-              ['Supabase project', 'Ativo, separado de Creative OS'],
-              ['Auth + Turnstile', 'Login protegido e visitantes bloqueados das telas internas'],
-              ['Dominio', 'www.board-os.ai em producao'],
-              ['Email provider', 'Resend configurado para recuperacao e notificacoes'],
-            ].map(([label, detail]) => (
+              ['Sessoes abertas', readout?.operational_queues.open_sessions ?? 0, 'board sessions ainda em fluxo'],
+              ['Lembretes vencidos', readout?.operational_queues.due_reminders ?? 0, 'prontos para envio pelo cron'],
+              ['Lembretes falhos', readout?.operational_queues.failed_reminders ?? 0, 'exigem recovery ou novo envio'],
+              ['Documentos pendentes', readout?.operational_queues.pending_documents ?? 0, 'upload/processamento'],
+              ['Documentos falhos', readout?.operational_queues.failed_documents ?? 0, 'precisam reprocessar'],
+              ['Billing ativo', (readout?.operational_queues.active_subscriptions ?? 0) + (readout?.operational_queues.active_usage_packages ?? 0), 'subscriptions + packages'],
+            ].map(([label, value, detail]) => (
               <div key={label} className="sb-advisor-row">
-                <span className="sb-file-type">OK</span>
+                <span className="sb-file-type">{String(value)}</span>
                 <div>
                   <p className="font-semibold">{label}</p>
                   <p className="sb-muted">{detail}</p>
                 </div>
               </div>
             ))}
+            {!!readout?.operational_queues.errors.length && (
+              <p className="sb-error">{readout.operational_queues.errors.join(' | ')}</p>
+            )}
           </div>
         </Panel>
       </section>
+
+      <Panel>
+        <SectionTitle label="Production readiness" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {[
+            ['Supabase', 'Projeto separado e buckets privados'],
+            ['Auth', 'Login com senha, Turnstile e rotas protegidas'],
+            ['AI', 'Router por finalidade com fallback deterministico'],
+            ['Billing', 'Checkout/portal/webhook prontos para price IDs'],
+            ['Reminders', 'Agendamento + cron Resend protegido por secret'],
+            ['Exports', 'HTML, PDF, PPTX, DOCX, XLSX e CSV'],
+            ['Dominio', 'www.board-os.ai em producao'],
+            ['Admin', 'Usuarios, sessoes, referrals e filas operacionais'],
+          ].map(([label, detail]) => (
+            <div key={label} className="sb-advisor-row">
+              <span className="sb-file-type">OK</span>
+              <div>
+                <p className="font-semibold">{label}</p>
+                <p className="sb-muted">{detail}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </Panel>
 
       <Panel>
         <SectionTitle label="Tabelas monitoradas" />

@@ -11,6 +11,9 @@ const countTables = [
   'decisions',
   'follow_ups',
   'referral_requests',
+  'reminders',
+  'subscriptions',
+  'usage_packages',
 ] as const
 
 async function tableCount(table: string) {
@@ -21,6 +24,23 @@ async function tableCount(table: string) {
 
   if (error) return { table, count: 0, error: error.message }
   return { table, count: count ?? 0 }
+}
+
+async function scopedCount(
+  table: string,
+  apply?: (query: any) => any
+) {
+  const service = serviceClient()
+  let query = service
+    .from(table)
+    .select('id', { count: 'exact', head: true })
+
+  if (apply) {
+    query = apply(query)
+  }
+
+  const { count, error } = await query
+  return { count: count ?? 0, error: error?.message ?? null }
 }
 
 export async function GET() {
@@ -52,8 +72,45 @@ export async function GET() {
     .order('created_at', { ascending: false })
     .limit(10)
 
+  const now = new Date().toISOString()
+  const [
+    openSessions,
+    dueReminders,
+    failedReminders,
+    pendingDocuments,
+    failedDocuments,
+    activeSubscriptions,
+    activeUsagePackages,
+  ] = await Promise.all([
+    scopedCount('board_sessions', (query) => query.in('status', ['open', 'in_review', 'awaiting_founder'])),
+    scopedCount('reminders', (query) => query.eq('status', 'scheduled').lte('remind_at', now)),
+    scopedCount('reminders', (query) => query.eq('status', 'failed')),
+    scopedCount('uploaded_documents', (query) => query.in('status', ['uploaded', 'processing'])),
+    scopedCount('uploaded_documents', (query) => query.eq('status', 'failed')),
+    scopedCount('subscriptions', (query) => query.in('status', ['trialing', 'active', 'past_due'])),
+    scopedCount('usage_packages', (query) => query.eq('status', 'active')),
+  ])
+
   return NextResponse.json({
     counts,
+    operational_queues: {
+      open_sessions: openSessions.count,
+      due_reminders: dueReminders.count,
+      failed_reminders: failedReminders.count,
+      pending_documents: pendingDocuments.count,
+      failed_documents: failedDocuments.count,
+      active_subscriptions: activeSubscriptions.count,
+      active_usage_packages: activeUsagePackages.count,
+      errors: [
+        openSessions.error,
+        dueReminders.error,
+        failedReminders.error,
+        pendingDocuments.error,
+        failedDocuments.error,
+        activeSubscriptions.error,
+        activeUsagePackages.error,
+      ].filter(Boolean),
+    },
     recent_sessions: (sessions ?? []).map((session) => ({
       ...session,
       company_name: companiesById.get(session.company_id) ?? null,

@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { isAuthError, requireAuth, requireCompanyAdmin, serviceClient } from '@/lib/auth-server'
 import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
+import { callJSONAI } from '@/lib/board/model-router'
+import { INJECTION_GUARD, wrapUserContent } from '@/lib/prompts'
 
 type AgentReview = {
   id: string
@@ -20,6 +22,27 @@ type ChallengePair = {
   from: AgentReview
   to: AgentReview
 }
+
+type ChallengeConversation = {
+  from_advisor_key: string
+  to_advisor_key: string
+  relationship: 'agreement' | 'opposition' | 'neutrality'
+  transcript: unknown[]
+  summary: string
+  conflicts: unknown[]
+  agreements: unknown[]
+}
+
+type ChallengeAIOutput = {
+  conversations: ChallengeConversation[]
+  closure_recommendation: string
+  closure_summary: string
+  unresolved_questions: unknown[]
+}
+
+const advisorKeys = ['finance', 'operator', 'growth', 'risk', 'customer', 'talent'] as const
+const relationships = ['agreement', 'opposition', 'neutrality'] as const
+const closureRecommendations = ['commit', 'commit_with_conditions', 'defer', 'reject', 'request_more_data', 'escalate_human_review'] as const
 
 const advisorNames: Record<string, string> = {
   board_brain: 'Board Brain',
@@ -136,9 +159,6 @@ function buildChallengePairs(advisors: AgentReview[]): ChallengePair[] {
 }
 
 function relationshipSummary(pair: ChallengePair) {
-  const fromPoint = pair.from.perspective ?? firstText(pair.from.recommendations) ?? `${pair.from.advisor_name} ainda precisa consolidar sua analise.`
-  const toPoint = pair.to.perspective ?? firstText(pair.to.recommendations) ?? `${pair.to.advisor_name} ainda precisa consolidar sua analise.`
-
   if (pair.relationship === 'opposition') {
     return `${pair.from.advisor_name} pressiona a recomendacao de ${pair.to.advisor_name} para explicitar riscos, dados ausentes e condicoes minimas antes de compromisso.`
   }
@@ -195,6 +215,84 @@ function buildConversationRow(pair: ChallengePair) {
     conflicts,
     agreements,
   }
+}
+
+function sanitizeConversation(value: unknown, fallback: ChallengeConversation): ChallengeConversation {
+  const record = asRecord(value)
+  const from = typeof record.from_advisor_key === 'string' && advisorKeys.includes(record.from_advisor_key as typeof advisorKeys[number])
+    ? record.from_advisor_key
+    : fallback.from_advisor_key
+  const to = typeof record.to_advisor_key === 'string' && advisorKeys.includes(record.to_advisor_key as typeof advisorKeys[number])
+    ? record.to_advisor_key
+    : fallback.to_advisor_key
+  const relationship = typeof record.relationship === 'string' && relationships.includes(record.relationship as typeof relationships[number])
+    ? record.relationship as ChallengeConversation['relationship']
+    : fallback.relationship
+  const transcript = Array.isArray(record.transcript) ? record.transcript : fallback.transcript
+  const conflicts = Array.isArray(record.conflicts) ? record.conflicts : fallback.conflicts
+  const agreements = Array.isArray(record.agreements) ? record.agreements : fallback.agreements
+  const summary = typeof record.summary === 'string' && record.summary.trim()
+    ? record.summary.trim()
+    : fallback.summary
+
+  return {
+    from_advisor_key: from,
+    to_advisor_key: to === from ? fallback.to_advisor_key : to,
+    relationship,
+    transcript,
+    summary,
+    conflicts,
+    agreements,
+  }
+}
+
+function buildChallengePrompt({
+  companyName,
+  boardPack,
+  reviews,
+  deterministicConversations,
+}: {
+  companyName: string
+  boardPack: Record<string, unknown>
+  reviews: AgentReview[]
+  deterministicConversations: ChallengeConversation[]
+}) {
+  return `You are Board Brain orchestrating a Shadow Board Review for ${companyName}.
+
+Guardrail: you are not a board replacement, not an AI board member, and not a virtual CEO. You organize governance challenge, conflict, consensus, questions, and closure for founder review.
+
+Board Pack:
+${wrapUserContent(JSON.stringify(boardPack, null, 2))}
+
+Advisor reviews:
+${wrapUserContent(JSON.stringify(reviews, null, 2))}
+
+Deterministic fallback challenge map:
+${wrapUserContent(JSON.stringify(deterministicConversations, null, 2))}
+
+Create advisor-to-advisor challenge rounds. Use only these advisor keys: finance, operator, growth, risk, customer, talent.
+
+Return one JSON object only. No markdown. Match this shape:
+{
+  "conversations": [
+    {
+      "from_advisor_key": "finance",
+      "to_advisor_key": "risk",
+      "relationship": "opposition",
+      "transcript": [
+        { "speaker": "Finance Advisor", "role": "challenge", "content": "" },
+        { "speaker": "Risk Advisor", "role": "response", "content": "" },
+        { "speaker": "Board Brain", "role": "orchestration", "content": "" }
+      ],
+      "summary": "",
+      "conflicts": [],
+      "agreements": []
+    }
+  ],
+  "closure_recommendation": "commit_with_conditions",
+  "closure_summary": "",
+  "unresolved_questions": []
+}`
 }
 
 function closureFromReviews(reviews: AgentReview[]) {
@@ -295,12 +393,38 @@ export async function POST() {
     if (!boardSession) throw new Error('Nao foi possivel abrir a sessao de Shadow Board Review.')
 
     const pairs = buildChallengePairs(advisors)
-    const challengeRows = pairs.map((pair) => ({
+    const deterministicConversations = pairs.map((pair) => buildConversationRow(pair) as ChallengeConversation)
+    const deterministicClosureRecommendation = closureFromReviews(reviews)
+    const deterministicClosureSummary = `Rodada de desafios concluida com ${deterministicConversations.length} conversas, ${deterministicConversations.reduce((sum, row) => sum + (Array.isArray(row.conflicts) ? row.conflicts.length : 0), 0)} conflitos mapeados e recomendacao de closure: ${deterministicClosureRecommendation}.`
+
+    const aiResult = await callJSONAI<ChallengeAIOutput>({
+      purpose: 'agent_challenge',
+      system: `You produce structured governance challenge rounds for founder-led companies. Return valid JSON only.${INJECTION_GUARD}`,
+      prompt: buildChallengePrompt({
+        companyName: company.name,
+        boardPack: boardPack as Record<string, unknown>,
+        reviews,
+        deterministicConversations,
+      }),
+      fallback: () => ({
+        conversations: deterministicConversations,
+        closure_recommendation: deterministicClosureRecommendation,
+        closure_summary: deterministicClosureSummary,
+        unresolved_questions: [],
+      }),
+    })
+
+    const conversationPayloads = (Array.isArray(aiResult.output.conversations) && aiResult.output.conversations.length
+      ? aiResult.output.conversations
+      : deterministicConversations
+    ).slice(0, 6).map((conversation, index) => sanitizeConversation(conversation, deterministicConversations[index % deterministicConversations.length]))
+
+    const challengeRows = conversationPayloads.map((conversation) => ({
       organization_id: boardPack.organization_id,
       company_id: boardPack.company_id,
       governance_cycle_id: boardPack.governance_cycle_id,
       board_session_id: boardSession.id,
-      ...buildConversationRow(pair),
+      ...conversation,
     }))
 
     const { error: deleteError } = await service
@@ -321,15 +445,22 @@ export async function POST() {
 
     if (conversationError) throw new Error(conversationError.message)
 
-    const closureRecommendation = closureFromReviews(reviews)
+    const closureRecommendation = closureRecommendations.includes(aiResult.output.closure_recommendation as typeof closureRecommendations[number])
+      ? aiResult.output.closure_recommendation
+      : deterministicClosureRecommendation
     const conflictCount = challengeRows.reduce((sum, row) => sum + (Array.isArray(row.conflicts) ? row.conflicts.length : 0), 0)
-    const closureSummary = `Rodada de desafios concluida com ${challengeRows.length} conversas, ${conflictCount} conflitos mapeados e recomendacao de closure: ${closureRecommendation}.`
+    const closureSummary = aiResult.output.closure_summary?.trim()
+      || `Rodada de desafios concluida com ${challengeRows.length} conversas, ${conflictCount} conflitos mapeados e recomendacao de closure: ${closureRecommendation}.`
     const metadata = {
       ...asRecord(boardSession.metadata),
       last_challenge_run_at: new Date().toISOString(),
       last_challenge_run_by: user.id,
       challenge_rounds: challengeRows.length,
       challenge_conflicts: conflictCount,
+      challenge_provider: aiResult.provider,
+      challenge_model: aiResult.model,
+      challenge_used_fallback: aiResult.usedFallback,
+      challenge_error: aiResult.error ?? null,
     }
 
     const { error: sessionError } = await service
@@ -361,6 +492,9 @@ export async function POST() {
         conversations_created: challengeRows.length,
         closure_recommendation: closureRecommendation,
         conflict_count: conflictCount,
+        provider: aiResult.provider,
+        model: aiResult.model,
+        used_fallback: aiResult.usedFallback,
       },
     })
 

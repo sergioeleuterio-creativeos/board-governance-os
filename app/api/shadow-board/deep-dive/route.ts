@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthError, requireAuth, requireCompanyAdmin, serviceClient } from '@/lib/auth-server'
 import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
+import { callJSONAI } from '@/lib/board/model-router'
+import { INJECTION_GUARD, wrapUserContent } from '@/lib/prompts'
+import { consumeUsagePackageUnit } from '@/lib/billing-usage'
 
 type AgentReview = {
   id: string
@@ -12,6 +15,14 @@ type AgentReview = {
   perspective: string | null
   strategic_questions: unknown
   recommendations: unknown
+}
+
+type DeepDiveOutput = {
+  summary: string
+  transcript: Array<Record<string, unknown>>
+  conflicts: unknown[]
+  agreements: unknown[]
+  implementation_conditions: unknown[]
 }
 
 const allowedAdvisorKeys = ['finance', 'operator', 'growth', 'risk', 'customer', 'talent'] as const
@@ -42,6 +53,55 @@ function stanceLabel(stance: string | null) {
     needs_more_data: 'dados insuficientes',
   }
   return stance ? labels[stance] ?? stance : 'sem postura registrada'
+}
+
+function sanitizeDeepDive(value: unknown, fallback: DeepDiveOutput): DeepDiveOutput {
+  const output = value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Partial<DeepDiveOutput>
+    : {}
+
+  return {
+    summary: typeof output.summary === 'string' && output.summary.trim() ? output.summary.trim() : fallback.summary,
+    transcript: Array.isArray(output.transcript) && output.transcript.length ? output.transcript : fallback.transcript,
+    conflicts: Array.isArray(output.conflicts) ? output.conflicts : fallback.conflicts,
+    agreements: Array.isArray(output.agreements) ? output.agreements : fallback.agreements,
+    implementation_conditions: Array.isArray(output.implementation_conditions) ? output.implementation_conditions : fallback.implementation_conditions,
+  }
+}
+
+function buildDeepDivePrompt({
+  companyName,
+  review,
+  fallback,
+}: {
+  companyName: string
+  review: AgentReview
+  fallback: DeepDiveOutput
+}) {
+  return `You are ${review.advisor_name} inside Board Governance OS, responding to a Board Brain request for a deeper advisor review.
+
+Company: ${companyName}
+
+Guardrail: you are not a board member, not a board replacement, and not a virtual CEO. You provide governance challenge, questions, conditions, risks, and implementation discipline.
+
+Advisor review:
+${wrapUserContent(JSON.stringify(review, null, 2))}
+
+Deterministic fallback:
+${wrapUserContent(JSON.stringify(fallback, null, 2))}
+
+Return one JSON object only. No markdown. Match this shape:
+{
+  "summary": "",
+  "transcript": [
+    { "speaker": "Board Brain", "role": "deep_dive_prompt", "content": "" },
+    { "speaker": "${review.advisor_name}", "role": "deep_dive_response", "content": "" },
+    { "speaker": "Board Brain", "role": "memory_instruction", "content": "" }
+  ],
+  "conflicts": [],
+  "agreements": [],
+  "implementation_conditions": []
+}`
 }
 
 export async function POST(request: NextRequest) {
@@ -84,6 +144,11 @@ export async function POST(request: NextRequest) {
 
     if (reviewError) throw new Error(reviewError.message)
     if (!review) return NextResponse.json({ error: 'Advisor ainda nao tem analise registrada.' }, { status: 404 })
+
+    const usage = await consumeUsagePackageUnit(boardPack.organization_id, 'deep_dive')
+    if (!usage.ok) {
+      return NextResponse.json({ error: usage.error ?? 'Pacote de uso indisponivel.' }, { status: 402 })
+    }
 
     const { data: existingSession, error: existingSessionError } = await service
       .from('board_sessions')
@@ -130,7 +195,7 @@ export async function POST(request: NextRequest) {
       recommendations.length ? `Recomendacoes: ${recommendations.join(' | ')}` : null,
     ].filter(Boolean).join(' ')
 
-    const transcript = [
+    const fallbackTranscript = [
       {
         speaker: 'Board Brain',
         role: 'deep_dive_prompt',
@@ -148,6 +213,26 @@ export async function POST(request: NextRequest) {
       },
     ]
 
+    const fallbackOutput: DeepDiveOutput = {
+      summary,
+      transcript: fallbackTranscript,
+      conflicts: questions,
+      agreements: recommendations,
+      implementation_conditions: recommendations,
+    }
+
+    const aiResult = await callJSONAI<DeepDiveOutput>({
+      purpose: 'advisor_review',
+      system: `You produce structured advisor deep dives for founder-led governance reviews. Return valid JSON only.${INJECTION_GUARD}`,
+      prompt: buildDeepDivePrompt({
+        companyName: company.name,
+        review: advisorReview,
+        fallback: fallbackOutput,
+      }),
+      fallback: () => fallbackOutput,
+    })
+    const deepDive = sanitizeDeepDive(aiResult.output, fallbackOutput)
+
     const { data: conversation, error: conversationError } = await service
       .from('agent_conversations')
       .insert({
@@ -158,10 +243,10 @@ export async function POST(request: NextRequest) {
         from_advisor_key: 'board_brain',
         to_advisor_key: advisorReview.advisor_key,
         relationship: 'neutrality',
-        transcript,
-        summary,
-        conflicts: questions,
-        agreements: recommendations,
+        transcript: deepDive.transcript,
+        summary: deepDive.summary,
+        conflicts: deepDive.conflicts,
+        agreements: deepDive.agreements,
       })
       .select('id, summary, created_at')
       .single()
@@ -179,6 +264,11 @@ export async function POST(request: NextRequest) {
           deep_dive_count: deepDiveCount,
           last_deep_dive_at: new Date().toISOString(),
           last_deep_dive_advisor: advisorReview.advisor_key,
+          last_deep_dive_provider: aiResult.provider,
+          last_deep_dive_model: aiResult.model,
+          last_deep_dive_used_fallback: aiResult.usedFallback,
+          last_deep_dive_error: aiResult.error ?? null,
+          last_deep_dive_usage_package_id: usage.packageId,
         },
       })
       .eq('id', boardSession.id)
@@ -194,6 +284,9 @@ export async function POST(request: NextRequest) {
         board_session_id: boardSession.id,
         board_pack_id: boardPack.id,
         advisor_key: advisorReview.advisor_key,
+        provider: aiResult.provider,
+        model: aiResult.model,
+        used_fallback: aiResult.usedFallback,
       },
     })
 

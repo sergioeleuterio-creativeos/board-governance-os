@@ -5,6 +5,7 @@ import { serviceClient } from '@/lib/auth-server'
 
 const MAX_EXTRACTED_TEXT_CHARS = 120_000
 const MAX_MEMORY_TEXT_CHARS = 8_000
+const MAX_FINANCIAL_SIGNALS = 40
 
 type ExtractionKind = 'pdf' | 'docx' | 'xlsx' | 'pptx' | 'csv' | 'txt' | 'unknown'
 
@@ -99,6 +100,40 @@ function detectMemoryCategory(text: string): 'financial' | 'risk' | 'customer' |
   if (/(process|processo|operation|opera[cç][aã]o|workflow|cadence|cad[eê]ncia|owner|respons[aá]vel)/.test(lower)) return 'operations'
   if (/(plan|plano|roadmap|priority|prioridade|timeline|cronograma|goal|objetivo)/.test(lower)) return 'plan'
   return 'fact'
+}
+
+function extractFinancialSignals(text: string) {
+  const financialPattern = /(dre|p&l|profit|loss|receita|revenue|faturamento|margem|margin|ebitda|lucro|profit|cash|caixa|runway|burn|ocf|operating cash flow|fluxo de caixa|capex|opex|budget|or[cç]amento|custo|cost|cac|ltv|churn|retention|reten[cç][aã]o|inadimpl[eê]ncia|endividamento|debt|roi|roas|ticket|arpu|arr|mrr)/i
+  const valuePattern = /(?:R\$|\$|BRL|USD|EUR)?\s*-?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?\s*(?:%|pp|bps|mil|mi|m|k|mm|bn|bi)?/gi
+  const lines = text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length >= 8 && line.length <= 500)
+
+  return lines
+    .filter((line) => financialPattern.test(line))
+    .map((line) => {
+      const values = Array.from(line.matchAll(valuePattern)).map((match) => match[0].trim())
+      return {
+        line,
+        values: [...new Set(values)].slice(0, 8),
+      }
+    })
+    .filter((signal) => signal.values.length || financialPattern.test(signal.line))
+    .slice(0, MAX_FINANCIAL_SIGNALS)
+}
+
+function buildFinancialSummary(signals: Array<{ line: string; values: string[] }>, fileName: string) {
+  if (!signals.length) return ''
+  const preview = signals
+    .slice(0, 8)
+    .map((signal) => {
+      const values = signal.values.length ? ` (${signal.values.join(', ')})` : ''
+      return `${signal.line}${values}`
+    })
+    .join(' | ')
+
+  return `${readableName(fileName)} contem sinais financeiros/operacionais relevantes para Board Pack: ${preview}`.slice(0, 1_800)
 }
 
 async function extractPdf(buffer: Buffer): Promise<string> {
@@ -216,6 +251,8 @@ export async function extractUploadedDocument(
     const extractedText = normalizeText(await extractTextByKind(kind, buffer))
     const summary = buildSummary(extractedText, typedDocument.original_filename)
     const category = detectMemoryCategory(`${typedDocument.original_filename}\n${summary}\n${extractedText.slice(0, 2_000)}`)
+    const financialSignals = extractFinancialSignals(extractedText)
+    const financialSummary = buildFinancialSummary(financialSignals, typedDocument.original_filename)
 
     await service.from('document_extractions').delete().eq('document_id', documentId)
     await service.from('company_brain_entries').delete().eq('source_document_id', documentId)
@@ -267,6 +304,23 @@ export async function extractUploadedDocument(
         source_locations: {},
         status: extractedText ? 'processed' : 'failed',
       },
+      ...(financialSignals.length ? [{
+        organization_id: typedDocument.organization_id,
+        company_id: typedDocument.company_id,
+        document_id: documentId,
+        extraction_type: 'financials',
+        content: financialSummary,
+        structured_data: {
+          source: 'document-intelligence-v1',
+          kind,
+          original_filename: typedDocument.original_filename,
+          financial_signals: financialSignals,
+          signal_count: financialSignals.length,
+        },
+        confidence_score: 74,
+        source_locations: {},
+        status: 'processed',
+      }] : []),
     ]
 
     const { error: extractionError } = await service.from('document_extractions').insert(extractionRows)
@@ -274,7 +328,7 @@ export async function extractUploadedDocument(
 
     let memoryEntriesCreated = 0
     if (extractedText) {
-      const { error: memoryError } = await service.from('company_brain_entries').insert({
+      const memoryRows: Array<Record<string, unknown>> = [{
         organization_id: typedDocument.organization_id,
         company_id: typedDocument.company_id,
         source_document_id: documentId,
@@ -291,10 +345,33 @@ export async function extractUploadedDocument(
           original_filename: typedDocument.original_filename,
           characters_extracted: extractedText.length,
         },
-      })
+      }]
+
+      if (financialSummary) {
+        memoryRows.push({
+          organization_id: typedDocument.organization_id,
+          company_id: typedDocument.company_id,
+          source_document_id: documentId,
+          created_by: actorUserId,
+          category: 'financial',
+          source_type: 'file',
+          title: `Financial signals - ${typedDocument.original_filename}`,
+          content: financialSummary,
+          confidence_score: 74,
+          status: 'active',
+          metadata: {
+            source: 'document-intelligence-v1',
+            kind,
+            original_filename: typedDocument.original_filename,
+            financial_signal_count: financialSignals.length,
+          },
+        })
+      }
+
+      const { error: memoryError } = await service.from('company_brain_entries').insert(memoryRows)
 
       if (memoryError) throw new Error(memoryError.message)
-      memoryEntriesCreated = 1
+      memoryEntriesCreated = memoryRows.length
     }
 
     const { error: updateError } = await service
@@ -307,6 +384,7 @@ export async function extractUploadedDocument(
             source: 'document-intelligence-v1',
             kind,
             characters_extracted: extractedText.length,
+            financial_signals: financialSignals.length,
             processed_at: new Date().toISOString(),
           },
         },
@@ -326,6 +404,7 @@ export async function extractUploadedDocument(
         kind,
         original_filename: typedDocument.original_filename,
         characters_extracted: extractedText.length,
+        financial_signals: financialSignals.length,
         memory_entries_created: memoryEntriesCreated,
       },
     })

@@ -11,6 +11,8 @@ const PUBLIC_PATHS = [
   '/robots.txt',
   '/sitemap.xml',
   '/api/auth',
+  '/api/cron',
+  '/api/billing/webhook',
 ]
 
 const rateLimitStore = new Map<string, { count: number; resetAt: number }>()
@@ -18,6 +20,7 @@ const RATE_LIMIT_RULES = [
   { prefix: '/api/governance', max: 20, windowMs: 60_000 },
   { prefix: '/api/ai', max: 30, windowMs: 60_000 },
   { prefix: '/api/admin', max: 60, windowMs: 60_000 },
+  { prefix: '/api/cron', max: 10, windowMs: 60_000 },
 ]
 
 function checkRateLimit(ip: string, pathname: string): boolean {
