@@ -49,6 +49,17 @@ type ExportResponse = {
   signed_url?: string | null
 }
 
+type ExportType = 'html' | 'pdf' | 'pptx' | 'docx' | 'xlsx' | 'csv'
+
+const exportOptions: Array<{ type: ExportType; label: string }> = [
+  { type: 'html', label: 'HTML' },
+  { type: 'pdf', label: 'PDF' },
+  { type: 'pptx', label: 'PPT' },
+  { type: 'docx', label: 'DOCX' },
+  { type: 'xlsx', label: 'XLSX' },
+  { type: 'csv', label: 'CSV' },
+]
+
 const advisorColors: Record<string, string> = {
   board_brain: '#C4922F',
   finance: '#3E6B4F',
@@ -118,7 +129,7 @@ export function BoardPackLiveScreen() {
     setLoading(false)
   }
 
-  async function exportBoardPack(exportType: 'html' | 'csv') {
+  async function exportBoardPack(exportType: ExportType) {
     if (!readout?.board_pack?.id) return
 
     setExporting(exportType)
@@ -241,12 +252,17 @@ export function BoardPackLiveScreen() {
         <Panel>
           <SectionTitle label="Exports" />
           <div className="grid gap-2">
-            <button className="btn-secondary" type="button" onClick={() => void exportBoardPack('html')} disabled={!boardPack || exporting === 'html'}>
-              {exporting === 'html' ? 'Exportando HTML' : 'Exportar HTML'}
-            </button>
-            <button className="btn-secondary" type="button" onClick={() => void exportBoardPack('csv')} disabled={!boardPack || exporting === 'csv'}>
-              {exporting === 'csv' ? 'Exportando CSV' : 'Exportar CSV'}
-            </button>
+            {exportOptions.map(option => (
+              <button
+                key={option.type}
+                className="btn-secondary"
+                type="button"
+                onClick={() => void exportBoardPack(option.type)}
+                disabled={!boardPack || exporting === option.type}
+              >
+                {exporting === option.type ? `Exportando ${option.label}` : `Exportar ${option.label}`}
+              </button>
+            ))}
           </div>
           {notice && <p className="sb-muted mt-3">{notice}</p>}
           {error && <p className="sb-error mt-3">{error}</p>}

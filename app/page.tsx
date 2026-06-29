@@ -22,10 +22,10 @@ export default function HomePage() {
 
       <main className="sb-public-hero">
         <section className="sb-public-copy">
-          <p className="sb-code">Governance operating system</p>
-          <h1>Board-level thinking before you can afford a board.</h1>
+          <p className="sb-code">Sistema operacional de governanca</p>
+          <h1>Pensamento de conselho antes de poder bancar um conselho.</h1>
           <p>
-            Board Governance OS ajuda empresas founder-led a transformar problemas confusos em
+            Board Governance OS ajuda empresas lideradas por founders a transformar problemas confusos em
             decisoes, memoria e follow-up, sem fingir ser um conselheiro, CEO virtual ou substituto
             de conselho.
           </p>
@@ -35,10 +35,10 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section className="sb-public-readout" aria-label="Product modules">
+        <section className="sb-public-readout" aria-label="Modulos do produto">
           <div className="sb-public-panel">
             <p className="sb-code">Principio</p>
-            <h2>Advice becomes decisions, owners, memory, and follow-through.</h2>
+            <h2>Conselho vira decisao, responsavel, memoria e acompanhamento.</h2>
           </div>
           <div className="sb-public-grid">
             {pillars.map(([title, description]) => (

@@ -1,10 +1,11 @@
 import { randomUUID } from 'crypto'
+import JSZip from 'jszip'
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthError, requireCompanyAdmin, serviceClient } from '@/lib/auth-server'
 
 export const maxDuration = 30
 
-type SupportedExportType = 'html' | 'csv'
+type SupportedExportType = 'html' | 'csv' | 'pdf' | 'docx' | 'pptx' | 'xlsx'
 
 interface BoardPackRow {
   id: string
@@ -21,9 +22,15 @@ interface BoardPackRow {
   export_payload: unknown
 }
 
+const SUPPORTED_EXPORT_TYPES: SupportedExportType[] = ['html', 'csv', 'pdf', 'docx', 'pptx', 'xlsx']
+
 const contentTypes: Record<SupportedExportType, string> = {
   html: 'text/html',
   csv: 'text/csv',
+  pdf: 'application/pdf',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 }
 
 function escapeHtml(value: unknown): string {
@@ -32,6 +39,22 @@ function escapeHtml(value: unknown): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
+}
+
+function escapeXml(value: unknown): string {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;')
+}
+
+function escapePdf(value: string): string {
+  return value
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)')
 }
 
 function asArray(value: unknown): unknown[] {
@@ -44,6 +67,74 @@ function asRecord(value: unknown): Record<string, unknown> {
 
 function csvCell(value: unknown): string {
   return `"${String(value ?? '').replace(/"/g, '""')}"`
+}
+
+type ExportRow = {
+  section: string
+  index: number
+  content: string
+}
+
+function valueText(value: unknown): string {
+  if (typeof value === 'string') return value
+  if (value == null) return ''
+  return JSON.stringify(value)
+}
+
+function exportRows(boardPack: BoardPackRow, companyName: string): ExportRow[] {
+  const payload = asRecord(boardPack.export_payload)
+  const financialReport = asRecord(payload.financial_report)
+  const advisorReports = asArray(payload.advisor_reports)
+  const rows: ExportRow[] = [
+    { section: 'Empresa', index: 1, content: companyName },
+    { section: 'Sumario executivo', index: 1, content: boardPack.executive_summary ?? '' },
+  ]
+
+  const pushSection = (section: string, value: unknown) => {
+    const items = asArray(value)
+    if (!items.length) {
+      rows.push({ section, index: 1, content: valueText(value) })
+      return
+    }
+    items.forEach((item, index) => rows.push({ section, index: index + 1, content: valueText(item) }))
+  }
+
+  pushSection('Perguntas estrategicas', boardPack.strategic_questions)
+  Object.entries(financialReport).forEach(([section, value]) => pushSection(`Financeiro - ${section}`, value))
+  pushSection('Relatorios dos advisors', advisorReports)
+  pushSection('Mapa de riscos', boardPack.risk_map)
+  pushSection('Ranking de prioridades', boardPack.priority_ranking)
+  pushSection('Agenda da reuniao', boardPack.meeting_agenda)
+  pushSection('Candidatos de decisao', boardPack.decision_candidates)
+
+  return rows.filter(row => row.content.trim())
+}
+
+function wrapText(value: string, width = 92): string[] {
+  const words = value.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean)
+  const lines: string[] = []
+  let line = ''
+  for (const word of words) {
+    const next = line ? `${line} ${word}` : word
+    if (next.length > width && line) {
+      lines.push(line)
+      line = word
+    } else {
+      line = next
+    }
+  }
+  if (line) lines.push(line)
+  return lines.length ? lines : ['']
+}
+
+function textLines(boardPack: BoardPackRow, companyName: string): string[] {
+  const lines = [`Board Pack v${boardPack.version} - ${companyName}`, '']
+  for (const row of exportRows(boardPack, companyName)) {
+    lines.push(`${row.section}${row.index > 1 ? ` ${row.index}` : ''}`)
+    lines.push(...wrapText(row.content, 96))
+    lines.push('')
+  }
+  return lines
 }
 
 function sectionRows(label: string, value: unknown): string[] {
@@ -133,9 +224,184 @@ function renderCsv(boardPack: BoardPackRow, companyName: string): string {
   ].join('\n')
 }
 
-function renderExport(boardPack: BoardPackRow, companyName: string, exportType: SupportedExportType): string {
-  if (exportType === 'html') return renderHtml(boardPack, companyName)
-  return renderCsv(boardPack, companyName)
+function renderPdf(boardPack: BoardPackRow, companyName: string): Buffer {
+  const allLines = textLines(boardPack, companyName).flatMap(line => wrapText(line, 86))
+  const linesPerPage = 46
+  const pages: string[][] = []
+  for (let index = 0; index < allLines.length; index += linesPerPage) {
+    pages.push(allLines.slice(index, index + linesPerPage))
+  }
+
+  const objects: string[] = []
+  objects.push('<< /Type /Catalog /Pages 2 0 R >>')
+  objects.push('')
+  objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>')
+
+  const pageObjectIds: number[] = []
+  for (const pageLines of pages) {
+    const pageObjectId = objects.length + 1
+    const contentObjectId = pageObjectId + 1
+    pageObjectIds.push(pageObjectId)
+    const stream = [
+      'BT',
+      '/F1 10 Tf',
+      '50 748 Td',
+      '14 TL',
+      ...pageLines.map(line => `(${escapePdf(line.slice(0, 110))}) Tj T*`),
+      'ET',
+    ].join('\n')
+
+    objects.push(`<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 3 0 R >> >> /MediaBox [0 0 612 792] /Contents ${contentObjectId} 0 R >>`)
+    objects.push(`<< /Length ${Buffer.byteLength(stream, 'utf8')} >>\nstream\n${stream}\nendstream`)
+  }
+
+  objects[1] = `<< /Type /Pages /Kids [${pageObjectIds.map(id => `${id} 0 R`).join(' ')}] /Count ${pageObjectIds.length} >>`
+
+  let pdf = '%PDF-1.4\n'
+  const offsets = [0]
+  objects.forEach((object, index) => {
+    offsets.push(Buffer.byteLength(pdf, 'utf8'))
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`
+  })
+  const xrefOffset = Buffer.byteLength(pdf, 'utf8')
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`
+  pdf += offsets.slice(1).map(offset => `${String(offset).padStart(10, '0')} 00000 n \n`).join('')
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`
+
+  return Buffer.from(pdf, 'utf8')
+}
+
+async function renderDocx(boardPack: BoardPackRow, companyName: string): Promise<Buffer> {
+  const zip = new JSZip()
+  const paragraphs = textLines(boardPack, companyName).map(line => `
+    <w:p>
+      <w:r><w:t xml:space="preserve">${escapeXml(line)}</w:t></w:r>
+    </w:p>`).join('')
+
+  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>
+</Types>`)
+  zip.folder('_rels')?.file('.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/>
+</Relationships>`)
+  zip.folder('word')?.file('document.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
+  <w:body>
+    ${paragraphs}
+    <w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1080" w:right="1080" w:bottom="1080" w:left="1080"/></w:sectPr>
+  </w:body>
+</w:document>`)
+
+  return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
+}
+
+function pptTextShape(id: number, title: string, body: string, y: number): string {
+  const bodyLines = wrapText(body, 74).slice(0, 9)
+  return `
+    <p:sp>
+      <p:nvSpPr><p:cNvPr id="${id}" name="Text ${id}"/><p:cNvSpPr txBox="1"/><p:nvPr/></p:nvSpPr>
+      <p:spPr><a:xfrm><a:off x="620000" y="${y}"/><a:ext cx="10800000" cy="1450000"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom><a:noFill/><a:ln><a:noFill/></a:ln></p:spPr>
+      <p:txBody>
+        <a:bodyPr wrap="square"/><a:lstStyle/>
+        <a:p><a:r><a:rPr lang="pt-BR" sz="2400" b="1"/><a:t>${escapeXml(title)}</a:t></a:r></a:p>
+        ${bodyLines.map(line => `<a:p><a:r><a:rPr lang="pt-BR" sz="1500"/><a:t>${escapeXml(line)}</a:t></a:r></a:p>`).join('')}
+      </p:txBody>
+    </p:sp>`
+}
+
+async function renderPptx(boardPack: BoardPackRow, companyName: string): Promise<Buffer> {
+  const zip = new JSZip()
+  const rows = exportRows(boardPack, companyName)
+  const slideChunks: ExportRow[][] = []
+  for (let index = 0; index < rows.length; index += 3) slideChunks.push(rows.slice(index, index + 3))
+
+  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/ppt/presentation.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.presentation.main+xml"/>
+  ${slideChunks.map((_, index) => `<Override PartName="/ppt/slides/slide${index + 1}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/>`).join('')}
+</Types>`)
+  zip.folder('_rels')?.file('.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="ppt/presentation.xml"/>
+</Relationships>`)
+  zip.folder('ppt')?.file('presentation.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:presentation xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:sldIdLst>${slideChunks.map((_, index) => `<p:sldId id="${256 + index}" r:id="rId${index + 1}"/>`).join('')}</p:sldIdLst>
+  <p:sldSz cx="12192000" cy="6858000" type="screen16x9"/><p:notesSz cx="6858000" cy="9144000"/>
+</p:presentation>`)
+  zip.folder('ppt')?.folder('_rels')?.file('presentation.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  ${slideChunks.map((_, index) => `<Relationship Id="rId${index + 1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${index + 1}.xml"/>`).join('')}
+</Relationships>`)
+
+  const slideFolder = zip.folder('ppt')?.folder('slides')
+  slideChunks.forEach((chunk, index) => {
+    slideFolder?.file(`slide${index + 1}.xml`, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main">
+  <p:cSld><p:spTree>
+    <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+    <p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
+    ${pptTextShape(2, index === 0 ? `Board Pack - ${companyName}` : `Board Pack - ${companyName} (${index + 1})`, chunk.map(row => `${row.section}: ${row.content}`).join(' '), 520000)}
+    ${chunk.slice(1).map((row, rowIndex) => pptTextShape(3 + rowIndex, row.section, row.content, 2300000 + rowIndex * 1500000)).join('')}
+  </p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr>
+</p:sld>`)
+  })
+
+  return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
+}
+
+async function renderXlsx(boardPack: BoardPackRow, companyName: string): Promise<Buffer> {
+  const zip = new JSZip()
+  const rows = [
+    ['section', 'index', 'content'],
+    ...exportRows(boardPack, companyName).map(row => [row.section, String(row.index), row.content]),
+  ]
+  const cell = (ref: string, value: string) => `<c r="${ref}" t="inlineStr"><is><t>${escapeXml(value)}</t></is></c>`
+  const sheetRows = rows.map((row, rowIndex) => {
+    const index = rowIndex + 1
+    return `<row r="${index}">${cell(`A${index}`, row[0])}${cell(`B${index}`, row[1])}${cell(`C${index}`, row[2])}</row>`
+  }).join('')
+
+  zip.file('[Content_Types].xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">
+  <Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>
+  <Default Extension="xml" ContentType="application/xml"/>
+  <Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>
+  <Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>
+</Types>`)
+  zip.folder('_rels')?.file('.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>
+</Relationships>`)
+  zip.folder('xl')?.file('workbook.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+  <sheets><sheet name="Board Pack" sheetId="1" r:id="rId1"/></sheets>
+</workbook>`)
+  zip.folder('xl')?.folder('_rels')?.file('workbook.xml.rels', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">
+  <Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>
+</Relationships>`)
+  zip.folder('xl')?.folder('worksheets')?.file('sheet1.xml', `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <sheetData>${sheetRows}</sheetData>
+</worksheet>`)
+
+  return zip.generateAsync({ type: 'nodebuffer', compression: 'DEFLATE' })
+}
+
+async function renderExport(boardPack: BoardPackRow, companyName: string, exportType: SupportedExportType): Promise<Buffer> {
+  if (exportType === 'html') return Buffer.from(renderHtml(boardPack, companyName), 'utf8')
+  if (exportType === 'csv') return Buffer.from(renderCsv(boardPack, companyName), 'utf8')
+  if (exportType === 'pdf') return renderPdf(boardPack, companyName)
+  if (exportType === 'docx') return renderDocx(boardPack, companyName)
+  if (exportType === 'pptx') return renderPptx(boardPack, companyName)
+  return renderXlsx(boardPack, companyName)
 }
 
 export async function POST(request: NextRequest) {
@@ -144,8 +410,8 @@ export async function POST(request: NextRequest) {
   const exportType = (typeof body?.export_type === 'string' ? body.export_type : 'html') as SupportedExportType
 
   if (!boardPackId) return NextResponse.json({ error: 'board_pack_id is required' }, { status: 400 })
-  if (!['html', 'csv'].includes(exportType)) {
-    return NextResponse.json({ error: 'export_type must be html or csv' }, { status: 400 })
+  if (!SUPPORTED_EXPORT_TYPES.includes(exportType)) {
+    return NextResponse.json({ error: `export_type must be one of ${SUPPORTED_EXPORT_TYPES.join(', ')}` }, { status: 400 })
   }
 
   const service = serviceClient()
@@ -170,7 +436,7 @@ export async function POST(request: NextRequest) {
   if (companyError) return NextResponse.json({ error: companyError.message }, { status: 500 })
 
   const companyName = company?.name ?? 'Empresa'
-  const content = renderExport(boardPack as BoardPackRow, companyName, exportType)
+  const content = await renderExport(boardPack as BoardPackRow, companyName, exportType)
   const storagePath = [
     boardPack.organization_id,
     boardPack.company_id,
@@ -180,7 +446,7 @@ export async function POST(request: NextRequest) {
 
   const { error: uploadError } = await service.storage
     .from('board-exports')
-    .upload(storagePath, Buffer.from(content, 'utf8'), {
+    .upload(storagePath, content, {
       contentType: contentTypes[exportType],
       upsert: false,
     })
@@ -201,7 +467,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         source: 'board-pack-export-api',
         content_type: contentTypes[exportType],
-        bytes: Buffer.byteLength(content, 'utf8'),
+        bytes: content.byteLength,
       },
     })
     .select('id')

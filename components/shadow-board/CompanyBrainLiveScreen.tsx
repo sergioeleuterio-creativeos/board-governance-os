@@ -43,6 +43,14 @@ type ErrorResponse = {
   error?: string
 }
 
+type ExtractDocumentResponse = {
+  result?: {
+    charactersExtracted: number
+    memoryEntriesCreated: number
+  }
+  error?: string
+}
+
 const statCards = [
   ['Fatos', 'fact'],
   ['Metas', 'goal'],
@@ -74,6 +82,8 @@ export function CompanyBrainLiveScreen() {
   const [readout, setReadout] = useState<CompanyBrainReadout | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [extractingId, setExtractingId] = useState<string | null>(null)
 
   const stats = useMemo(() => {
     const values = readout?.stats ?? {}
@@ -101,6 +111,33 @@ export function CompanyBrainLiveScreen() {
     setLoading(false)
   }
 
+  async function extractDocument(documentId: string) {
+    setExtractingId(documentId)
+    setNotice('')
+    setError('')
+
+    const response = await fetch('/api/company-brain/documents/extract', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ document_id: documentId }),
+    })
+    const payload = await response.json().catch(() => null) as ExtractDocumentResponse | null
+
+    if (!response.ok) {
+      setError(payload?.error ?? 'Nao foi possivel processar o documento.')
+      setExtractingId(null)
+      return
+    }
+
+    setNotice([
+      'Documento processado.',
+      payload?.result ? `${payload.result.charactersExtracted} caracteres extraidos` : null,
+      payload?.result ? `${payload.result.memoryEntriesCreated} memoria criada` : null,
+    ].filter(Boolean).join(' - '))
+    setExtractingId(null)
+    await loadReadout()
+  }
+
   useEffect(() => {
     void loadReadout()
   }, [])
@@ -119,6 +156,11 @@ export function CompanyBrainLiveScreen() {
       {error && (
         <Panel>
           <p className="sb-error">{error}</p>
+        </Panel>
+      )}
+      {notice && (
+        <Panel>
+          <p className="sb-muted">{notice}</p>
         </Panel>
       )}
 
@@ -176,10 +218,18 @@ export function CompanyBrainLiveScreen() {
               {(readout?.recent_documents ?? []).map(document => (
                 <div key={document.id} className="sb-file-row">
                   <span className="sb-file-type">{document.file_ext?.slice(0, 3).toUpperCase() || 'DOC'}</span>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <p className="font-semibold">{document.original_filename}</p>
                     <p className="sb-muted">{document.status} - {document.summary ?? document.document_type ?? 'sem resumo'}</p>
                   </div>
+                  <button
+                    className="btn-secondary shrink-0"
+                    type="button"
+                    disabled={extractingId === document.id || document.status === 'processing'}
+                    onClick={() => void extractDocument(document.id)}
+                  >
+                    {extractingId === document.id || document.status === 'processing' ? 'Processando' : 'Reprocessar'}
+                  </button>
                 </div>
               ))}
               {!loading && !readout?.recent_documents.length && (

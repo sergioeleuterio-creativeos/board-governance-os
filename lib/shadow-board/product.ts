@@ -3,7 +3,7 @@ export const PRODUCT = {
   shortName: 'BGOS',
   moduleName: 'Shadow Board Review',
   category: 'Governance OS',
-  description: 'Governance operating system for founder-led companies',
+  description: 'Sistema operacional de governanca para empresas lideradas por founders',
   defaultLocale: 'pt-BR',
   supportedLocales: ['pt-BR', 'en', 'es'],
   localDevPort: 3001,

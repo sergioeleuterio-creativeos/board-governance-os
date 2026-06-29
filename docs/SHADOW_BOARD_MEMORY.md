@@ -647,14 +647,14 @@ Autonomous sprint continuation completed on 2026-06-27:
 - Added `docs/IBGC_AGENT_TRAINING.md`.
 
 Updated backlog after autonomous continuation:
-- Add UI controls to trigger document extraction from Company Brain and show extraction status.
+- Completed later: UI controls now trigger document extraction from Company Brain and show extraction status.
 - Add source relevance controls to exclude unrelated uploaded files from company context.
 - Add deeper financial/table extraction for PDFs and spreadsheets.
 - Add browser-triggered Governance Run creation from the UI.
 - Add founder review/approval flow for business plans, board packs, decision candidates, and follow-ups.
 - Add agent challenge rounds in `agent_conversations`.
 - Generate meeting minutes from board sessions.
-- Add PDF, PPTX, DOCX, and XLSX export generation.
+- Completed later: Board Pack exports now support PDF, PPTX, DOCX, XLSX, HTML, and CSV.
 - Build upload retry/remove UX.
 - Resolve residual moderate npm audit advisory from Next's bundled PostCSS when a patched Next release is available.
 
@@ -816,9 +816,7 @@ Backlog after live operations sprint:
 - Generate board meeting minutes from board sessions and agent conflicts/agreements.
 - Add founder approval workflow that converts board-pack decision candidates into approved/rejected/deferred decisions with audit trail.
 - Add reminder scheduling and email notifications for follow-ups and review dates.
-- Add document extraction trigger/status UI from Company Brain.
 - Add document relevance controls so unrelated uploads can be excluded from governance context.
-- Add PDF, PPTX, DOCX, and XLSX export generation beyond current HTML/CSV exports.
 - Add Stripe Checkout, customer portal, webhooks, usage packages, and enforcement after Stripe products/prices exist.
 - Add admin billing state, document queue visibility, and agent run logs.
 - Add Resend operational email notifications for referral requests, reminders, and session status once sender policy is finalized.
@@ -827,7 +825,7 @@ Backlog after live operations sprint:
 Known risks:
 - Production database must have the full foundation migration, including `referral_requests`, `board-exports`, and canonical governance tables.
 - New live pages depend on authenticated Supabase cookies and service-role server routes; if Vercel env variables drift, pages will show API errors.
-- HTML/CSV exports are production-ready; PDF/PPTX/DOCX/XLSX remain backlog.
+- Board Pack exports are generated in-app across HTML, PDF, PPTX, DOCX, XLSX, and CSV; visual polish of generated Office/PDF layouts can continue later.
 - Governance Run can consume OpenAI credits when the user clicks `Rodar Board Brain`.
 - Admin temporary password generation returns the password once in the browser and must be handled as sensitive operational data.
 
@@ -891,8 +889,7 @@ Backlog carried forward:
 - Add true 1:1 agent challenge execution, beyond the seeded conversation summaries.
 - Add founder approval workflow that converts candidates to approved/rejected/deferred decisions with audit trail.
 - Add reminder scheduling/email notifications.
-- Add document extraction trigger/status UI and relevance controls.
-- Add PDF/PPTX/DOCX/XLSX exports beyond HTML/CSV.
+- Add document relevance controls.
 - Add Stripe Checkout, portal, webhooks, usage enforcement, and admin billing views.
 
 ### 2026-06-29 - LANCE Creative OS marketing plan ingested
@@ -956,3 +953,75 @@ Verification:
 - Remote Supabase count check confirmed the two documents and marketing-plan brain entries.
 - `npm run typecheck` passed.
 - `npm run build` passed.
+
+### 2026-06-29 - LANCE Creative OS source pack ingested and verified
+
+User supplied four additional LANCE PDFs:
+- `LANCE Brand Territories_ Creative OS — Brand Strategy & Campaign Operating System.pdf.pdf`
+- `LANCE Intelligence Report_ Creative OS — Brand Strategy & Campaign Operating System.pdf.pdf`
+- `LANCE Proposed Brand Foundation_ Creative OS — Brand Strategy & Campaign Operating System.pdf`
+- `Pré-Work Lance.pdf`
+
+Credit-light ingestion plan:
+- Extract all PDFs locally with deterministic PDF parsing, not OpenAI.
+- Store each source as its own `uploaded_documents` row.
+- Store one conservative `document_extractions` summary/text row per source.
+- Promote only durable governance facts into Company Brain.
+- Rebuild Board Pack, business plan, decisions, follow-ups, and compatibility run from the full source pack.
+
+Local extraction completed:
+- Brand Territories: 15 pages, about 9k characters.
+- Intelligence Report: 8 pages, about 25k characters.
+- Brand Foundation: 4 pages, about 5.7k characters.
+- Marketing Plan: 5 pages, about 9.2k characters.
+- Pre-work: 5 pages, about 6k characters.
+
+Seed script updated:
+- `scripts/seed-lance.mjs` now maps the full Creative OS source pack:
+  - Marketing Plan
+  - Intelligence Report
+  - Brand Foundation
+  - Brand Territories
+  - Pre-work Dreamboard
+- The seed now adds source-specific Company Brain entries for:
+  - 30-year newsroom memory as moat
+  - journalist authority as product
+  - AI commoditization of generic sports coverage
+  - membership/premium depth test
+  - brand promise, JTBD, discriminators, and tone of voice
+  - visual brand territory
+  - commercial rebuild, Sales Ops, app/newsletter/YouTube goals
+- Board Pack now includes journalist-authority, membership, Sales Ops, CMO proposition, and DRE/P&L/OCF questions.
+- Decision candidates increased to 5, adding `Ativar jornalistas LANCE! como produtos de autoridade e audiencia`.
+- Follow-ups increased to 7, adding journalist activation and membership/premium-depth POC.
+- Compatibility governance run now references the full source pack instead of marketing-plan-only language.
+
+Local product updates:
+- Company Brain recent documents now have a `Reprocessar` action that calls `/api/company-brain/documents/extract`, refreshes the readout, and reports extracted characters/memory entries.
+- Board Pack exports now support HTML, PDF, PPTX, DOCX, XLSX, and CSV from the live export route, with generated artifacts stored in `board-exports` and signed URLs returned to the UI.
+- Public homepage and product metadata were localized to pt-BR for the production-first launch language.
+
+Verification:
+- `node --check scripts/seed-lance.mjs` passed.
+- `node scripts/seed-lance.mjs` succeeded against remote Supabase.
+- Remote Supabase count check after reseed:
+  - Uploaded documents: 6
+  - Document extractions: 6
+  - Company Brain entries: 36
+  - Governance cycles: 1
+  - Governance inputs: 1
+  - Business plans: 1
+  - Board Packs: 1
+  - Board sessions: 1
+  - Agent reviews: 7
+  - Agent conversations: 3
+  - Board meetings: 1
+  - Meeting minutes: 1
+  - Decisions: 5
+  - Follow-ups: 7
+  - Compatibility governance runs: 1
+- `npm run typecheck` passed.
+- `npm run build` passed.
+
+Pending:
+- Commit, push, let Vercel deploy, then run production verification.

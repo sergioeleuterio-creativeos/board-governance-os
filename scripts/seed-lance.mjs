@@ -10,7 +10,109 @@ const DEFAULT_PDF_PATH = '/tmp/lance-midia-kit-2026.pdf'
 const DEFAULT_TEXT_PATH = '/tmp/lance-midia-kit-2026.txt'
 const MARKETING_PLAN_SOURCE_NAME = 'LANCE Proposed Marketing Plan - Creative OS'
 const DEFAULT_MARKETING_PLAN_PATH = '/Users/Sergio/Documents/Business/Z&E/Creative OS/Leads/Resenha/Dreamboard/LANCE/LANCE Proposed Marketing Plan_ Creative OS — Brand Strategy & Campaign Operating System.pdf'
-const DEFAULT_MARKETING_PLAN_TEXT_PATH = '/tmp/lance-creative-os-marketing-plan.txt'
+const DEFAULT_MARKETING_PLAN_TEXT_PATH = '/tmp/lance-proposed-marketing-plan-creative-os-brand-strategy-campaign-operating-system.txt'
+const DEFAULT_LANCE_SOURCE_DIR = '/Users/Sergio/Documents/Business/Z&E/Creative OS/Leads/Resenha/Dreamboard/LANCE'
+
+const creativeOsSourceDocuments = [
+  {
+    key: 'marketingPlan',
+    sourceName: MARKETING_PLAN_SOURCE_NAME,
+    path: process.env.LANCE_MARKETING_PLAN_PATH || DEFAULT_MARKETING_PLAN_PATH,
+    textPath: process.env.LANCE_MARKETING_PLAN_TEXT_PATH || DEFAULT_MARKETING_PLAN_TEXT_PATH,
+    storageName: 'LANCE-Creative-OS-Marketing-Plan.pdf',
+    originalFilename: 'LANCE Proposed Marketing Plan - Creative OS.pdf',
+    documentType: 'marketing_plan',
+    summary: 'Plano Creative OS para reposicionamento, reconhecimento de marca, audiencia 18-32, workstreams e KPIs de marketing do LANCE!.',
+    pages: 5,
+    structuredData: {
+      primary_audience: 'Brazilian sports fans aged 18-32 who consume football content constantly but have no brand relationship with where it comes from.',
+      media_buyer_problem: 'Younger coordinators and managers do not carry memory of LANCE! as a category-defining brand, reducing advertising salience despite audience scale.',
+      strategic_direction: 'Penetration',
+      workstreams: [
+        'Break-News Habit Loop',
+        'Creator and Athlete Voice Layer',
+        'Brand Moment Campaign',
+        'Physical Availability Audit',
+        'Advertising Proposition Rebuild',
+      ],
+      marketing_metrics: null,
+    },
+  },
+  {
+    key: 'intelligenceReport',
+    sourceName: 'LANCE Intelligence Report - Creative OS',
+    path: process.env.LANCE_INTELLIGENCE_REPORT_PATH || path.join(DEFAULT_LANCE_SOURCE_DIR, 'LANCE Intelligence Report_ Creative OS — Brand Strategy & Campaign Operating System.pdf.pdf'),
+    textPath: process.env.LANCE_INTELLIGENCE_REPORT_TEXT_PATH || '/tmp/lance-intelligence-report-creative-os-brand-strategy-campaign-operating-system.txt',
+    storageName: 'LANCE-Creative-OS-Intelligence-Report.pdf',
+    originalFilename: 'LANCE Intelligence Report - Creative OS.pdf',
+    documentType: 'intelligence_report',
+    summary: 'Relatorio Creative OS de audiencia, competicao, categoria e implicacoes estrategicas para o LANCE!.',
+    pages: 8,
+    structuredData: {
+      strategic_headline: 'LANCE owns the only asset competitors cannot buy: thirty years of sourced memory.',
+      priorities: [
+        'Make journalism legible in native formats',
+        'Own the exhaustion play explicitly',
+        'Restructure around journalist authority, not masthead authority',
+        'Claim the depth segment before it fragments further',
+      ],
+      category_forces: [
+        'AI commoditization of generic sports content',
+        'Depth appetite in young fans',
+        'Paid content model maturation',
+        'Creator economy fragmenting loyalty',
+      ],
+    },
+  },
+  {
+    key: 'brandFoundation',
+    sourceName: 'LANCE Proposed Brand Foundation - Creative OS',
+    path: process.env.LANCE_BRAND_FOUNDATION_PATH || path.join(DEFAULT_LANCE_SOURCE_DIR, 'LANCE Proposed Brand Foundation_ Creative OS — Brand Strategy & Campaign Operating System.pdf'),
+    textPath: process.env.LANCE_BRAND_FOUNDATION_TEXT_PATH || '/tmp/lance-proposed-brand-foundation-creative-os-brand-strategy-campaign-operating-system.txt',
+    storageName: 'LANCE-Creative-OS-Brand-Foundation.pdf',
+    originalFilename: 'LANCE Proposed Brand Foundation - Creative OS.pdf',
+    documentType: 'brand_foundation',
+    summary: 'Fundacao de marca Creative OS: promessa, JTBD, discriminadores, posicionamento e tom de voz do LANCE!.',
+    pages: 4,
+    structuredData: {
+      brand_promise: 'LANCE gives you the story behind the result, reported by journalists who were there when the history was made and are still here now.',
+      founding_thesis: 'Brazilian football deserves journalism that remembers what happened last decade when it explains what happened last night.',
+      voice_attributes: ['insider', 'direct', 'credible', 'immediate', 'experienced', 'unfiltered'],
+    },
+  },
+  {
+    key: 'brandTerritories',
+    sourceName: 'LANCE Brand Territories - Creative OS',
+    path: process.env.LANCE_BRAND_TERRITORIES_PATH || path.join(DEFAULT_LANCE_SOURCE_DIR, 'LANCE Brand Territories_ Creative OS — Brand Strategy & Campaign Operating System.pdf.pdf'),
+    textPath: process.env.LANCE_BRAND_TERRITORIES_TEXT_PATH || '/tmp/lance-brand-territories-creative-os-brand-strategy-campaign-operating-system.txt',
+    storageName: 'LANCE-Creative-OS-Brand-Territories.pdf',
+    originalFilename: 'LANCE Brand Territories - Creative OS.pdf',
+    documentType: 'brand_territories',
+    summary: 'Territorio visual Creative OS: amber floodlight, newsprint, red deadline lines, press-box urgency, archive/live tension and journalist authority.',
+    pages: 15,
+    structuredData: {
+      color_palette: 'Amber floodlight, hard black, near-white newsprint and deadline red.',
+      type_system: 'Condensed Gothic or compressed sans for headlines; serif text for broadsheet authority.',
+      voice: 'A journalist in the press room who has covered the sport for decades and tells what the result means.',
+    },
+  },
+  {
+    key: 'prework',
+    sourceName: 'LANCE Pre-Work Dreamboard',
+    path: process.env.LANCE_PREWORK_PATH || path.join(DEFAULT_LANCE_SOURCE_DIR, 'Pré-Work Lance.pdf'),
+    textPath: process.env.LANCE_PREWORK_TEXT_PATH || '/tmp/pre-work-lance.txt',
+    storageName: 'LANCE-Pre-Work-Dreamboard.pdf',
+    originalFilename: 'Pre-Work Lance.pdf',
+    documentType: 'prework',
+    summary: 'Pre-work Dreamboard sobre reposicionamento, reconstrucao comercial, Gen Z, grandes anunciantes, app, newsletter, YouTube e Sales Ops.',
+    pages: 5,
+    structuredData: {
+      speaker: 'Gustavo Mota',
+      central_dilemma: 'Transformar a forca historica da marca LANCE! em crescimento comercial previsivel e relevancia para novas geracoes.',
+      twelve_month_goals: ['app operacional', 'newsletter perto de 3M assinantes', 'YouTube perto de 1M inscritos', 'nova estrutura comercial consolidada'],
+    },
+  },
+]
 
 function loadEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return
@@ -358,11 +460,11 @@ const sourceReferences = [
     url: SOURCE_URL,
     trust: 'official',
   },
-  {
-    title: MARKETING_PLAN_SOURCE_NAME,
+  ...creativeOsSourceDocuments.map((document) => ({
+    title: document.sourceName,
     url: 'local-pdf',
     trust: 'internal-plan',
-  },
+  })),
 ]
 
 async function uploadMediaKit(organization, company, user) {
@@ -540,6 +642,77 @@ async function uploadMarketingPlan(organization, company, user) {
   return document.id
 }
 
+async function uploadCreativeOsDocument(organization, company, user, documentConfig) {
+  if (!fs.existsSync(documentConfig.path)) return null
+
+  const bucket = process.env.SUPABASE_STORAGE_BUCKET_DOCUMENTS || 'company-documents'
+  const storagePath = `${organization.id}/${company.id}/sources/${documentConfig.storageName}`
+  const pdfBuffer = fs.readFileSync(documentConfig.path)
+
+  const { error: uploadError } = await service.storage
+    .from(bucket)
+    .upload(storagePath, pdfBuffer, {
+      contentType: 'application/pdf',
+      upsert: true,
+    })
+
+  if (uploadError) {
+    console.warn(`Skipping ${documentConfig.sourceName} storage upload: ${uploadError.message}`)
+    return null
+  }
+
+  const document = await must(`insert ${documentConfig.sourceName} document`, service
+    .from('uploaded_documents')
+    .insert({
+      organization_id: organization.id,
+      company_id: company.id,
+      uploaded_by: user.id,
+      storage_bucket: bucket,
+      storage_path: storagePath,
+      original_filename: documentConfig.originalFilename,
+      mime_type: 'application/pdf',
+      file_ext: 'pdf',
+      file_size_bytes: pdfBuffer.byteLength,
+      document_type: documentConfig.documentType,
+      status: 'processed',
+      summary: documentConfig.summary,
+      metadata: {
+        seed: SEED_KEY,
+        source_name: documentConfig.sourceName,
+      },
+    })
+    .select('id')
+    .single())
+
+  const extractedText = fs.existsSync(documentConfig.textPath)
+    ? fs.readFileSync(documentConfig.textPath, 'utf8')
+    : documentConfig.summary
+
+  await must(`insert ${documentConfig.sourceName} extraction`, service
+    .from('document_extractions')
+    .insert({
+      organization_id: organization.id,
+      company_id: company.id,
+      document_id: document.id,
+      extraction_type: 'summary',
+      content: extractedText.slice(0, 30000),
+      structured_data: {
+        seed: SEED_KEY,
+        source_name: documentConfig.sourceName,
+        ...documentConfig.structuredData,
+        ...(documentConfig.key === 'marketingPlan' ? { marketing_metrics: marketingMetrics } : {}),
+      },
+      confidence_score: 90,
+      source_locations: {
+        source_name: documentConfig.sourceName,
+        pages: documentConfig.pages,
+      },
+      status: 'processed',
+    }))
+
+  return document.id
+}
+
 function brainEntries(organization, company, user, sourceDocumentIds) {
   const base = {
     organization_id: organization.id,
@@ -564,6 +737,19 @@ function brainEntries(organization, company, user, sourceDocumentIds) {
       source_name: MARKETING_PLAN_SOURCE_NAME,
     },
   }
+  const sourceBase = (key, sourceName, confidence = 90) => ({
+    ...base,
+    source_document_id: sourceDocumentIds[key] ?? base.source_document_id,
+    confidence_score: confidence,
+    metadata: {
+      seed: SEED_KEY,
+      source_name: sourceName,
+    },
+  })
+  const intelligenceBase = sourceBase('intelligenceReport', 'LANCE Intelligence Report - Creative OS', 91)
+  const foundationBase = sourceBase('brandFoundation', 'LANCE Proposed Brand Foundation - Creative OS', 90)
+  const territoriesBase = sourceBase('brandTerritories', 'LANCE Brand Territories - Creative OS', 86)
+  const preworkBase = sourceBase('prework', 'LANCE Pre-Work Dreamboard', 88)
 
   return [
     {
@@ -698,6 +884,90 @@ function brainEntries(organization, company, user, sourceDocumentIds) {
       title: 'A marca aparece no ponto de venda?',
       content: 'Pergunta board-level: media buyers 25-35 reconhecem LANCE! espontaneamente como publisher esportivo relevante para campanhas 18-32?',
     },
+    {
+      ...intelligenceBase,
+      category: 'fact',
+      title: 'Moat estrategico: trinta anos de memoria apurada',
+      content: 'O Intelligence Report define o ativo unico do LANCE! como memoria institucional e relacionamento jornalistico acumulado por decadas, algo que competidores nao compram nem replicam rapidamente.',
+    },
+    {
+      ...intelligenceBase,
+      category: 'plan',
+      title: 'Jornalistas como produto e sinal de autoridade',
+      content: 'A recomendacao central e tornar 8-12 jornalistas do LANCE! vozes individuais visiveis em TikTok, Reels, Shorts, audio e paginas de byline, com a marca como motor de sourcing e credencial.',
+    },
+    {
+      ...intelligenceBase,
+      category: 'risk',
+      title: 'IA commoditiza cobertura esportiva generica',
+      content: 'Relatorios de jogo, previews estatisticos, agregacoes de aspas e reacoes sintetizadas por IA devem comprimir a economia de conteudo esportivo generico em ate 24 meses.',
+    },
+    {
+      ...intelligenceBase,
+      category: 'goal',
+      title: 'Meta de autoridade individual: 2M seguidores combinados',
+      content: 'O movimento sugerido para 12 meses e uma iniciativa journalist-first que cresca a base combinada dos jornalistas do LANCE! para 2 milhoes de seguidores, com atribuicao verificavel a conteudo de profundidade.',
+    },
+    {
+      ...intelligenceBase,
+      category: 'plan',
+      title: 'Membership/premium depth em ate 12 meses',
+      content: 'O relatorio recomenda testar uma camada paga estreita, com proposta de valor baseada em acesso aos reporters e profundidade, aproveitando Pix e maturacao de assinaturas digitais no Brasil.',
+    },
+    {
+      ...foundationBase,
+      category: 'fact',
+      title: 'Promessa de marca: a historia por tras do resultado',
+      content: 'A Brand Foundation resume a promessa: LANCE! entrega a historia por tras do resultado, reportada por jornalistas que estavam la quando a historia foi feita e seguem aqui agora.',
+    },
+    {
+      ...foundationBase,
+      category: 'customer',
+      title: 'JTBD: autoridade para entrar na conversa',
+      content: 'Jovens torcedores contratam o LANCE! para receber noticia de futebol com a autoridade de quem leu apuracao original, nao apenas reacoes sociais.',
+    },
+    {
+      ...foundationBase,
+      category: 'plan',
+      title: 'Discriminadores da marca',
+      content: 'Memoria institucional na redacao, linguagem originada no futebol brasileiro e velocidade de breaking news via relacoes diretas com clubes, agentes e insiders de federacoes.',
+    },
+    {
+      ...foundationBase,
+      category: 'fact',
+      title: 'Tom de voz definido',
+      content: 'Insider, direto, crivel, imediato, experiente, sem filtro e autoritativo sem pretensao. Evitar hype, linguagem generica de esporte/entretenimento e promessas vazias.',
+    },
+    {
+      ...territoriesBase,
+      category: 'plan',
+      title: 'Territorio visual: press box, floodlight, newsprint',
+      content: 'A direcao visual usa amber floodlight, preto duro, newsprint, vermelho de deadline, tipografia condensada, fotografia de alto contraste e composicao pressionada por urgencia editorial.',
+    },
+    {
+      ...territoriesBase,
+      category: 'customer',
+      title: 'Sinal de audiencia: feito por quem cobre futebol para quem entende',
+      content: 'A linguagem visual deve assumir fluencia: referencias, arquivo, nomes e anos que recompensam quem acompanha futebol brasileiro, sem tentar parecer estetica esportiva global generica.',
+    },
+    {
+      ...preworkBase,
+      category: 'operations',
+      title: 'Pre-work: reconstrucao comercial em andamento',
+      content: 'O pre-work indica reestruturacao quase completa da area comercial, novas liderancas, processos, Sales Ops e necessidade de acelerar grandes contas e valor para CMOs.',
+    },
+    {
+      ...preworkBase,
+      category: 'goal',
+      title: 'Objetivos 12 meses: app, newsletter, YouTube e vendas previsiveis',
+      content: 'Gustavo Mota quer app plenamente operacional, newsletter perto de 3 milhoes de assinantes, YouTube perto de 1 milhao de inscritos, estrutura comercial consolidada e mais previsibilidade de vendas.',
+    },
+    {
+      ...preworkBase,
+      category: 'question',
+      title: 'Pergunta-chave ao board',
+      content: 'Como um veiculo tradicional reinventa sua estrategia comercial e editorial para continuar relevante para grandes marcas e conquistar nova geracao sem perder sua essencia?',
+    },
   ]
 }
 
@@ -751,6 +1021,10 @@ const kpis = [
   { metric: 'Media buyer perception score 25-35', target: marketingMetrics.media_buyer_perception_25_35, owner: 'Comercial/Marketing' },
   { metric: 'Receita publicitaria digital para marcas 18-32', target: marketingMetrics.digital_ad_revenue_18_32, owner: 'Comercial/Financeiro' },
   { metric: 'Brand consistency em aggregators/news feeds', target: marketingMetrics.aggregator_brand_consistency, owner: 'SEO/Produto' },
+  { metric: 'Seguidores combinados dos jornalistas LANCE!', target: '2M em 12 meses', owner: 'Editorial/Social' },
+  { metric: 'Newsletter', target: 'aproximar 3M assinantes em 12 meses', owner: 'CRM/Editorial' },
+  { metric: 'YouTube', target: 'aproximar 1M inscritos em 12 meses', owner: 'Video/Editorial' },
+  { metric: 'Membership/premium depth', target: 'prova de conceito em ate 12 meses', owner: 'Produto/Financeiro' },
   { metric: 'Usuarios identificados no app', target: 'Definir baseline em 30 dias', owner: 'Produto/Dados' },
   { metric: 'Retencao D7/D30 do app', target: 'D7 e D30 por cohort de torcedor', owner: 'Produto' },
   { metric: 'Receita por usuario identificado', target: 'Criar baseline por CRM/campanha', owner: 'Comercial/Dados' },
@@ -774,6 +1048,21 @@ const risks = [
     risk: 'Conteudo atribuido ao algoritmo, nao ao LANCE!',
     severity: 'high',
     mitigation: 'Auditar Google News, Apple News, WhatsApp previews e aggregators para garantir nome, logo e preview corretos em 95% dos links.',
+  },
+  {
+    risk: 'Conteudo esportivo generico sera commoditizado por IA',
+    severity: 'high',
+    mitigation: 'Reduzir producao de match reports/quotes/rumores genericos e realocar capacidade para sourcing, memoria historica, investigacao e contexto proprietario.',
+  },
+  {
+    risk: 'Jornalistas seguem invisiveis atras da masthead',
+    severity: 'high',
+    mitigation: 'Criar produto, rituais e incentivos para 8-12 jornalistas virarem ativos de audiencia rastreaveis sem perder vinculo com a marca LANCE!.',
+  },
+  {
+    risk: 'Reconstrucao comercial demora a gerar previsibilidade',
+    severity: 'medium',
+    mitigation: 'Board acompanhar pipeline de grandes contas, Sales Ops, proposta CMO, receita 18-32 e conversao por pacote comercial.',
   },
   {
     risk: 'Concentracao comercial em betting ou poucos anunciantes',
@@ -817,6 +1106,13 @@ const financialReport = {
     { metric: 'Media buyer perception 25-35', value: marketingMetrics.media_buyer_perception_25_35, board_note: 'Conecta marca a venda publicitaria.', context: 'Marketing plan' },
     { metric: 'Digital ad revenue 18-32', value: marketingMetrics.digital_ad_revenue_18_32, board_note: 'Resultado de negocio esperado da estrategia de marca.', context: 'Marketing plan' },
     { metric: 'Aggregator brand consistency', value: marketingMetrics.aggregator_brand_consistency, board_note: 'Corrige perda de atribuicao em discovery algoritimico.', context: 'Marketing plan' },
+  ],
+  'Produto, comunidade e receita futura': [
+    { metric: 'Jornalistas LANCE! como ativos de audiencia', value: '2M seguidores combinados em 12 meses', board_note: 'Transforma memoria/sourcing em alcance atribuivel e defensavel.', context: 'Intelligence Report' },
+    { metric: 'Newsletter', value: 'Meta de ~3M assinantes', board_note: 'Canal proprietario para profundidade, CRM e monetizacao futura.', context: 'Pre-work' },
+    { metric: 'YouTube', value: 'Meta de ~1M inscritos', board_note: 'Canal para video, explicadores e autoridade individual dos jornalistas.', context: 'Pre-work' },
+    { metric: 'Membership/premium depth', value: 'POC em ate 12 meses', board_note: 'Testar monetizacao de profundidade antes da categoria padronizar.', context: 'Intelligence Report' },
+    { metric: 'Sales Ops / grandes contas', value: 'Nova estrutura comercial em consolidacao', board_note: 'Medir pipeline, conversao, ticket medio, ciclo de venda e proposta CMO.', context: 'Pre-work' },
   ],
 }
 
@@ -938,7 +1234,9 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
   const diagnosis = [
     'LANCE! parte de uma posicao forte de alcance e autoridade esportiva, com mais de 25 milhoes de fas impactados por mes e um ecossistema que combina site, social, video, creators, app, WhatsApp, newsletter, push e produtos adjacentes.',
     'O plano Creative OS acrescenta a tensao central de marca: LANCE! tem audiencia real, mas parte dessa audiencia e anonima, source-agnostic e pouco atribuida ao nome LANCE!, especialmente entre torcedores 18-32 e media buyers 25-35.',
-    'A questao de board nao e gerar mais audiencia; e transformar alcance em escolha consciente, relacionamento proprietario, dados first-party, receita de qualidade e cadencia de decisao entre editorial, marca, produto, tecnologia, social e comercial.',
+    'O Intelligence Report aprofunda o moat: trinta anos de memoria apurada e relacionamento jornalistico, que precisa virar produto visivel por meio de jornalistas nomeados, explicadores nativos, audio/video, comunidades e profundidade que IA e volume social nao replicam.',
+    'O pre-work traz a urgencia operacional: reconstrucao comercial, Sales Ops, proposta para CMOs, app operacional, newsletter em escala, YouTube forte e previsibilidade de grandes contas.',
+    'A questao de board nao e gerar mais audiencia; e transformar alcance em escolha consciente, autoridade individual dos jornalistas, relacionamento proprietario, dados first-party, receita de qualidade e cadencia de decisao entre editorial, marca, produto, tecnologia, social e comercial.',
     'A confianca do plano e limitada pela ausencia de DRE, P&L, OCF, caixa, margem por produto e concentracao por anunciante/categoria nos materiais publicos.',
   ].join(' ')
 
@@ -957,7 +1255,7 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
       metadata: {
         seed: SEED_KEY,
         source_url: SOURCE_URL,
-        source_name: 'LANCE! media kit + Creative OS marketing plan',
+        source_name: 'LANCE! media kit + Creative OS source pack',
       },
     })
     .select('id')
@@ -995,7 +1293,9 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
       kpis,
       workstreams: [
         { workstream: 'Break-news habit loop e atribuicao LANCE!', owner_suggestion: 'Marca + Editorial + Social', cadence: 'Semanal', proof_point: 'Branded search, saves/shares, follows e match-day owned-channel share.' },
+        { workstream: 'Jornalistas como produto de autoridade', owner_suggestion: 'Editorial + Produto + Social', cadence: 'Semanal', proof_point: '8-12 vozes ativadas, seguidores combinados, explicadores e audio/video por reporter.' },
         { workstream: 'App, CRM e dados first-party', owner_suggestion: 'Produto + Dados', cadence: 'Semanal', proof_point: 'Usuarios identificados, D7/D30, opt-in e receita por usuario.' },
+        { workstream: 'Comercial moderno e proposta CMO', owner_suggestion: 'CRO + Sales Ops + Marketing', cadence: 'Semanal', proof_point: 'Pipeline grandes contas, ciclos, conversao, ticket medio e receita 18-32.' },
         { workstream: 'DRE gerencial e receita de qualidade', owner_suggestion: 'Financeiro + CRO', cadence: 'Mensal', proof_point: 'DRE por linha, OCF, margem e concentracao.' },
         { workstream: 'Governanca editorial-comercial', owner_suggestion: 'Editorial + Juridico + Comercial', cadence: 'Mensal', proof_point: 'Politica de categorias, branded content, creators, betting e dados.' },
         { workstream: 'Pacotes premium e CRM comercial', owner_suggestion: 'Growth + Comercial', cadence: 'Quinzenal', proof_point: 'Receita direta, lift de campanha e recorrencia por segmento.' },
@@ -1011,7 +1311,7 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
       },
       risks,
       assumptions: [
-        { title: 'Fontes primarias', detail: 'Diagnostico baseado no Midia Kit oficial LANCE! 2026 e no plano Creative OS de marketing, sem acesso a DRE/OCF internos.' },
+        { title: 'Fontes primarias', detail: 'Diagnostico baseado no Midia Kit oficial LANCE! 2026 e no source pack Creative OS, sem acesso a DRE/OCF internos.' },
         { title: 'Plano de governanca', detail: 'Recomendacoes devem ser revistas com dados financeiros e operacionais internos antes de aprovacao.' },
       ],
       completeness_score: 88,
@@ -1033,6 +1333,20 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
       ],
       tradeoffs: [
         { title: 'Menos foco em alcance commodity', detail: 'Aceitar que nem todo volume sem atribuicao cria valor comercial defensavel.' },
+      ],
+    },
+    {
+      title: 'Ativar jornalistas LANCE! como produtos de autoridade e audiencia',
+      decision: 'proceed_with_conditions',
+      rationale: 'O Intelligence Report mostra que a memoria apurada e o sourcing dos jornalistas sao o moat mais defensavel do LANCE!, mas hoje essa autoridade fica pouco visivel nos formatos nativos onde o jovem torcedor decide o que seguir.',
+      risk_level: 'medium',
+      confidence_score: 80,
+      conditions: [
+        { title: 'Selecao editorial', detail: 'Definir 8-12 jornalistas prioritarios com territorio, pauta, formato e cadencia.' },
+        { title: 'Scorecard individual', detail: 'Medir seguidores combinados, saves, shares, retenção, branded search assistido e impacto em CRM.' },
+      ],
+      tradeoffs: [
+        { title: 'Masthead vs vozes individuais', detail: 'A marca precisa ganhar atribuicao pelos jornalistas sem perder consistencia institucional.' },
       ],
     },
     {
@@ -1094,6 +1408,9 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
         'Que DRE gerencial prova que app, CRM e dados first-party melhoram qualidade de receita?',
         'Qual limite de concentracao por anunciante, categoria e betting o board aceita?',
         'Quais guardrails protegem credibilidade editorial em branded content, creators e uso de dados?',
+        'Quais jornalistas viram ativos de audiencia rastreaveis sem enfraquecer a marca LANCE!?',
+        'Que modelo de membership ou premium depth pode ser testado nos proximos 12 meses?',
+        'Qual desenho comercial traduz app, newsletter, YouTube, CRM e autoridade jornalistica em proposta para CMOs?',
         'Qual cadencia semanal evita que editorial, produto e comercial otimizem objetivos conflitantes?',
       ],
       risk_map: risks,
@@ -1101,7 +1418,10 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
       meeting_agenda: [
         'Confirmar tese: alcance anonimo vs escolha consciente por LANCE!.',
         'Revisar plano Creative OS: break-news habit loop, creator layer, brand moment campaign e advertising proposition rebuild.',
+        'Ativar jornalistas, audio/video explicador e comunidades/torcidas como canais de distribuicao de autoridade.',
         'Revisar lacunas financeiras: DRE, P&L, OCF, caixa, margem e concentracao.',
+        'Revisar Sales Ops, pipeline de grandes contas e proposta CMO.',
+        'Debater prova de conceito de membership/premium depth.',
         'Aprovar KPI tree do app/CRM e gates de investimento.',
         'Debater guardrails de betting, branded content, creators e dados.',
         'Definir decisoes, owners e review dates dos proximos 30 dias.',
@@ -1243,12 +1563,13 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
       status: 'scheduled',
       agenda: [
         'Reposicionamento Creative OS e baseline de marca',
+        'Jornalistas como ativos de autoridade',
         'App/CRM first-party',
         'DRE gerencial e receita de qualidade',
         'Guardrails de reputacao, betting e dados',
       ],
       attendees: ['Board Brain', 'Finance Advisor', 'Operator Advisor', 'Growth Advisor', 'Risk Advisor', 'Customer Advisor', 'Talent Advisor'],
-    orchestrator_summary: 'Reuniao preparada para decidir commit with conditions sobre reposicionamento, app/CRM e receita de qualidade.',
+      orchestrator_summary: 'Reuniao preparada para decidir commit with conditions sobre reposicionamento, jornalistas como ativos de autoridade, app/CRM e receita de qualidade.',
     })
     .select('id')
     .single())
@@ -1271,8 +1592,8 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
     risk_level: decision.risk_level,
     confidence_score: decision.confidence_score,
     conditions: decision.conditions,
-    owner_label: ['Marca + Editorial + Growth', 'Produto + Dados', 'Financeiro + CRO', 'Editorial + Juridico'][index] ?? 'Board Brain',
-    owner: ['Marca + Editorial + Growth', 'Produto + Dados', 'Financeiro + CRO', 'Editorial + Juridico'][index] ?? 'Board Brain',
+    owner_label: ['Marca + Editorial + Growth', 'Editorial + Produto + Social', 'Produto + Dados', 'Financeiro + CRO', 'Editorial + Juridico'][index] ?? 'Board Brain',
+    owner: ['Marca + Editorial + Growth', 'Editorial + Produto + Social', 'Produto + Dados', 'Financeiro + CRO', 'Editorial + Juridico'][index] ?? 'Board Brain',
     review_date: addDays(30 + index * 7),
     metadata: { seed: SEED_KEY, board_pack_id: boardPack.id },
   }))).select('id, title'))
@@ -1294,10 +1615,27 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
   }))
 
   const brandDecisionId = decisions[0]?.id ?? null
-  const appDecisionId = decisions[1]?.id ?? null
-  const financeDecisionId = decisions[2]?.id ?? null
-  const guardrailsDecisionId = decisions[3]?.id ?? null
+  const journalistDecisionId = decisions[1]?.id ?? null
+  const appDecisionId = decisions[2]?.id ?? null
+  const financeDecisionId = decisions[3]?.id ?? null
+  const guardrailsDecisionId = decisions[4]?.id ?? null
   await must('insert follow ups', service.from('follow_ups').insert([
+    {
+      organization_id: organization.id,
+      company_id: company.id,
+      governance_cycle_id: governanceCycle.id,
+      decision_id: journalistDecisionId,
+      source_agent_key: 'customer',
+      user_id: user.id,
+      owner_label: 'Editorial + Produto + Social',
+      owner: 'Editorial + Produto + Social',
+      title: 'Selecionar 8-12 jornalistas e desenhar formatos nativos de autoridade',
+      action: 'Definir territorio editorial, pauta, cadencia, clips explicadores, audio/video, CTAs para canais proprietarios e scorecard por jornalista.',
+      description: 'Transformar memoria e sourcing do LANCE! em produto visivel, atribuivel e medido.',
+      priority: 'urgent',
+      status: 'open',
+      due_date: addDays(7),
+    },
     {
       organization_id: organization.id,
       company_id: company.id,
@@ -1366,6 +1704,22 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
       organization_id: organization.id,
       company_id: company.id,
       governance_cycle_id: governanceCycle.id,
+      decision_id: journalistDecisionId,
+      source_agent_key: 'growth',
+      user_id: user.id,
+      owner_label: 'Produto + Editorial + Growth',
+      owner: 'Produto + Editorial + Growth',
+      title: 'Definir POC de membership e premium depth',
+      action: 'Escolher promessa, pacote, preco-teste, fontes de conteudo, beneficios de comunidade e metrica de validacao para profundidade paga.',
+      description: 'Testar monetizacao de profundidade antes que a categoria se fragmente ainda mais.',
+      priority: 'high',
+      status: 'open',
+      due_date: addDays(21),
+    },
+    {
+      organization_id: organization.id,
+      company_id: company.id,
+      governance_cycle_id: governanceCycle.id,
       decision_id: brandDecisionId,
       source_agent_key: 'growth',
       user_id: user.id,
@@ -1405,7 +1759,9 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
         executive_summary: diagnosis,
         strategic_questions: [
           'Como LANCE! vira escolha consciente entre torcedores 18-32?',
+          'Quais jornalistas viram ativos de audiencia atribuivel?',
           'Qual parte da audiencia vira base first-party?',
+          'Qual POC de membership/premium depth cabe nos proximos 12 meses?',
           'Que DRE prova qualidade de receita?',
           'Quais guardrails protegem marca e dados?',
         ],
@@ -1413,16 +1769,18 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
         priority_ranking: priorities,
         meeting_agenda: [
           'Reposicionamento Creative OS e baseline de marca',
+          'Jornalistas como ativos de autoridade',
           'App/CRM first-party',
           'DRE gerencial',
+          'Membership/premium depth',
           'Guardrails de reputacao e dados',
         ],
       },
       decision: decisionCandidates[0],
-      follow_ups_created: 5,
+      follow_ups_created: 7,
     },
     model_provider: 'research_seed',
-    model_name: 'official-media-kit-plus-creative-os-marketing-plan',
+    model_name: 'official-media-kit-plus-creative-os-source-pack',
     risk_score: 70,
     confidence_score: 82,
     executive_summary: diagnosis,
@@ -1430,7 +1788,9 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
       executive_summary: diagnosis,
       strategic_questions: [
         'Como LANCE! vira escolha consciente entre torcedores 18-32?',
+        'Quais jornalistas viram ativos de audiencia atribuivel?',
         'Qual parte da audiencia vira base first-party?',
+        'Qual POC de membership/premium depth cabe nos proximos 12 meses?',
         'Que DRE prova qualidade de receita?',
         'Quais guardrails protegem marca e dados?',
       ],
@@ -1438,14 +1798,18 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
       priority_ranking: priorities,
       meeting_agenda: [
         'Reposicionamento Creative OS e baseline de marca',
+        'Jornalistas como ativos de autoridade',
         'App/CRM first-party',
         'DRE gerencial',
+        'Membership/premium depth',
         'Guardrails de reputacao e dados',
       ],
     },
     strategic_questions: [
       'Como LANCE! vira escolha consciente entre torcedores 18-32?',
+      'Quais jornalistas viram ativos de audiencia atribuivel?',
       'Qual parte da audiencia vira base first-party?',
+      'Qual POC de membership/premium depth cabe nos proximos 12 meses?',
       'Que DRE prova qualidade de receita?',
       'Quais guardrails protegem marca e dados?',
     ],
@@ -1457,15 +1821,19 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
     },
     meeting_agenda: [
       'Reposicionamento Creative OS e baseline de marca',
+      'Jornalistas como ativos de autoridade',
       'App/CRM first-party',
       'DRE gerencial',
+      'Membership/premium depth',
       'Guardrails de reputacao e dados',
     ],
     follow_up_tracker: [
       'Criar baseline de marca 18-32 e media buyers 25-35',
+      'Selecionar 8-12 jornalistas e desenhar formatos nativos de autoridade',
       'Fechar KPI tree do app e CRM',
       'Montar DRE gerencial e OCF',
       'Aprovar guardrails',
+      'Definir POC de membership e premium depth',
       'Desenhar pacotes premium',
     ],
     status: 'complete',
@@ -1503,7 +1871,9 @@ async function main() {
 
   const sourceDocumentIds = {
     mediaKit: await uploadMediaKit(organization, company, user),
-    marketingPlan: await uploadMarketingPlan(organization, company, user),
+  }
+  for (const documentConfig of creativeOsSourceDocuments) {
+    sourceDocumentIds[documentConfig.key] = await uploadCreativeOsDocument(organization, company, user, documentConfig)
   }
   await must('insert company brain entries', service.from('company_brain_entries').insert(brainEntries(organization, company, user, sourceDocumentIds)))
   const chain = await seedGovernanceChain(organization, company, user, sourceDocumentIds)
