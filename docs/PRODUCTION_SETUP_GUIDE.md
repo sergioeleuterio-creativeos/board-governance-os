@@ -70,6 +70,8 @@ Password-only decision:
 - Magic links are disabled in the Board Governance OS login UI.
 - Users need an invited Supabase Auth account with a password set.
 - If a user was created through a magic-link-only flow, set or reset their password in Supabase before asking them to log in.
+- Password recovery links should redirect through `https://www.board-os.ai/auth/callback?type=recovery&next=/reset-password`.
+- The app also has a first-party password reset request flow from `/login`.
 
 Production checklist:
 1. Supabase Dashboard -> Authentication -> URL Configuration.
@@ -131,6 +133,18 @@ After changing brand assets or `NEXT_PUBLIC_APP_URL`, redeploy Vercel and test:
 Repeatable check:
 - Run `npm run verify:production` after a production deploy.
 - To check another host, run `npm run verify:production -- https://preview-or-custom-host`.
+
+## Public Route Posture
+
+Only these surfaces should be public:
+- `/`
+- `/login`
+- `/reset-password`
+- `/auth/callback`
+- metadata assets such as manifest, robots, sitemap, icon, and brand images
+- auth utility endpoints under `/api/auth`
+
+All product routes such as `/dashboard`, `/company`, `/board-pack`, `/shadow-board`, and `/decisions` must redirect unauthenticated visitors to `/login`.
 
 ## Email
 

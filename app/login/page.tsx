@@ -29,6 +29,9 @@ function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resetLoading, setResetLoading] = useState(false)
+  const [resetMode, setResetMode] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
   const [error, setError] = useState('')
   const [turnstileToken, setTurnstileToken] = useState('')
   const turnstileRef = useRef<HTMLDivElement | null>(null)
@@ -89,11 +92,11 @@ function LoginForm() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ token: turnstileToken }),
-    })
+    }).catch(() => null)
 
-    if (response.ok) return true
+    if (response?.ok) return true
 
-    setError(t('securityCheckFailed'))
+    setError(response ? t('securityCheckFailed') : t('networkError'))
     if (window.turnstile && widgetIdRef.current) {
       window.turnstile.reset(widgetIdRef.current)
       setTurnstileToken('')
@@ -117,7 +120,7 @@ function LoginForm() {
     const { error: authError } = await supabase.auth.signInWithPassword({
       email: normalizedEmail,
       password,
-    })
+    }).catch(() => ({ error: new Error(t('networkError')) }))
 
     if (authError) {
       setError(authError.message)
@@ -129,7 +132,68 @@ function LoginForm() {
       return
     }
 
-    window.location.href = next
+    window.location.href = `/api/auth/bootstrap?next=${encodeURIComponent(next)}`
+  }
+
+  const handleResetRequest = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!normalizedEmail) return
+    setResetLoading(true)
+    setError('')
+    setResetSent(false)
+
+    const response = await fetch('/api/auth/password-reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: normalizedEmail }),
+    }).catch(() => null)
+
+    setResetLoading(false)
+
+    if (!response?.ok) {
+      setError(response ? t('resetRequestFailed') : t('networkError'))
+      return
+    }
+
+    setResetSent(true)
+  }
+
+  if (resetMode) {
+    return (
+      <form onSubmit={handleResetRequest} className="space-y-5">
+        <label className="block">
+          <span className="field-label">{t('email')}</span>
+          <input
+            type="email"
+            className="field-input"
+            placeholder="you@example.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            autoFocus
+            required
+          />
+        </label>
+
+        {resetSent && <p className="text-xs font-mono text-positive">{t('resetEmailSent')}</p>}
+        {error && <p className="text-xs font-mono text-red-600">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={resetLoading || !normalizedEmail}
+          className="btn-gold w-full disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {resetLoading ? t('sendingReset') : t('sendResetButton')}
+        </button>
+
+        <button type="button" className="sb-inline-link" onClick={() => {
+          setResetMode(false)
+          setError('')
+          setResetSent(false)
+        }}>
+          {t('backToPassword')}
+        </button>
+      </form>
+    )
   }
 
   return (
@@ -178,6 +242,13 @@ function LoginForm() {
       <p className="text-xs text-muted leading-relaxed">
         {t('passwordOnlyNote')}
       </p>
+
+      <button type="button" className="sb-inline-link" onClick={() => {
+        setResetMode(true)
+        setError('')
+      }}>
+        {t('forgotPassword')}
+      </button>
     </form>
   )
 }

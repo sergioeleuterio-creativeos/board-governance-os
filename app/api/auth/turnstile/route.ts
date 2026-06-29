@@ -20,7 +20,11 @@ export async function POST(request: NextRequest) {
   const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
     method: 'POST',
     body: formData,
-  })
+  }).catch(() => null)
+
+  if (!response) {
+    return NextResponse.json({ error: 'turnstile verification unavailable' }, { status: 503 })
+  }
 
   const result = await response.json().catch(() => null)
   if (!response.ok || result?.success !== true) {

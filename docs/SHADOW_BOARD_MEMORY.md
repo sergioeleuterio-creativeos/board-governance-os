@@ -704,6 +704,14 @@ Implementation completed:
 - Made the navigation user card auth-aware so it uses the signed-in Supabase user/profile instead of the demo `Lucas Mares` placeholder.
 - Made the dashboard greeting auth-aware so it uses the signed-in user's first name when available and falls back to neutral copy.
 - Sergio moved the old Casa OS files out of this project context; no deletion action is needed from Codex.
+- Locked production route access so unauthenticated visitors can only see `/`, `/login`, `/reset-password`, auth callback, metadata, and auth utility endpoints.
+- Replaced the root redirect to `/dashboard` with a public product home page.
+- Added first-party password reset request flow at `/api/auth/password-reset`.
+- Added `/reset-password` so Supabase recovery links land on a password update screen instead of entering the app directly.
+- Updated auth callback recovery handling to route recovery sessions to `/reset-password`.
+- Improved login network-error handling so low-level auth/Turnstile failures do not surface as raw `Failed to fetch`.
+- Updated robots and sitemap so protected app routes are not advertised as public pages.
+- Updated production verification script to assert protected-route redirects.
 
 IBGC material inventory:
 - Source root: `/Users/Sergio/Documents/Pessoal/Cursos/IBGC`.
@@ -718,10 +726,11 @@ Verification:
 - `npm run build` passes.
 - `node --check scripts/verify-production.mjs` passes.
 - Live production checks passed for dashboard metadata, `robots.txt`, `manifest.webmanifest`, and `/brand/site-thumbnail.png`.
-- A temporary local production server was started on port `3003` and then stopped; follow-up localhost curl probes were blocked by the Codex approval/usage gate.
+- A temporary local production server was started on port `3003` and then stopped after smoke tests.
 - Verified `HEAD /login` returns `200`.
 - Verified `HEAD /board-pack` returns `200`.
 - Verified empty POST to `/api/auth/turnstile` returns `400`.
+- Verified locally that `/` returns `200`, `/dashboard` redirects to `/login?next=%2Fdashboard`, `/company/intake` redirects to login, protected APIs return `401`, robots disallows app routes, and sitemap only lists the public home page.
 
 New backlog after 2026-06-28:
 - Create OpenAI project/key and add `OPENAI_API_KEY`.

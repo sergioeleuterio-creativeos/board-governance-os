@@ -77,7 +77,7 @@ export default function Navigation() {
   const tNav = useTranslations('nav')
   const tShell = useTranslations('shell')
   const { user, profile, isAdmin, loading } = useAuth()
-  if (pathname === '/login') return null
+  if (pathname === '/' || pathname === '/login' || pathname === '/reset-password') return null
 
   const displayName = profile?.full_name
     || userMetadataName(user)

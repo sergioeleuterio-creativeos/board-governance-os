@@ -29,6 +29,20 @@ async function assertOk(path, expectedContentType) {
   return { url, response, contentType }
 }
 
+async function assertRedirect(path, expectedLocationPrefix) {
+  const url = new URL(path, baseUrl)
+  const response = await fetch(url, { redirect: 'manual' })
+  const location = response.headers.get('location') || ''
+  const absolutePrefix = new URL(expectedLocationPrefix, baseUrl).toString()
+  const locationMatches = location.startsWith(expectedLocationPrefix) || location.startsWith(absolutePrefix)
+
+  if (![301, 302, 303, 307, 308].includes(response.status) || !locationMatches) {
+    throw new Error(`${url} should redirect to ${expectedLocationPrefix}, got ${response.status} ${location || 'no location'}`)
+  }
+
+  return { url: url.toString(), response, location }
+}
+
 function requireText(text, needle, label) {
   if (!text.includes(needle)) {
     throw new Error(`${label} is missing ${needle}`)
@@ -37,15 +51,24 @@ function requireText(text, needle, label) {
 
 const checks = [
   async () => {
-    const { response } = await assertOk('/dashboard', 'text/html')
+    const { response } = await assertOk('/', 'text/html')
     const html = await response.text()
-    requireText(html, `<link rel="canonical" href="${baseUrl}`, 'dashboard metadata')
-    requireText(html, `${baseUrl}/brand/site-thumbnail.png`, 'dashboard metadata')
-    return 'dashboard metadata'
+    requireText(html, `<link rel="canonical" href="${baseUrl}`, 'home metadata')
+    requireText(html, 'Board-level thinking before you can afford a board.', 'home page')
+    return 'public home'
   },
   async () => {
     await assertOk('/login', 'text/html')
     return 'login page'
+  },
+  async () => {
+    await assertOk('/reset-password', 'text/html')
+    return 'reset password page'
+  },
+  async () => {
+    await assertRedirect('/dashboard', '/login?next=%2Fdashboard')
+    await assertRedirect('/company/intake', '/login?next=%2Fcompany%2Fintake')
+    return 'protected app redirects'
   },
   async () => {
     await assertOk('/brand/mark.png', 'image/png')
@@ -65,12 +88,16 @@ const checks = [
     const { response } = await assertOk('/robots.txt', 'text/plain')
     const robots = await response.text()
     requireText(robots, `Sitemap: ${baseUrl}/sitemap.xml`, 'robots.txt')
+    requireText(robots, 'Disallow: /dashboard', 'robots.txt')
     return 'robots.txt'
   },
   async () => {
     const { response } = await assertOk('/sitemap.xml', 'application/xml')
     const sitemap = await response.text()
-    requireText(sitemap, `${baseUrl}/dashboard`, 'sitemap.xml')
+    requireText(sitemap, `<loc>${baseUrl}</loc>`, 'sitemap.xml')
+    if (sitemap.includes('/dashboard')) {
+      throw new Error('sitemap.xml should not include protected app routes')
+    }
     return 'sitemap.xml'
   },
 ]

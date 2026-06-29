@@ -8,6 +8,7 @@ export async function GET(request: NextRequest) {
   const tokenHash = searchParams.get('token_hash')
   const type = searchParams.get('type')
   const next = searchParams.get('next') ?? '/dashboard'
+  const isRecovery = type === 'recovery' || next === '/reset-password'
 
   const cookieStore = await cookies()
   const supabase = createServerClient(
@@ -25,7 +26,10 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
-    if (!error) return NextResponse.redirect(`${origin}/api/auth/bootstrap?next=${encodeURIComponent(next)}`)
+    if (!error) {
+      const redirectTo = isRecovery ? '/reset-password' : next
+      return NextResponse.redirect(`${origin}/api/auth/bootstrap?next=${encodeURIComponent(redirectTo)}`)
+    }
   }
 
   if (tokenHash && type) {
@@ -33,7 +37,10 @@ export async function GET(request: NextRequest) {
       token_hash: tokenHash,
       type: type as Parameters<typeof supabase.auth.verifyOtp>[0]['type'],
     })
-    if (!error) return NextResponse.redirect(`${origin}/api/auth/bootstrap?next=${encodeURIComponent(next)}`)
+    if (!error) {
+      const redirectTo = isRecovery ? '/reset-password' : next
+      return NextResponse.redirect(`${origin}/api/auth/bootstrap?next=${encodeURIComponent(redirectTo)}`)
+    }
   }
 
   return NextResponse.redirect(`${origin}/login?error=auth_failed`)
