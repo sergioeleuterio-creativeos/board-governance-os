@@ -752,3 +752,81 @@ New backlog after 2026-06-28:
 
 Known issues:
 - Additional local/prod network smoke probes may need to wait if the Codex approval gate reports usage-limit exhaustion.
+
+### 2026-06-29
+
+Autonomous production sprint continuation completed:
+- Stabilized and pushed live operations work in small deployable commits:
+  - `91a4c4a` - live governance operations
+  - `61bfc1a` - live Shadow Board Review and referral request trigger
+  - `beb28ce` - pt-BR polish for live screens
+  - `fb5aa1c` - admin referral triage
+  - `1b320f7` - live Company Brain readout
+- Replaced static admin user table with live Supabase admin users page.
+- Added `/api/admin/users`, `/api/admin/users/[userId]`, and `/api/admin/users/[userId]/password`.
+- Admin users page now supports live user listing, organization/company membership display, status changes, super-admin toggling, invites through the existing invite route, and temporary password generation for recovery.
+- Replaced static admin overview with live `/api/admin/readout` data.
+- Replaced static admin sessions page with live session monitor and `/api/admin/sessions` routes.
+- Admin sessions page can update session status and closure recommendation.
+- Added live workspace context API `/api/workspace/current` and shared `useWorkspace()` hook.
+- Navigation topbar now uses live company/organization context instead of the `Nuveo Logistica` placeholder.
+- Dashboard header now uses the signed-in user/company context in pt-BR.
+- Added live dashboard readout route `/api/dashboard/readout`.
+- `/dashboard` now shows live risk/confidence metrics, open decisions, overdue follow-ups, cadence, and advisor status from Supabase.
+- Added live Decision Memory routes `/api/decisions` and `/api/decisions/[decisionId]`.
+- `/decisions` now shows a real decision ledger and lets company admins update decision status.
+- Added live Follow-ups routes `/api/follow-ups` and `/api/follow-ups/[followUpId]`.
+- `/follow-ups` now shows real follow-ups, overdue/due-this-week/on-track metrics, status updates, and a `Get connected` action.
+- Added `/api/referrals` so follow-up supplier/partner connection requests are stored in `referral_requests`.
+- Added admin referral triage via `/admin/referrals`, `/api/admin/referrals`, and `/api/admin/referrals/[referralId]`.
+- Admin referral queue supports requested, triaging, introduced, closed, and cancelled statuses.
+- Added live Governance Run page wired to `/api/governance/run`.
+- Governance Run page can trigger Board Brain for the current company and show latest run/business plan/board pack/session readout.
+- Added GET support to `/api/governance/run` for latest live run state.
+- Added `/api/board-pack/latest` and live `/board-pack` page.
+- Board Pack page now renders latest executive summary, strategic questions, financial report payload, risk map, decision candidates, advisor reports, and live HTML/CSV exports.
+- Board Pack export route now returns a signed URL when Supabase storage creates the artifact.
+- Added live Shadow Board Review page backed by saved `agent_reviews` from the latest board pack.
+- Shadow Board Review now shows advisor stances, questions, recommendations, confidence, Board Brain synthesis, and links to decisions/board pack/rerun.
+- Added live Company Brain readout route `/api/company-brain/readout`.
+- `/company` now shows real Company Brain memory entries, category counts, open questions, and recently uploaded documents.
+- Updated pt-BR-first labels across the live production journey while keeping product terms such as Board Brain, Board Pack, and Governance Run.
+- Updated pt-BR/en/es navigation messages for the new admin referrals page.
+- Added admin referral count to the admin readout table list.
+- AI model routing now actively uses `OPENAI_MODEL_BOARD_BRAIN_SYNTHESIS` for governance synthesis when set, falling back to `AI_MODEL`.
+
+Verification:
+- `npm run typecheck` passed after each implementation slice.
+- `npm run build` passed after live governance operations, live Shadow Board/referrals, pt-BR polish, admin referral triage, and live Company Brain readout.
+- `npm run verify:production` passed against `https://www.board-os.ai` after the first production push: public home, login, reset password, protected redirects, brand images, manifest, robots, and sitemap are OK.
+- Git pushes to `main` succeeded after each checkpoint, so Vercel should deploy each slice automatically.
+
+Updated sprint status:
+- Sprint 2/Auth/Admin: substantially advanced. Live admin users, temporary password recovery, sessions, readout, and referral triage are now implemented.
+- Sprint 4/Company Brain: live intake already existed; `/company` now reads live memory and documents.
+- Sprint 6/Governance Run: UI trigger and latest run readout are now implemented.
+- Sprint 7/Board Pack: live board pack readout and HTML/CSV export UI are now implemented.
+- Sprint 8/Shadow Board Review: live saved advisor review room is implemented; true 1:1 challenge rounds remain pending.
+- Sprint 11/Decision Memory: live ledger and status updates are implemented.
+- Sprint 12/Follow-ups: live tracker and referral request trigger are implemented; reminder notifications remain pending.
+- Sprint 14/Admin Operations: live users, sessions, readout, and referrals are implemented; billing/document/agent-log admin depth remains pending.
+
+Backlog after live operations sprint:
+- Implement true agent challenge rounds and persist `agent_conversations`.
+- Generate board meeting minutes from board sessions and agent conflicts/agreements.
+- Add founder approval workflow that converts board-pack decision candidates into approved/rejected/deferred decisions with audit trail.
+- Add reminder scheduling and email notifications for follow-ups and review dates.
+- Add document extraction trigger/status UI from Company Brain.
+- Add document relevance controls so unrelated uploads can be excluded from governance context.
+- Add PDF, PPTX, DOCX, and XLSX export generation beyond current HTML/CSV exports.
+- Add Stripe Checkout, customer portal, webhooks, usage packages, and enforcement after Stripe products/prices exist.
+- Add admin billing state, document queue visibility, and agent run logs.
+- Add Resend operational email notifications for referral requests, reminders, and session status once sender policy is finalized.
+- Add deeper OpenAI model routing for intake, document extraction, advisor review, challenge, and final decision once those calls are split.
+
+Known risks:
+- Production database must have the full foundation migration, including `referral_requests`, `board-exports`, and canonical governance tables.
+- New live pages depend on authenticated Supabase cookies and service-role server routes; if Vercel env variables drift, pages will show API errors.
+- HTML/CSV exports are production-ready; PDF/PPTX/DOCX/XLSX remain backlog.
+- Governance Run can consume OpenAI credits when the user clicks `Rodar Board Brain`.
+- Admin temporary password generation returns the password once in the browser and must be handled as sensitive operational data.

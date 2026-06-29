@@ -11,7 +11,11 @@ export function resolveAIProvider(): Provider {
   return 'mock'
 }
 
-export function resolveModel(provider: Provider): string {
+export function resolveModel(provider: Provider, purpose: 'governance_synthesis' | 'default' = 'default'): string {
+  if (provider === 'openai' && purpose === 'governance_synthesis' && process.env.OPENAI_MODEL_BOARD_BRAIN_SYNTHESIS) {
+    return process.env.OPENAI_MODEL_BOARD_BRAIN_SYNTHESIS
+  }
+
   if (process.env.AI_MODEL) return process.env.AI_MODEL
   if (provider === 'openai') return 'gpt-4.1'
   if (provider === 'anthropic') return 'claude-sonnet-4-6'
@@ -87,7 +91,7 @@ function parseJSON(text: string): GovernanceAIOutput {
 
 export async function runGovernanceAI(company: BoardCompany, input: GovernanceRunInput) {
   const provider = resolveAIProvider()
-  const model = resolveModel(provider)
+  const model = resolveModel(provider, 'governance_synthesis')
 
   if (provider === 'mock') {
     return { provider, model, output: mockGovernanceOutput(company, input) }
