@@ -37,23 +37,41 @@ export default function ResetPasswordPage() {
       const code = query.get('code')
       const tokenHash = query.get('token_hash')
       const type = query.get('type')
+      const callbackError = query.get('error')
       const accessToken = hash.get('access_token')
       const refreshToken = hash.get('refresh_token')
 
+      if (callbackError) {
+        setError('Nao foi possivel validar este link de recuperacao.')
+      }
+
       if (code) {
-        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
-        if (exchangeError) {
-          setError(exchangeError.message)
-        }
-      } else if (tokenHash && type) {
-        const { error: otpError } = await supabase.auth.verifyOtp({
-          token_hash: tokenHash,
-          type: type as Parameters<typeof supabase.auth.verifyOtp>[0]['type'],
+        const callbackParams = new URLSearchParams({
+          code,
+          next: '/reset-password',
         })
-        if (otpError) {
-          setError(otpError.message)
-        }
-      } else if (accessToken && refreshToken) {
+        window.location.replace(`/auth/callback?${callbackParams.toString()}`)
+        return
+      }
+
+      if (tokenHash) {
+        const callbackParams = new URLSearchParams({
+          token_hash: tokenHash,
+          type: type || 'recovery',
+          next: '/reset-password',
+        })
+        window.location.replace(`/auth/callback?${callbackParams.toString()}`)
+        return
+      }
+
+      if (accessToken && refreshToken) {
+        setError('')
+        setMessage('Link validado. Defina sua nova senha.')
+        window.history.replaceState(null, '', '/reset-password')
+        await wait(100)
+      }
+
+      if (accessToken && refreshToken) {
         const { error: sessionError } = await supabase.auth.setSession({
           access_token: accessToken,
           refresh_token: refreshToken,
@@ -63,7 +81,7 @@ export default function ResetPasswordPage() {
         }
       }
 
-      if (code || tokenHash || type || accessToken || refreshToken || window.location.hash) {
+      if (accessToken || refreshToken || window.location.hash) {
         window.history.replaceState(null, '', '/reset-password')
       }
 
@@ -204,6 +222,7 @@ export default function ResetPasswordPage() {
             </form>
           ) : (
             <div className="space-y-4">
+              {error && <p className="text-xs font-mono text-red-600">{error}</p>}
               <p className="text-sm text-muted">
                 Este link expirou ou ja foi usado. Solicite um novo link de recuperacao.
               </p>

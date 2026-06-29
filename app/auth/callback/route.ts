@@ -43,5 +43,9 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  if (isRecovery) {
+    return NextResponse.redirect(`${origin}/reset-password?error=auth_failed`)
+  }
+
   return NextResponse.redirect(`${origin}/login?error=auth_failed`)
 }
