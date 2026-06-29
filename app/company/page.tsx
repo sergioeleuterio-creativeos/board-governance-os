@@ -1,6 +1,5 @@
-import { CompanyBrainScreen } from '@/components/shadow-board/Screens'
+import { CompanyBrainLiveScreen } from '@/components/shadow-board/CompanyBrainLiveScreen'
 
 export default function CompanyPage() {
-  return <CompanyBrainScreen />
+  return <CompanyBrainLiveScreen />
 }
-
