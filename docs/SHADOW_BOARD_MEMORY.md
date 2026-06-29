@@ -1023,5 +1023,7 @@ Verification:
 - `npm run typecheck` passed.
 - `npm run build` passed.
 
-Pending:
-- Commit, push, let Vercel deploy, then run production verification.
+Deployment checkpoint:
+- Code commit pushed to `main`: `41ced64` (`Ingest LANCE source pack and expand exports`).
+- `npm run verify:production` passed against `https://www.board-os.ai`.
+- Production homepage confirmed the new pt-BR copy: `Pensamento de conselho antes de poder bancar um conselho.`
