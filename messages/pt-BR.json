@@ -40,13 +40,13 @@
       "operations": "Operacoes"
     },
     "items": {
-      "dashboard": "Dashboard",
+      "dashboard": "Painel",
       "company": "Company Brain",
       "intake": "Intake",
       "governanceRun": "Governance Run",
       "boardPack": "Board Pack",
       "shadowBoard": "Shadow Board Review",
-      "decisions": "Decision Memory",
+      "decisions": "Memoria de decisoes",
       "followUps": "Follow-ups",
       "designSystem": "Design System",
       "mobile": "Mobile",

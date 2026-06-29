@@ -128,8 +128,8 @@ export function DecisionMemoryLiveScreen() {
     <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
       <div className="space-y-5">
         <PageHeader
-          eyebrow="06 - Decision Memory"
-          title="Decision ledger"
+          eyebrow="06 - Memoria de decisoes"
+          title="Livro de decisoes"
           description="Registros permanentes com rationale, tradeoffs, owners e review dates."
         />
 
@@ -142,10 +142,10 @@ export function DecisionMemoryLiveScreen() {
 
         <Panel>
           <div className="mb-4 flex flex-wrap gap-2">
-            <StatusPill>All {decisions.length}</StatusPill>
-            <StatusPill tone="positive">Approved {metrics.approved}</StatusPill>
-            <StatusPill tone="caution">Review {metrics.review}</StatusPill>
-            <StatusPill tone="critical">Rejected {metrics.rejected}</StatusPill>
+            <StatusPill>Todas {decisions.length}</StatusPill>
+            <StatusPill tone="positive">Aprovadas {metrics.approved}</StatusPill>
+            <StatusPill tone="caution">Revisao {metrics.review}</StatusPill>
+            <StatusPill tone="critical">Rejeitadas {metrics.rejected}</StatusPill>
           </div>
           <div className="space-y-3">
             {loading && <p className="sb-muted">Carregando decisoes...</p>}
@@ -177,7 +177,7 @@ export function DecisionMemoryLiveScreen() {
           <p className="sb-muted">Selecione uma decisao para revisar o registro completo.</p>
         ) : (
           <>
-            <p className="sb-code">{selected.id.slice(0, 8)} - Decision record</p>
+            <p className="sb-code">{selected.id.slice(0, 8)} - Registro de decisao</p>
             <h1>{selected.title || 'Decisao sem titulo'}</h1>
             <div className="flex flex-wrap gap-2">
               <StatusPill tone={toneForStatus(selected.status)}>{selected.status}</StatusPill>
@@ -204,29 +204,29 @@ export function DecisionMemoryLiveScreen() {
                 onClick={() => void updateDecision(selected.id, { status: 'approved' })}
                 disabled={savingId === selected.id}
               >
-                Approve
+                Aprovar
               </button>
             </div>
 
-            <DossierSection number="Rationale" title="Why this decision was made">
+            <DossierSection number="Rationale" title="Por que esta decisao foi tomada">
               <p>{selected.rationale || 'Rationale ainda nao registrado.'}</p>
             </DossierSection>
             <div className="grid gap-4 sm:grid-cols-2">
               <Panel>
-                <p className="sb-code">Owner</p>
+                <p className="sb-code">Responsavel</p>
                 <p className="font-semibold">{selected.owner_label || selected.owner || 'Sem owner'}</p>
               </Panel>
               <Panel>
-                <p className="sb-code">Review date</p>
+                <p className="sb-code">Data de revisao</p>
                 <p className="font-semibold">{dateLabel(selected.review_date)}</p>
               </Panel>
             </div>
-            <DossierSection number="Tradeoffs" title="Accepted tradeoffs">
+            <DossierSection number="Tradeoffs" title="Tradeoffs aceitos">
               <ul className="sb-clean-list">
                 {jsonList(selected.tradeoffs).map((item) => <li key={item}>{item}</li>)}
               </ul>
             </DossierSection>
-            <DossierSection number="Conditions" title="Conditions and expected outcome">
+            <DossierSection number="Conditions" title="Condicoes e resultado esperado">
               <p>{selected.expected_outcome || 'Expected outcome ainda nao registrado.'}</p>
               <ul className="sb-clean-list mt-3">
                 {jsonList(selected.conditions).map((item) => <li key={item}>{item}</li>)}

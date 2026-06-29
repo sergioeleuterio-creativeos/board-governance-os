@@ -159,7 +159,7 @@ export function BoardPackLiveScreen() {
         <Panel>
           <SectionTitle label="Board Pack" />
           <p className="sb-serif-callout">Nenhum board pack gerado ainda.</p>
-          <Link href="/governance-run" className="btn-primary mt-4">Run Board Brain</Link>
+          <Link href="/governance-run" className="btn-primary mt-4">Rodar Board Brain</Link>
         </Panel>
       </div>
     )
@@ -171,12 +171,12 @@ export function BoardPackLiveScreen() {
         <SectionTitle label="Contents" />
         {[
           'Executive summary',
-          'Strategic questions',
-          'Financial reports',
-          'Risk map',
-          'Advisor reports',
-          'Meeting agenda',
-          'Decision candidates',
+          'Perguntas estrategicas',
+          'Relatorios financeiros',
+          'Mapa de riscos',
+          'Relatorios dos advisors',
+          'Agenda da reuniao',
+          'Candidatos de decisao',
         ].map((item, index) => (
           <p key={item} className="sb-pack-nav">{index + 1}. {item}</p>
         ))}
@@ -191,7 +191,7 @@ export function BoardPackLiveScreen() {
           <p>{boardPack?.executive_summary ?? 'Carregando executive summary...'}</p>
         </DossierSection>
 
-        <DossierSection number="2" title="Strategic questions">
+        <DossierSection number="2" title="Perguntas estrategicas">
           <div className="space-y-3">
             {asArray(boardPack?.strategic_questions).map((question, index) => (
               <p key={`${itemText(question)}-${index}`}><strong>Q{index + 1}</strong> {itemText(question)}</p>
@@ -199,13 +199,13 @@ export function BoardPackLiveScreen() {
           </div>
         </DossierSection>
 
-        <DossierSection number="3" title="Financial reports for board review">
+        <DossierSection number="3" title="Relatorios financeiros para revisao do board">
           <div className="space-y-5">
             {Object.entries(financialReport).map(([section, rows]) => (
               <div key={section}>
                 <h3 className="sb-row-title">{section}</h3>
                 <div className="sb-table sb-financial-table mt-3">
-                  <div className="sb-table-head"><span>Line</span><span>Value</span><span>Board note</span><span>Context</span></div>
+                  <div className="sb-table-head"><span>Linha</span><span>Valor</span><span>Nota do board</span><span>Contexto</span></div>
                   {asArray(rows).map((row, index) => {
                     const record = asRecord(row)
                     return (
@@ -242,19 +242,19 @@ export function BoardPackLiveScreen() {
           <SectionTitle label="Exports" />
           <div className="grid gap-2">
             <button className="btn-secondary" type="button" onClick={() => void exportBoardPack('html')} disabled={!boardPack || exporting === 'html'}>
-              {exporting === 'html' ? 'Exportando HTML' : 'Export HTML'}
+              {exporting === 'html' ? 'Exportando HTML' : 'Exportar HTML'}
             </button>
             <button className="btn-secondary" type="button" onClick={() => void exportBoardPack('csv')} disabled={!boardPack || exporting === 'csv'}>
-              {exporting === 'csv' ? 'Exportando CSV' : 'Export CSV'}
+              {exporting === 'csv' ? 'Exportando CSV' : 'Exportar CSV'}
             </button>
           </div>
           {notice && <p className="sb-muted mt-3">{notice}</p>}
           {error && <p className="sb-error mt-3">{error}</p>}
-          {exportUrl && <a className="sb-text-link mt-3 block" href={exportUrl} target="_blank" rel="noreferrer">Open export</a>}
+          {exportUrl && <a className="sb-text-link mt-3 block" href={exportUrl} target="_blank" rel="noreferrer">Abrir export</a>}
         </Panel>
 
         <Panel>
-          <SectionTitle label="Advisor reports" />
+          <SectionTitle label="Relatorios dos advisors" />
           <div className="space-y-3">
             {(readout?.agent_reviews ?? []).map((review) => (
               <article key={review.id} className="sb-advisor-row">

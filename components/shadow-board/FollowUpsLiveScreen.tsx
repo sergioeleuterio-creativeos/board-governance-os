@@ -147,7 +147,7 @@ export function FollowUpsLiveScreen() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="07 - Follow-ups"
-        title="Cadence & follow-through"
+        title="Cadencia e follow-through"
         description="Cada decisao carrega owners e datas. Esta tela mantem a memoria operacional viva."
       />
 
@@ -159,15 +159,15 @@ export function FollowUpsLiveScreen() {
       )}
 
       <section className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Overdue" value={String(metrics.overdue)} detail="critical actions" tone={metrics.overdue ? 'critical' : 'positive'} />
-        <MetricCard label="Due this week" value={String(metrics.dueWeek)} detail="owner check-ins" tone={metrics.dueWeek ? 'caution' : 'neutral'} />
-        <MetricCard label="On track" value={String(metrics.onTrack)} detail="active loops" tone="positive" />
+        <MetricCard label="Atrasados" value={String(metrics.overdue)} detail="acoes criticas" tone={metrics.overdue ? 'critical' : 'positive'} />
+        <MetricCard label="Esta semana" value={String(metrics.dueWeek)} detail="check-ins de owner" tone={metrics.dueWeek ? 'caution' : 'neutral'} />
+        <MetricCard label="No trilho" value={String(metrics.onTrack)} detail="loops ativos" tone="positive" />
       </section>
       <Panel>
         <SectionTitle label="Follow-up tracker" />
         <div className="sb-table sb-followup-table">
           <div className="sb-table-head">
-            <span>Follow-up</span><span>Owner</span><span>Due</span><span>Status</span>
+            <span>Follow-up</span><span>Owner</span><span>Prazo</span><span>Status</span>
           </div>
           {loading && (
             <div className="sb-table-row">

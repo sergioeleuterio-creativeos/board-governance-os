@@ -36,8 +36,8 @@ export function DashboardHeader() {
 
   return (
     <PageHeader
-      eyebrow="Founder Dashboard"
-      title={firstName ? `Good morning, ${firstName}` : 'Good morning'}
+      eyebrow="Painel do founder"
+      title={firstName ? `Bom dia, ${firstName}` : 'Bom dia'}
       description={`${companyLabel} - ${meetingLabel}`}
     />
   )

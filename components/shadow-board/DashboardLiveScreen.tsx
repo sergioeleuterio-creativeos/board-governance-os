@@ -98,13 +98,13 @@ export function DashboardLiveScreen() {
       tone: (readout?.metrics.plan_confidence ?? 0) >= 70 ? 'positive' : 'neutral',
     },
     {
-      label: 'Open decisions',
+      label: 'Decisoes abertas',
       value: String(readout?.metrics.open_decisions ?? 0),
       detail: `${readout?.decisions_awaiting.length ?? 0} awaiting you`,
       tone: 'neutral',
     },
     {
-      label: 'Overdue follow-ups',
+      label: 'Follow-ups atrasados',
       value: String(readout?.metrics.overdue_follow_ups ?? 0),
       detail: 'critical if not cleared',
       tone: (readout?.metrics.overdue_follow_ups ?? 0) > 0 ? 'caution' : 'positive',
@@ -145,7 +145,7 @@ export function DashboardLiveScreen() {
 
       {readout?.needs_company && (
         <Panel>
-          <SectionTitle label="Workspace setup" />
+          <SectionTitle label="Setup do workspace" />
           <p className="sb-serif-callout">Crie ou alimente a primeira empresa para transformar o dashboard em leitura operacional.</p>
           <Link href="/company/intake" className="btn-primary mt-4">Iniciar intake</Link>
         </Panel>
@@ -164,7 +164,7 @@ export function DashboardLiveScreen() {
 
       <section className="grid gap-5 xl:grid-cols-[1.35fr_0.9fr]">
         <Panel>
-          <SectionTitle label="Decisions awaiting you" action={<Link href="/decisions" className="sb-text-link">View all</Link>} />
+          <SectionTitle label="Decisoes aguardando voce" action={<Link href="/decisions" className="sb-text-link">Ver todas</Link>} />
           <div className="space-y-3">
             {loading && <p className="sb-muted">Carregando decisoes...</p>}
             {!loading && readout?.decisions_awaiting.map(item => (
@@ -185,23 +185,23 @@ export function DashboardLiveScreen() {
 
         <div className="space-y-5">
           <Panel>
-            <SectionTitle label="Governance cadence" />
+            <SectionTitle label="Cadencia de governanca" />
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="sb-code">LAST 90 DAYS</p>
+                <p className="sb-code">ULTIMOS 90 DIAS</p>
                 <p className="sb-big-number">{readout?.cadence.closed_decisions_90d ?? 0}</p>
-                <p className="sb-muted">Decisions closed</p>
+                <p className="sb-muted">Decisoes encerradas</p>
               </div>
               <div>
-                <p className="sb-code">INPUTS LOGGED</p>
+                <p className="sb-code">INPUTS REGISTRADOS</p>
                 <p className="sb-big-number">{readout?.cadence.memory_updates_90d ?? 0}</p>
-                <p className="sb-muted">Memory updates</p>
+                <p className="sb-muted">Atualizacoes de memoria</p>
               </div>
             </div>
           </Panel>
 
           <Panel>
-            <SectionTitle label="Shadow Board status" />
+            <SectionTitle label="Status do Shadow Board" />
             <div className="grid gap-2">
               {(readout?.advisors ?? []).map(adv => (
                 <div key={adv.advisor_key} className="sb-advisor-row">
@@ -220,11 +220,11 @@ export function DashboardLiveScreen() {
           </Panel>
 
           <Panel>
-            <SectionTitle label="Follow-up marketplace" />
+            <SectionTitle label="Marketplace de follow-up" />
             <p className="sb-muted">
               Requests for vetted suppliers and Creative OS referrals will be triggered from follow-ups with full decision context.
             </p>
-            <button className="btn-secondary mt-4" type="button">Prepare request</button>
+            <button className="btn-secondary mt-4" type="button">Preparar pedido</button>
           </Panel>
         </div>
       </section>

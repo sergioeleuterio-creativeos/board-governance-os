@@ -118,7 +118,7 @@ export function ShadowBoardReviewLiveScreen() {
         <Panel tone="chamber">
           <SectionTitle label="Shadow Board Review" />
           <p className="sb-serif-callout">Nenhum board pack esta em review ainda.</p>
-          <Link href="/governance-run" className="btn-gold mt-4">Run Board Brain</Link>
+          <Link href="/governance-run" className="btn-gold mt-4">Rodar Board Brain</Link>
         </Panel>
       </div>
     )
@@ -128,8 +128,8 @@ export function ShadowBoardReviewLiveScreen() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="05 - Shadow Board Review"
-        title={readout?.company?.name ? `${readout.company.name} in session` : 'Board Pack in session'}
-        description="Six governance lenses reviewing independently, with Board Brain synthesis and closure recommendation."
+        title={readout?.company?.name ? `${readout.company.name} em sessao` : 'Board Pack em sessao'}
+        description="Seis lentes de governanca revisam de forma independente, com sintese e recomendacao de closure do Board Brain."
       />
 
       {error && (
@@ -140,7 +140,7 @@ export function ShadowBoardReviewLiveScreen() {
 
       <section className="grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
         <Panel tone="chamber">
-          <SectionTitle label="Advisor analysis" />
+          <SectionTitle label="Analise dos advisors" />
           <div className="grid gap-3">
             {(advisors.length ? advisors : readout?.agent_reviews ?? []).map((review) => (
               <article key={review.id} className="sb-review-card">
@@ -177,8 +177,8 @@ export function ShadowBoardReviewLiveScreen() {
 
         <Panel tone="chamber" className="sb-synthesis">
           <AdvisorMark code="BB" color="#C4922F" size="lg" />
-          <p className="sb-eyebrow mt-5">Board Brain - synthesized recommendation</p>
-          <h2>{aligned} aligned - {dissent} dissent recorded</h2>
+          <p className="sb-eyebrow mt-5">Board Brain - recomendacao sintetizada</p>
+          <h2>{aligned} alinhados - {dissent} dissentimento registrado</h2>
           <div className="mt-5">
             <div className="flex items-center justify-between">
               <span className="sb-code">Confidence</span>
@@ -194,9 +194,9 @@ export function ShadowBoardReviewLiveScreen() {
             {readout?.board_pack?.status && <StatusPill>{readout.board_pack.status}</StatusPill>}
           </div>
           <div className="mt-6 grid gap-2">
-            <Link href="/decisions" className="btn-gold">Review decision candidates</Link>
+            <Link href="/decisions" className="btn-gold">Revisar candidatos de decisao</Link>
             <Link href="/board-pack" className="btn-chamber">Open board pack</Link>
-            <Link href="/governance-run" className="btn-chamber-muted">Run again</Link>
+            <Link href="/governance-run" className="btn-chamber-muted">Rodar novamente</Link>
           </div>
         </Panel>
       </section>

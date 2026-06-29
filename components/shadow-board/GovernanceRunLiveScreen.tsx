@@ -113,13 +113,13 @@ export function GovernanceRunLiveScreen() {
 
   const metrics = useMemo<GovernanceMetric[]>(() => ([
     {
-      label: 'Risk score',
+      label: 'Score de risco',
       value: String(lastRun?.output.run.risk_score ?? readout?.latest_run?.risk_score ?? readout?.latest_business_plan?.quality_score ?? 0),
       detail: '/ 100',
       tone: (lastRun?.output.run.risk_score ?? readout?.latest_run?.risk_score ?? 0) >= 70 ? 'critical' : 'caution',
     },
     {
-      label: 'Confidence',
+      label: 'Confianca',
       value: String(lastRun?.output.run.confidence_score ?? readout?.latest_run?.confidence_score ?? readout?.latest_business_plan?.completeness_score ?? 0),
       detail: '/ 100',
       tone: (lastRun?.output.run.confidence_score ?? readout?.latest_run?.confidence_score ?? 0) >= 70 ? 'positive' : 'neutral',
@@ -193,14 +193,14 @@ export function GovernanceRunLiveScreen() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="03 - Governance Run"
-        title="Live governance run"
+        title="Governance run ao vivo"
         description="Gere diagnostico, plano, board pack, agent reviews, decision candidates e follow-ups a partir da Company Brain."
         action={workspace?.company?.id ? (
           <button className="btn-primary" type="button" onClick={() => void runGovernance()} disabled={running || workspaceLoading}>
-            {running ? 'Rodando...' : 'Run Board Brain'}
+            {running ? 'Rodando...' : 'Rodar Board Brain'}
           </button>
         ) : (
-          <Link href="/company/intake" className="btn-primary">Start intake</Link>
+          <Link href="/company/intake" className="btn-primary">Iniciar intake</Link>
         )}
       />
 
@@ -218,7 +218,7 @@ export function GovernanceRunLiveScreen() {
       <Panel>
         <div className="grid gap-5 lg:grid-cols-[0.75fr_1.4fr]">
           <div>
-            <SectionTitle label="Diagnosis" />
+            <SectionTitle label="Diagnostico" />
             <p className="sb-serif-callout">
               {lastRun?.output.run.summary
                 ?? readout?.latest_business_plan?.diagnosis
@@ -231,17 +231,17 @@ export function GovernanceRunLiveScreen() {
             </div>
           </div>
           <div>
-            <SectionTitle label="Workstreams, priorities & proof points" />
+            <SectionTitle label="Workstreams, prioridades e evidencias" />
             <div className="sb-table">
               <div className="sb-table-head">
-                <span>Item</span><span>Source</span><span>Status</span><span>Next</span>
+                <span>Item</span><span>Fonte</span><span>Status</span><span>Proximo</span>
               </div>
               {[...workstreams, ...priorities].slice(0, 8).map((item, index) => (
                 <div className="sb-table-row" key={`${textFromItem(item)}-${index}`}>
                   <span>{textFromItem(item) || `Item ${index + 1}`}</span>
                   <span>Board Brain</span>
                   <span>{readout?.latest_business_plan?.status ?? '-'}</span>
-                  <span>Review</span>
+                  <span>Revisar</span>
                 </div>
               ))}
               {!loading && !workstreams.length && !priorities.length && (
@@ -264,7 +264,7 @@ export function GovernanceRunLiveScreen() {
             <h2 className="sb-row-title mt-3">{lastRun.persistence.boardPackId.slice(0, 8)}</h2>
           </Panel>
           <Panel>
-            <p className="sb-code">Agent reviews</p>
+            <p className="sb-code">Analises dos advisors</p>
             <h2 className="sb-row-title mt-3">{lastRun.persistence.agentReviewsCreated}</h2>
           </Panel>
           <Panel>
