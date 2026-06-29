@@ -17,8 +17,28 @@ type PartnerRecord = {
   created_at: string
 }
 
+type OrganizationOption = {
+  id: string
+  name: string
+  slug: string
+  partner_channel_id: string | null
+  status: string
+}
+
+type CompanyOption = {
+  id: string
+  organization_id: string
+  organization_name: string | null
+  name: string
+  slug: string
+  partner_channel_id: string | null
+  status: string
+}
+
 type PartnersResponse = {
   partners: PartnerRecord[]
+  organizations: OrganizationOption[]
+  companies: CompanyOption[]
 }
 
 type ErrorResponse = {
@@ -41,12 +61,19 @@ function statusTone(status: string): 'positive' | 'critical' | 'caution' | 'neut
 
 export function AdminPartnersClient() {
   const [partners, setPartners] = useState<PartnerRecord[]>([])
+  const [organizations, setOrganizations] = useState<OrganizationOption[]>([])
+  const [companies, setCompanies] = useState<CompanyOption[]>([])
   const [loading, setLoading] = useState(true)
   const [savingId, setSavingId] = useState<string | null>(null)
+  const [associationSaving, setAssociationSaving] = useState(false)
   const [name, setName] = useState('')
   const [type, setType] = useState<typeof partnerTypes[number]>('distribution_partner')
   const [contactName, setContactName] = useState('')
   const [contactEmail, setContactEmail] = useState('')
+  const [selectedPartnerId, setSelectedPartnerId] = useState('')
+  const [targetType, setTargetType] = useState<'organization' | 'company'>('organization')
+  const [selectedOrganizationId, setSelectedOrganizationId] = useState('')
+  const [selectedCompanyId, setSelectedCompanyId] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
@@ -56,6 +83,26 @@ export function AdminPartnersClient() {
     const referrals = partners.reduce((sum, partner) => sum + partner.referral_count, 0)
     return { active, whiteLabel, referrals }
   }, [partners])
+
+  const partnersById = useMemo(() => {
+    return new Map(partners.map((partner) => [partner.id, partner]))
+  }, [partners])
+
+  const selectedTargetId = targetType === 'organization' ? selectedOrganizationId : selectedCompanyId
+
+  function partnerLabel(partnerId: string | null) {
+    if (!partnerId) return 'sem canal'
+    return partnersById.get(partnerId)?.name ?? 'canal desconhecido'
+  }
+
+  function namesForPartner<T extends { name: string; partner_channel_id: string | null }>(rows: T[], partnerId: string) {
+    const names = rows
+      .filter((row) => row.partner_channel_id === partnerId)
+      .map((row) => row.name)
+      .slice(0, 3)
+
+    return names.length ? names.join(', ') : 'nenhum vinculo'
+  }
 
   async function loadPartners() {
     setLoading(true)
@@ -72,6 +119,11 @@ export function AdminPartnersClient() {
     }
 
     setPartners(payload.partners)
+    setOrganizations(payload.organizations ?? [])
+    setCompanies(payload.companies ?? [])
+    setSelectedPartnerId((current) => current || payload.partners[0]?.id || '')
+    setSelectedOrganizationId((current) => current || payload.organizations?.[0]?.id || '')
+    setSelectedCompanyId((current) => current || payload.companies?.[0]?.id || '')
     setLoading(false)
   }
 
@@ -123,6 +175,35 @@ export function AdminPartnersClient() {
 
     setNotice('Parceiro atualizado.')
     setSavingId(null)
+    await loadPartners()
+  }
+
+  async function updateAssociation(action: 'attach' | 'detach') {
+    if (!selectedPartnerId || !selectedTargetId) return
+
+    setAssociationSaving(true)
+    setError('')
+    setNotice('')
+
+    const response = await fetch(`/api/admin/partners/${selectedPartnerId}/associations`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action,
+        target_type: targetType,
+        target_id: selectedTargetId,
+      }),
+    })
+    const payload = await response.json().catch(() => null) as { error?: string } | null
+
+    if (!response.ok) {
+      setError(payload?.error ?? 'Nao foi possivel atualizar vinculo.')
+      setAssociationSaving(false)
+      return
+    }
+
+    setNotice(action === 'attach' ? 'Vinculo criado.' : 'Vinculo removido.')
+    setAssociationSaving(false)
     await loadPartners()
   }
 
@@ -180,8 +261,71 @@ export function AdminPartnersClient() {
       </Panel>
 
       <Panel>
+        <SectionTitle label="Associar contas" />
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-5">
+          <label>
+            <span className="field-label">Canal</span>
+            <select className="field-input" value={selectedPartnerId} onChange={(event) => setSelectedPartnerId(event.target.value)}>
+              {partners.map((partner) => <option key={partner.id} value={partner.id}>{partner.name}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className="field-label">Tipo de vinculo</span>
+            <select className="field-input" value={targetType} onChange={(event) => setTargetType(event.target.value as 'organization' | 'company')}>
+              <option value="organization">Organizacao</option>
+              <option value="company">Empresa</option>
+            </select>
+          </label>
+          {targetType === 'organization' ? (
+            <label className="xl:col-span-2">
+              <span className="field-label">Organizacao</span>
+              <select className="field-input" value={selectedOrganizationId} onChange={(event) => setSelectedOrganizationId(event.target.value)}>
+                {organizations.map((organization) => (
+                  <option key={organization.id} value={organization.id}>
+                    {organization.name} - {partnerLabel(organization.partner_channel_id)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : (
+            <label className="xl:col-span-2">
+              <span className="field-label">Empresa</span>
+              <select className="field-input" value={selectedCompanyId} onChange={(event) => setSelectedCompanyId(event.target.value)}>
+                {companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name} / {company.organization_name ?? 'sem organizacao'} - {partnerLabel(company.partner_channel_id)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+          <div className="grid grid-cols-2 gap-2 self-end">
+            <button
+              className="btn-primary"
+              type="button"
+              onClick={() => void updateAssociation('attach')}
+              disabled={!selectedPartnerId || !selectedTargetId || associationSaving}
+            >
+              Vincular
+            </button>
+            <button
+              className="btn-secondary"
+              type="button"
+              onClick={() => void updateAssociation('detach')}
+              disabled={!selectedPartnerId || !selectedTargetId || associationSaving}
+            >
+              Remover
+            </button>
+          </div>
+        </div>
+        <p className="sb-muted mt-3">
+          Use este controle para conectar canais como Resenha a organizacoes ou empresas especificas sem alterar a propriedade do produto.
+        </p>
+      </Panel>
+
+      <Panel>
         <SectionTitle label="Canais registrados" />
-        <div className="sb-table">
+        <div className="sb-table sb-admin-partners-table">
           <div className="sb-table-head">
             <span>Canal</span>
             <span>Contato</span>
@@ -202,6 +346,8 @@ export function AdminPartnersClient() {
               </span>
               <span>
                 {partner.organization_count} orgs / {partner.company_count} empresas
+                <small>Orgs: {namesForPartner(organizations, partner.id)}</small>
+                <small>Empresas: {namesForPartner(companies, partner.id)}</small>
                 <small>{partner.referral_count} referrals</small>
               </span>
               <span>

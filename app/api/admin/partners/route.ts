@@ -18,6 +18,25 @@ type PartnerRow = {
   updated_at: string
 }
 
+type OrganizationRow = {
+  id: string
+  name: string
+  slug: string
+  partner_channel_id: string | null
+  status: string
+  created_at: string
+}
+
+type CompanyRow = {
+  id: string
+  organization_id: string
+  name: string
+  slug: string
+  partner_channel_id: string | null
+  status: string
+  created_at: string
+}
+
 function slugify(value: string) {
   return value
     .normalize('NFD')
@@ -48,12 +67,16 @@ export async function GET() {
   const partnerRows = (partners ?? []) as PartnerRow[]
   const partnerIds = partnerRows.map((partner) => partner.id)
   const [organizationsResult, companiesResult, referralsResult] = await Promise.all([
-    partnerIds.length
-      ? service.from('organizations').select('id, partner_channel_id').in('partner_channel_id', partnerIds)
-      : Promise.resolve({ data: [], error: null }),
-    partnerIds.length
-      ? service.from('companies').select('id, partner_channel_id').in('partner_channel_id', partnerIds)
-      : Promise.resolve({ data: [], error: null }),
+    service
+      .from('organizations')
+      .select('id, name, slug, partner_channel_id, status, created_at')
+      .order('name', { ascending: true })
+      .limit(200),
+    service
+      .from('companies')
+      .select('id, organization_id, name, slug, partner_channel_id, status, created_at')
+      .order('name', { ascending: true })
+      .limit(300),
     partnerIds.length
       ? service.from('referral_requests').select('id, partner_channel_id, status').in('partner_channel_id', partnerIds)
       : Promise.resolve({ data: [], error: null }),
@@ -72,8 +95,12 @@ export async function GET() {
     return counts
   }
 
-  const orgCounts = countByPartner((organizationsResult.data ?? []) as Array<{ partner_channel_id: string | null }>)
-  const companyCounts = countByPartner((companiesResult.data ?? []) as Array<{ partner_channel_id: string | null }>)
+  const organizationRows = (organizationsResult.data ?? []) as OrganizationRow[]
+  const companyRows = (companiesResult.data ?? []) as CompanyRow[]
+  const organizationsById = new Map(organizationRows.map((organization) => [organization.id, organization]))
+
+  const orgCounts = countByPartner(organizationRows)
+  const companyCounts = countByPartner(companyRows)
   const referralCounts = countByPartner((referralsResult.data ?? []) as Array<{ partner_channel_id: string | null }>)
 
   return NextResponse.json({
@@ -82,6 +109,11 @@ export async function GET() {
       organization_count: orgCounts.get(partner.id) ?? 0,
       company_count: companyCounts.get(partner.id) ?? 0,
       referral_count: referralCounts.get(partner.id) ?? 0,
+    })),
+    organizations: organizationRows,
+    companies: companyRows.map((company) => ({
+      ...company,
+      organization_name: organizationsById.get(company.organization_id)?.name ?? null,
     })),
   })
 }

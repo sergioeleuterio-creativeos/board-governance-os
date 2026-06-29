@@ -1252,3 +1252,55 @@ Backlog carried forward:
 - Add admin controls to associate companies/organizations with partner channels from the browser.
 - Add stronger XLSX financial table parsing beyond line-based signal detection.
 - Add backup/export strategy and data retention policy docs.
+
+### 2026-06-29 - Cron verified and production hardening follow-on
+
+User confirmed:
+- `CRON_SECRET` was created and deployed in Vercel.
+- Stripe and billing enforcement remain parked for later.
+- Continue all possible production builds without waiting for user input.
+
+Verified production:
+- `GET https://www.board-os.ai/api/cron/reminders` without authorization returned `401`.
+- Same route with `Authorization: Bearer <CRON_SECRET>` returned `200`.
+- Cron response showed `processed: 0`, `sent: 0`, `failed: 0`.
+
+Implemented Sprint 15:
+- Admin partner channels can now associate and remove associations for organizations and companies.
+- Added `POST /api/admin/partners/[partnerId]/associations`.
+- Association changes update existing `partner_channel_id` fields on `organizations` or `companies`.
+- Association changes write audit events:
+  - `partner.organization_attached`
+  - `partner.organization_detached`
+  - `partner.company_attached`
+  - `partner.company_detached`
+- `/admin/partners` now shows attach/detach controls and the first associated organization/company names for each channel.
+
+Implemented Sprint 12/16:
+- Added reusable product email templates in `lib/email/templates.ts`.
+- Cron reminders now use the shared reminder email template.
+- Template module also includes ready-to-wire variants for:
+  - board pack ready
+  - session closed
+  - referral request triage
+
+Implemented Sprint 5:
+- Document intelligence now extracts structured financial tables from spreadsheet-like XLSX/CSV text.
+- Financial table rows are classified as:
+  - `dre_pnl`
+  - `cash_flow`
+  - `unit_economics`
+  - `financial`
+- Structured data is stored under `financial_tables` in `document_extractions`.
+- Uploaded document metadata and audit events now include `financial_tables` counts.
+
+Implemented Sprint 17:
+- Added `docs/BACKUP_EXPORT_POLICY.md`.
+- Production setup guide now points to the backup/export policy.
+
+Backlog carried forward:
+- Stripe price IDs, webhook endpoint, and billing enforcement.
+- Custom notification sending for board pack ready, session closed, and referral triage using the new templates.
+- Retention cleanup job for expired generated exports.
+- Storage signed URL policy review before paid launch.
+- Staging restore rehearsal once a paid-production Supabase backup exists.

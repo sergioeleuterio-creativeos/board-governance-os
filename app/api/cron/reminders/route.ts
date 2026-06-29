@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { serviceClient } from '@/lib/auth-server'
+import { renderReminderEmail } from '@/lib/email/templates'
 
 type ReminderRow = {
   id: string
@@ -140,17 +141,12 @@ async function handleReminders(request: NextRequest) {
       if (reminder.channel !== 'email') throw new Error(`unsupported_channel:${reminder.channel}`)
 
       const content = textForReminder(reminder)
-      const subject = `Board Governance OS: ${content.title}`
-      const text = `${content.title}\n\n${content.detail}\n${content.due}\n\nAbrir follow-ups: ${appUrl}/follow-ups`
-      const html = `
-        <div style="font-family:Arial,sans-serif;line-height:1.5;color:#1f1d1a">
-          <p style="font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:#a67c2d">Board Governance OS</p>
-          <h1 style="font-size:22px;margin:0 0 12px">${content.title}</h1>
-          <p>${content.detail}</p>
-          <p><strong>${content.due}</strong></p>
-          <p><a href="${appUrl}/follow-ups">Abrir follow-ups</a></p>
-        </div>
-      `
+      const { subject, text, html } = renderReminderEmail({
+        title: content.title,
+        detail: content.detail,
+        due: content.due,
+        appUrl,
+      })
 
       await sendResendEmail({ to: profile.email, subject, text, html })
 

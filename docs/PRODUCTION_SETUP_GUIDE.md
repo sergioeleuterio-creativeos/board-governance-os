@@ -1,6 +1,6 @@
 # Production Setup Guide
 
-Last updated: 2026-06-28
+Last updated: 2026-06-29
 
 This guide keeps Board Governance OS separate from Creative OS while the product moves toward production.
 
@@ -213,6 +213,16 @@ Expected behavior:
 
 Official reference:
 - https://vercel.com/docs/cron-jobs
+
+## Backup And Export
+
+The operating policy lives in `docs/BACKUP_EXPORT_POLICY.md`.
+
+Production stance:
+- Supabase database backups are the source of truth for structured recovery.
+- Supabase Storage buckets stay private; app routes or signed URLs should mediate access.
+- Generated board exports should expire by default and be regenerated when needed.
+- Restore rehearsals should happen in a separate staging Supabase project, never inside Creative OS.
 
 ## Stripe
 

@@ -6,6 +6,10 @@ import { serviceClient } from '@/lib/auth-server'
 const MAX_EXTRACTED_TEXT_CHARS = 120_000
 const MAX_MEMORY_TEXT_CHARS = 8_000
 const MAX_FINANCIAL_SIGNALS = 40
+const MAX_FINANCIAL_TABLE_ROWS = 80
+
+const FINANCIAL_PATTERN = /(dre|p&l|profit|loss|receita|revenue|faturamento|margem|margin|ebitda|lucro|profit|cash|caixa|runway|burn|ocf|operating cash flow|fluxo de caixa|capex|opex|budget|or[cç]amento|custo|cost|cac|ltv|churn|retention|reten[cç][aã]o|inadimpl[eê]ncia|endividamento|debt|roi|roas|ticket|arpu|arr|mrr)/i
+const VALUE_PATTERN = /(?:R\$|\$|BRL|USD|EUR)?\s*-?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?\s*(?:%|pp|bps|mil|mi|m|k|mm|bn|bi)?/gi
 
 type ExtractionKind = 'pdf' | 'docx' | 'xlsx' | 'pptx' | 'csv' | 'txt' | 'unknown'
 
@@ -103,24 +107,89 @@ function detectMemoryCategory(text: string): 'financial' | 'risk' | 'customer' |
 }
 
 function extractFinancialSignals(text: string) {
-  const financialPattern = /(dre|p&l|profit|loss|receita|revenue|faturamento|margem|margin|ebitda|lucro|profit|cash|caixa|runway|burn|ocf|operating cash flow|fluxo de caixa|capex|opex|budget|or[cç]amento|custo|cost|cac|ltv|churn|retention|reten[cç][aã]o|inadimpl[eê]ncia|endividamento|debt|roi|roas|ticket|arpu|arr|mrr)/i
-  const valuePattern = /(?:R\$|\$|BRL|USD|EUR)?\s*-?\d{1,3}(?:[.,]\d{3})*(?:[.,]\d+)?\s*(?:%|pp|bps|mil|mi|m|k|mm|bn|bi)?/gi
   const lines = text
     .split('\n')
     .map((line) => line.trim())
     .filter((line) => line.length >= 8 && line.length <= 500)
 
   return lines
-    .filter((line) => financialPattern.test(line))
+    .filter((line) => FINANCIAL_PATTERN.test(line))
     .map((line) => {
-      const values = Array.from(line.matchAll(valuePattern)).map((match) => match[0].trim())
+      const values = Array.from(line.matchAll(VALUE_PATTERN)).map((match) => match[0].trim())
       return {
         line,
         values: [...new Set(values)].slice(0, 8),
       }
     })
-    .filter((signal) => signal.values.length || financialPattern.test(signal.line))
+    .filter((signal) => signal.values.length || FINANCIAL_PATTERN.test(signal.line))
     .slice(0, MAX_FINANCIAL_SIGNALS)
+}
+
+function classifyFinancialRow(label: string) {
+  const lower = label.toLowerCase()
+  if (/(receita|revenue|faturamento|lucro|profit|margem|margin|ebitda|custo|cost|opex|capex|dre|p&l)/.test(lower)) return 'dre_pnl'
+  if (/(caixa|cash|ocf|fluxo|runway|burn|endividamento|debt)/.test(lower)) return 'cash_flow'
+  if (/(cac|ltv|churn|retention|reten[cç][aã]o|arpu|arr|mrr|ticket|roi|roas)/.test(lower)) return 'unit_economics'
+  return 'financial'
+}
+
+function extractFinancialTables(text: string) {
+  const tables: Array<{
+    sheet: string
+    rows: Array<{ section: string; label: string; values: string[]; raw: string }>
+  }> = []
+  let rowsCaptured = 0
+
+  const blocks = text.split(/\n{2,}/).map((block) => block.trim()).filter(Boolean)
+  for (const block of blocks) {
+    const lines = block.split('\n').map((line) => line.trim()).filter(Boolean)
+    if (!lines.length) continue
+
+    const hasSheetHeader = /^sheet\d+$/i.test(lines[0])
+    const sheet = hasSheetHeader ? lines[0] : 'document'
+    const dataLines = hasSheetHeader ? lines.slice(1) : lines
+    const rows: Array<{ section: string; label: string; values: string[]; raw: string }> = []
+
+    for (const line of dataLines) {
+      if (rowsCaptured >= MAX_FINANCIAL_TABLE_ROWS) break
+      if (!line.includes('\t') || !FINANCIAL_PATTERN.test(line)) continue
+
+      const cells = line.split('\t').map((cell) => cell.trim()).filter(Boolean)
+      if (cells.length < 2) continue
+
+      const label = cells.find((cell) => FINANCIAL_PATTERN.test(cell)) ?? cells[0]
+      const values = cells
+        .filter((cell) => cell !== label)
+        .flatMap((cell) => Array.from(cell.matchAll(VALUE_PATTERN)).map((match) => match[0].trim()))
+        .filter(Boolean)
+
+      rows.push({
+        section: classifyFinancialRow(label),
+        label,
+        values: [...new Set(values)].slice(0, 12),
+        raw: line,
+      })
+      rowsCaptured += 1
+    }
+
+    if (rows.length) tables.push({ sheet, rows })
+    if (rowsCaptured >= MAX_FINANCIAL_TABLE_ROWS) break
+  }
+
+  return tables.slice(0, 12)
+}
+
+function buildFinancialTableSummary(
+  tables: Array<{ sheet: string; rows: Array<{ section: string; label: string; values: string[] }> }>,
+  fileName: string
+) {
+  if (!tables.length) return ''
+  const preview = tables
+    .flatMap((table) => table.rows.slice(0, 4).map((row) => `${table.sheet}/${row.section}: ${row.label}${row.values.length ? ` (${row.values.join(', ')})` : ''}`))
+    .slice(0, 10)
+    .join(' | ')
+
+  return `${readableName(fileName)} contem tabelas financeiras estruturadas para DRE/P&L, caixa ou unit economics: ${preview}`.slice(0, 1_800)
 }
 
 function buildFinancialSummary(signals: Array<{ line: string; values: string[] }>, fileName: string) {
@@ -252,7 +321,9 @@ export async function extractUploadedDocument(
     const summary = buildSummary(extractedText, typedDocument.original_filename)
     const category = detectMemoryCategory(`${typedDocument.original_filename}\n${summary}\n${extractedText.slice(0, 2_000)}`)
     const financialSignals = extractFinancialSignals(extractedText)
+    const financialTables = extractFinancialTables(extractedText)
     const financialSummary = buildFinancialSummary(financialSignals, typedDocument.original_filename)
+    const financialTableSummary = buildFinancialTableSummary(financialTables, typedDocument.original_filename)
 
     await service.from('document_extractions').delete().eq('document_id', documentId)
     await service.from('company_brain_entries').delete().eq('source_document_id', documentId)
@@ -321,6 +392,25 @@ export async function extractUploadedDocument(
         source_locations: {},
         status: 'processed',
       }] : []),
+      ...(financialTables.length ? [{
+        organization_id: typedDocument.organization_id,
+        company_id: typedDocument.company_id,
+        document_id: documentId,
+        extraction_type: 'table',
+        content: financialTableSummary,
+        structured_data: {
+          source: 'document-intelligence-v1',
+          kind,
+          original_filename: typedDocument.original_filename,
+          table_type: 'financial_board_report',
+          financial_tables: financialTables,
+          table_count: financialTables.length,
+          row_count: financialTables.reduce((sum, table) => sum + table.rows.length, 0),
+        },
+        confidence_score: 78,
+        source_locations: {},
+        status: 'processed',
+      }] : []),
     ]
 
     const { error: extractionError } = await service.from('document_extractions').insert(extractionRows)
@@ -347,7 +437,7 @@ export async function extractUploadedDocument(
         },
       }]
 
-      if (financialSummary) {
+      if (financialSummary || financialTableSummary) {
         memoryRows.push({
           organization_id: typedDocument.organization_id,
           company_id: typedDocument.company_id,
@@ -356,7 +446,7 @@ export async function extractUploadedDocument(
           category: 'financial',
           source_type: 'file',
           title: `Financial signals - ${typedDocument.original_filename}`,
-          content: financialSummary,
+          content: financialTableSummary || financialSummary,
           confidence_score: 74,
           status: 'active',
           metadata: {
@@ -364,6 +454,7 @@ export async function extractUploadedDocument(
             kind,
             original_filename: typedDocument.original_filename,
             financial_signal_count: financialSignals.length,
+            financial_table_count: financialTables.length,
           },
         })
       }
@@ -385,6 +476,7 @@ export async function extractUploadedDocument(
             kind,
             characters_extracted: extractedText.length,
             financial_signals: financialSignals.length,
+            financial_tables: financialTables.length,
             processed_at: new Date().toISOString(),
           },
         },
@@ -405,6 +497,7 @@ export async function extractUploadedDocument(
         original_filename: typedDocument.original_filename,
         characters_extracted: extractedText.length,
         financial_signals: financialSignals.length,
+        financial_tables: financialTables.length,
         memory_entries_created: memoryEntriesCreated,
       },
     })
