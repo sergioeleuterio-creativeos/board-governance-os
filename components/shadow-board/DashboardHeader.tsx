@@ -2,17 +2,19 @@
 
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkspace } from '@/hooks/useWorkspace'
+import { displayNameFromProfile } from '@/lib/display-name'
 import { PageHeader } from './ui'
 
 function profileName(user: ReturnType<typeof useAuth>['user'], profile: ReturnType<typeof useAuth>['profile']): string | null {
   const metadata = user?.user_metadata ?? {}
   const metadataName = metadata.full_name ?? metadata.name
 
-  if (profile?.full_name?.trim()) return profile.full_name.trim()
-  if (typeof metadataName === 'string' && metadataName.trim()) return metadataName.trim()
-  if (profile?.email) return profile.email.split('@')[0]
-  if (user?.email) return user.email.split('@')[0]
-  return null
+  return displayNameFromProfile({
+    fullName: profile?.full_name,
+    metadataName: typeof metadataName === 'string' ? metadataName : null,
+    email: profile?.email ?? user?.email,
+    fallback: '',
+  })
 }
 
 export function DashboardHeader() {

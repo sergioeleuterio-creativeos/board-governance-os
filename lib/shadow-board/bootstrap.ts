@@ -3,6 +3,7 @@ import 'server-only'
 import type { User } from '@supabase/supabase-js'
 import { serviceClient } from '@/lib/auth-server'
 import type { OrganizationRole } from '@/lib/shadow-board/domain'
+import { displayNameFromProfile } from '@/lib/display-name'
 
 function configuredAdminEmails(): Set<string> {
   const raw = [
@@ -38,7 +39,11 @@ function slugify(value: string): string {
 function displayNameFor(user: User): string | null {
   const metadata = user.user_metadata ?? {}
   const name = metadata.full_name ?? metadata.name
-  return typeof name === 'string' && name.trim() ? name.trim() : null
+  return displayNameFromProfile({
+    fullName: typeof name === 'string' ? name : null,
+    email: user.email,
+    fallback: '',
+  }) || null
 }
 
 function organizationNameFor(user: User): string {

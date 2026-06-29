@@ -48,7 +48,7 @@ export async function GET() {
     .select('organization_id, role')
     .eq('user_id', user.id)
     .eq('status', 'active')
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
 
   if (membershipError) {
     return NextResponse.json({ error: membershipError.message }, { status: 500 })
@@ -73,7 +73,7 @@ export async function GET() {
     .select('company_id, role')
     .eq('user_id', user.id)
     .eq('status', 'active')
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
 
   if (companyMembershipError) {
     return NextResponse.json({ error: companyMembershipError.message }, { status: 500 })
@@ -98,7 +98,7 @@ export async function GET() {
       .select('id, organization_id, name, slug, status, industry, stage, revenue_range, default_locale, created_at')
       .eq('organization_id', primaryOrganizationId)
       .eq('status', 'active')
-      .order('created_at', { ascending: true })
+      .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
     : { data: null, error: null }

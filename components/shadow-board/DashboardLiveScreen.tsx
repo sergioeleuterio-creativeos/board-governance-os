@@ -2,7 +2,6 @@
 
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
-import { companyContext } from '@/lib/shadow-board/demo-data'
 import { AdvisorMark, MetricCard, Panel, RowCard, SectionTitle, StatusPill } from './ui'
 import { DashboardHeader } from './DashboardHeader'
 
@@ -79,6 +78,14 @@ function advisorStatusColor(status: string) {
   return '#8A8478'
 }
 
+function statusLabel(status: string) {
+  if (status === 'complete') return 'concluido'
+  if (status === 'failed') return 'falhou'
+  if (status === 'running') return 'rodando'
+  if (status === 'queued') return 'em fila'
+  return status
+}
+
 export function DashboardLiveScreen() {
   const [readout, setReadout] = useState<DashboardReadout | null>(null)
   const [loading, setLoading] = useState(true)
@@ -86,13 +93,13 @@ export function DashboardLiveScreen() {
 
   const metrics = useMemo(() => ([
     {
-      label: 'Risk index',
+      label: 'Indice de risco',
       value: metricValue(readout?.metrics.risk_index ?? null, '0'),
       detail: readout?.metrics.risk_index === null ? '/ 100 - sem leitura' : '/ 100',
       tone: (readout?.metrics.risk_index ?? 0) >= 70 ? 'critical' : 'caution',
     },
     {
-      label: 'Plan confidence',
+      label: 'Confianca do plano',
       value: metricValue(readout?.metrics.plan_confidence ?? null, '0'),
       detail: readout?.metrics.plan_confidence === null ? '/ 100 - pendente' : '/ 100',
       tone: (readout?.metrics.plan_confidence ?? 0) >= 70 ? 'positive' : 'neutral',
@@ -100,13 +107,13 @@ export function DashboardLiveScreen() {
     {
       label: 'Decisoes abertas',
       value: String(readout?.metrics.open_decisions ?? 0),
-      detail: `${readout?.decisions_awaiting.length ?? 0} awaiting you`,
+      detail: `${readout?.decisions_awaiting.length ?? 0} aguardando voce`,
       tone: 'neutral',
     },
     {
       label: 'Follow-ups atrasados',
       value: String(readout?.metrics.overdue_follow_ups ?? 0),
-      detail: 'critical if not cleared',
+      detail: 'criticos se nao forem resolvidos',
       tone: (readout?.metrics.overdue_follow_ups ?? 0) > 0 ? 'caution' : 'positive',
     },
   ] as const), [readout])
@@ -152,8 +159,8 @@ export function DashboardLiveScreen() {
       )}
 
       <Panel className="sb-principle">
-        <p className="sb-eyebrow">Principle</p>
-        <p>{companyContext.principle}</p>
+        <p className="sb-eyebrow">Principio</p>
+        <p>Input consultivo vira decisao, responsavel, memoria e follow-up. Nao mais conselho solto para ser esquecido.</p>
       </Panel>
 
       <section className="grid gap-4 lg:grid-cols-4 sm:grid-cols-2">
@@ -210,10 +217,10 @@ export function DashboardLiveScreen() {
                     <p className="font-semibold">{adv.name}</p>
                     <p className="sb-muted truncate">
                       {adv.stance ?? adv.scope}
-                      {adv.confidence_score ? ` - ${adv.confidence_score}% confidence` : ''}
+                      {adv.confidence_score ? ` - ${adv.confidence_score}% confianca` : ''}
                     </p>
                   </div>
-                  <span className="sb-code" style={{ color: advisorStatusColor(adv.status) }}>{adv.status}</span>
+                  <span className="sb-code" style={{ color: advisorStatusColor(adv.status) }}>{statusLabel(adv.status)}</span>
                 </div>
               ))}
             </div>
@@ -222,7 +229,7 @@ export function DashboardLiveScreen() {
           <Panel>
             <SectionTitle label="Marketplace de follow-up" />
             <p className="sb-muted">
-              Requests for vetted suppliers and Creative OS referrals will be triggered from follow-ups with full decision context.
+              Pedidos para fornecedores avaliados e referencias Creative OS serao disparados a partir dos follow-ups com contexto completo da decisao.
             </p>
             <button className="btn-secondary mt-4" type="button">Preparar pedido</button>
           </Panel>

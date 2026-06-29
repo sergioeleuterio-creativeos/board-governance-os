@@ -15,6 +15,7 @@ export type CurrentCompany = {
   name: string
   slug: string
   status: string
+  stage?: string | null
 }
 
 export async function getCurrentCompanyForUser(user: User): Promise<CurrentCompany | null> {
@@ -26,7 +27,7 @@ export async function getCurrentCompanyForUser(user: User): Promise<CurrentCompa
     .select('company_id, role')
     .eq('user_id', user.id)
     .eq('status', 'active')
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
 
   if (companyMembershipError) throw new Error(companyMembershipError.message)
 
@@ -34,7 +35,7 @@ export async function getCurrentCompanyForUser(user: User): Promise<CurrentCompa
   if (companyId) {
     const { data: company, error } = await service
       .from('companies')
-      .select('id, organization_id, name, slug, status')
+      .select('id, organization_id, name, slug, status, stage')
       .eq('id', companyId)
       .maybeSingle()
 
@@ -47,7 +48,7 @@ export async function getCurrentCompanyForUser(user: User): Promise<CurrentCompa
     .select('organization_id')
     .eq('user_id', user.id)
     .eq('status', 'active')
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
 
@@ -56,10 +57,10 @@ export async function getCurrentCompanyForUser(user: User): Promise<CurrentCompa
 
   const { data: company, error } = await service
     .from('companies')
-    .select('id, organization_id, name, slug, status')
+    .select('id, organization_id, name, slug, status, stage')
     .eq('organization_id', organizationMembership.organization_id)
     .eq('status', 'active')
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .limit(1)
     .maybeSingle()
 

@@ -130,7 +130,7 @@ export function DecisionMemoryLiveScreen() {
         <PageHeader
           eyebrow="06 - Memoria de decisoes"
           title="Livro de decisoes"
-          description="Registros permanentes com rationale, tradeoffs, owners e review dates."
+          description="Registros permanentes com racional, tradeoffs, responsaveis e datas de revisao."
         />
 
         {(error || notice) && (
@@ -159,7 +159,7 @@ export function DecisionMemoryLiveScreen() {
                 <RowCard
                   code={decision.id.slice(0, 8)}
                   title={decision.title || 'Decisao sem titulo'}
-                  detail={`${decision.status} - ${decision.closure_recommendation ?? 'sem closure'} - review ${dateLabel(decision.review_date)}`}
+                  detail={`${decision.status} - ${decision.closure_recommendation ?? 'sem closure'} - revisao ${dateLabel(decision.review_date)}`}
                   tag={decision.risk_level ?? decision.status}
                   tone={toneForStatus(decision.status)}
                 />
@@ -208,13 +208,13 @@ export function DecisionMemoryLiveScreen() {
               </button>
             </div>
 
-            <DossierSection number="Rationale" title="Por que esta decisao foi tomada">
-              <p>{selected.rationale || 'Rationale ainda nao registrado.'}</p>
+            <DossierSection number="Racional" title="Por que esta decisao foi tomada">
+              <p>{selected.rationale || 'Racional ainda nao registrado.'}</p>
             </DossierSection>
             <div className="grid gap-4 sm:grid-cols-2">
               <Panel>
                 <p className="sb-code">Responsavel</p>
-                <p className="font-semibold">{selected.owner_label || selected.owner || 'Sem owner'}</p>
+                <p className="font-semibold">{selected.owner_label || selected.owner || 'Sem responsavel'}</p>
               </Panel>
               <Panel>
                 <p className="sb-code">Data de revisao</p>
@@ -226,8 +226,8 @@ export function DecisionMemoryLiveScreen() {
                 {jsonList(selected.tradeoffs).map((item) => <li key={item}>{item}</li>)}
               </ul>
             </DossierSection>
-            <DossierSection number="Conditions" title="Condicoes e resultado esperado">
-              <p>{selected.expected_outcome || 'Expected outcome ainda nao registrado.'}</p>
+            <DossierSection number="Condicoes" title="Condicoes e resultado esperado">
+              <p>{selected.expected_outcome || 'Resultado esperado ainda nao registrado.'}</p>
               <ul className="sb-clean-list mt-3">
                 {jsonList(selected.conditions).map((item) => <li key={item}>{item}</li>)}
               </ul>

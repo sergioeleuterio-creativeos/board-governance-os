@@ -84,32 +84,32 @@ function renderHtml(boardPack: BoardPackRow, companyName: string): string {
 <body>
   <p class="meta">Board Governance OS · Board Pack v${boardPack.version}</p>
   <h1>${escapeHtml(companyName)}</h1>
-  <p class="summary">${escapeHtml(boardPack.executive_summary || 'No executive summary available.')}</p>
+  <p class="summary">${escapeHtml(boardPack.executive_summary || 'Nenhum sumario executivo disponivel.')}</p>
 
-  <h2>Strategic Questions</h2>
+  <h2>Perguntas estrategicas</h2>
   <ol>${questions.map(item => `<li>${escapeHtml(typeof item === 'string' ? item : JSON.stringify(item))}</li>`).join('')}</ol>
 
-  <h2>Risk Map</h2>
+  <h2>Mapa de riscos</h2>
   ${risks.map(item => `<pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>`).join('')}
 
-  <h2>Financial Reports</h2>
+  <h2>Relatorios financeiros</h2>
   ${Object.entries(financialReport).map(([section, rows]) => `
     <h3>${escapeHtml(section)}</h3>
     <table>
       <tbody>${asArray(rows).map(row => `<tr>${Object.values(asRecord(row)).map(cell => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody>
     </table>
-  `).join('') || '<p>No structured financial report available yet.</p>'}
+  `).join('') || '<p>Nenhum relatorio financeiro estruturado disponivel ainda.</p>'}
 
-  <h2>Structured Advisor Reports</h2>
-  ${advisorReports.map(item => `<pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>`).join('') || '<p>No advisor reports available yet.</p>'}
+  <h2>Relatorios estruturados dos advisors</h2>
+  ${advisorReports.map(item => `<pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>`).join('') || '<p>Nenhum relatorio de advisor disponivel ainda.</p>'}
 
-  <h2>Priority Ranking</h2>
+  <h2>Ranking de prioridades</h2>
   ${priorities.map(item => `<pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>`).join('')}
 
-  <h2>Meeting Agenda</h2>
+  <h2>Agenda da reuniao</h2>
   <ol>${agenda.map(item => `<li>${escapeHtml(typeof item === 'string' ? item : JSON.stringify(item))}</li>`).join('')}</ol>
 
-  <h2>Decision Candidates</h2>
+  <h2>Candidatos de decisao</h2>
   ${decisions.map(item => `<pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>`).join('')}
 </body>
 </html>`
@@ -169,7 +169,7 @@ export async function POST(request: NextRequest) {
 
   if (companyError) return NextResponse.json({ error: companyError.message }, { status: 500 })
 
-  const companyName = company?.name ?? 'Company'
+  const companyName = company?.name ?? 'Empresa'
   const content = renderExport(boardPack as BoardPackRow, companyName, exportType)
   const storagePath = [
     boardPack.organization_id,

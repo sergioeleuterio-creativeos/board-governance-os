@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import { PRODUCT } from '@/lib/shadow-board/product'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkspace } from '@/hooks/useWorkspace'
+import { displayNameFromProfile } from '@/lib/display-name'
 
 const navGroups = [
   {
@@ -30,13 +31,6 @@ const navGroups = [
     items: [
       { href: '/decisions', code: '06', key: 'decisions' },
       { href: '/follow-ups', code: '07', key: 'followUps' },
-    ],
-  },
-  {
-    key: 'reference',
-    items: [
-      { href: '/design-system', code: 'DS', key: 'designSystem' },
-      { href: '/mobile', code: 'MB', key: 'mobile' },
     ],
   },
   {
@@ -86,11 +80,14 @@ export default function Navigation() {
   const periodLabel = workspace?.latest_session
     ? `${workspace.latest_session.session_type} - ${workspace.latest_session.status}`
     : workspace?.company?.stage ?? workspace?.organization_memberships[0]?.role ?? 'Workspace'
-  const displayName = profile?.full_name
-    || userMetadataName(user)
-    || profile?.email
-    || user?.email
-    || (loading ? 'Carregando...' : 'Visitante')
+  const displayName = loading
+    ? 'Carregando...'
+    : displayNameFromProfile({
+      fullName: profile?.full_name,
+      metadataName: userMetadataName(user),
+      email: profile?.email ?? user?.email,
+      fallback: 'Usuario',
+    })
   const displayRole = user ? (isAdmin ? 'Admin' : tShell('founderRole')) : 'Preview'
 
   return (

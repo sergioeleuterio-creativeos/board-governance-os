@@ -1,6 +1,5 @@
-import { DesignSystemScreen } from '@/components/shadow-board/Screens'
+import { redirect } from 'next/navigation'
 
 export default function DesignSystemPage() {
-  return <DesignSystemScreen />
+  redirect('/dashboard')
 }
-

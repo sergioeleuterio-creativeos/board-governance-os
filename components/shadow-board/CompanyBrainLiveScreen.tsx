@@ -44,12 +44,12 @@ type ErrorResponse = {
 }
 
 const statCards = [
-  ['Facts', 'fact'],
-  ['Goals', 'goal'],
-  ['Financials', 'financial'],
-  ['Risks', 'risk'],
-  ['Files', 'files'],
-  ['Decisions', 'decision'],
+  ['Fatos', 'fact'],
+  ['Metas', 'goal'],
+  ['Financeiro', 'financial'],
+  ['Riscos', 'risk'],
+  ['Arquivos', 'files'],
+  ['Decisoes', 'decision'],
 ] as const
 
 function isCompanyBrainReadout(payload: CompanyBrainReadout | ErrorResponse | null): payload is CompanyBrainReadout {
@@ -135,7 +135,7 @@ export function CompanyBrainLiveScreen() {
         <Panel>
           <SectionTitle label="Linha do tempo da memoria" />
           <div className="mb-4 flex flex-wrap gap-2">
-            {['All', 'Risks', 'Finance', 'Questions'].map(label => <StatusPill key={label}>{label}</StatusPill>)}
+            {['Todos', 'Riscos', 'Financeiro', 'Perguntas'].map(label => <StatusPill key={label}>{label}</StatusPill>)}
           </div>
           <div className="space-y-3">
             {loading && <p className="sb-muted">Carregando memoria...</p>}
@@ -146,7 +146,7 @@ export function CompanyBrainLiveScreen() {
                   <h3 className="sb-row-title">{entry.title}</h3>
                   <p className="sb-muted mt-1">{entry.content}</p>
                   <p className="sb-code mt-3">
-                    {entry.source_type} - {entry.confidence_score ?? '-'} confidence - {dateLabel(entry.created_at)}
+                    {entry.source_type} - {entry.confidence_score ?? '-'} confianca - {dateLabel(entry.created_at)}
                   </p>
                 </div>
               </article>

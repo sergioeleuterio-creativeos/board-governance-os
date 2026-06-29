@@ -124,7 +124,7 @@ export function FollowUpsLiveScreen() {
       body: JSON.stringify({
         follow_up_id: item.id,
         recommended_by_agent_key: item.source_agent_key,
-        requested_category: item.source_agent_key === 'customer' ? 'Marketing / customer growth' : 'Vetted supplier',
+        requested_category: item.source_agent_key === 'customer' ? 'Marketing / crescimento de clientes' : 'Fornecedor recomendado',
       }),
     })
     const payload = await response.json().catch(() => null) as { error?: string } | null
@@ -164,10 +164,10 @@ export function FollowUpsLiveScreen() {
         <MetricCard label="No trilho" value={String(metrics.onTrack)} detail="loops ativos" tone="positive" />
       </section>
       <Panel>
-        <SectionTitle label="Follow-up tracker" />
+        <SectionTitle label="Tracker de follow-ups" />
         <div className="sb-table sb-followup-table">
           <div className="sb-table-head">
-            <span>Follow-up</span><span>Owner</span><span>Prazo</span><span>Status</span>
+            <span>Follow-up</span><span>Responsavel</span><span>Prazo</span><span>Status</span>
           </div>
           {loading && (
             <div className="sb-table-row">
@@ -191,7 +191,7 @@ export function FollowUpsLiveScreen() {
                 {item.action || item.title}
                 <small>{item.description ?? item.source_agent_key ?? 'Sem detalhe'}</small>
               </span>
-              <span>{item.owner_label || item.owner || 'Sem owner'}</span>
+              <span>{item.owner_label || item.owner || 'Sem responsavel'}</span>
               <span><StatusPill tone={dueTone(item)}>{dateLabel(item.due_date)}</StatusPill></span>
               <span>
                 <select
@@ -210,7 +210,7 @@ export function FollowUpsLiveScreen() {
                   onClick={() => void requestReferral(item)}
                   disabled={referringId === item.id}
                 >
-                  {referringId === item.id ? 'Registrando' : 'Get connected'}
+                  {referringId === item.id ? 'Registrando' : 'Solicitar conexao'}
                 </button>
               </span>
             </div>

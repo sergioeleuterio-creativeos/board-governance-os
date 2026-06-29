@@ -127,7 +127,7 @@ export function GovernanceRunLiveScreen() {
     {
       label: 'Board pack',
       value: readout?.latest_board_pack ? `v${readout.latest_board_pack.version}` : '-',
-      detail: readout?.latest_board_pack?.status ?? 'not generated',
+      detail: readout?.latest_board_pack?.status ?? 'nao gerado',
       tone: 'neutral',
     },
   ]), [lastRun, readout])
@@ -194,7 +194,7 @@ export function GovernanceRunLiveScreen() {
       <PageHeader
         eyebrow="03 - Governance Run"
         title="Governance run ao vivo"
-        description="Gere diagnostico, plano, board pack, agent reviews, decision candidates e follow-ups a partir da Company Brain."
+        description="Gere diagnostico, plano, Board Pack, analises dos advisors, candidatos de decisao e follow-ups a partir da Company Brain."
         action={workspace?.company?.id ? (
           <button className="btn-primary" type="button" onClick={() => void runGovernance()} disabled={running || workspaceLoading}>
             {running ? 'Rodando...' : 'Rodar Board Brain'}

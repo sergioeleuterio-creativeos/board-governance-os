@@ -830,3 +830,67 @@ Known risks:
 - HTML/CSV exports are production-ready; PDF/PPTX/DOCX/XLSX remain backlog.
 - Governance Run can consume OpenAI credits when the user clicks `Rodar Board Brain`.
 - Admin temporary password generation returns the password once in the browser and must be handled as sensitive operational data.
+
+### 2026-06-29 - LANCE research seed and product cleanup
+
+User direction:
+- Remove `Design System` and `Mobile` from the left menu.
+- User identity should display name/surname instead of email.
+- Replace first-seed/Nuveo demo context with LANCE! from lance.com.br and the available marketing/media material.
+- Keep i18n/pt-BR polish moving while preserving product terms such as Board Pack, Board Brain, Governance Run, Company Brain, and Shadow Board Review.
+
+Implemented:
+- Added `lib/display-name.ts` and wired navigation, dashboard header, and workspace bootstrap to derive a human display name from profile metadata or email local-part.
+- Navigation no longer includes Design System or Mobile reference items.
+- `/design-system` and `/mobile` now redirect to `/dashboard` so old static mock screens do not leak first-seed content through direct URLs.
+- Current-company resolution now prefers the newest active company membership/company, allowing the LANCE seed to become the active workspace company.
+- Localized visible English remnants across the live Dashboard, Company Brain, Governance Run, Board Pack, Shadow Board Review, Decision Memory, Follow-ups, and Board Pack HTML export.
+- Updated the intake default draft from Nuveo Logistica to LANCE! context.
+
+LANCE source work:
+- Used the official LANCE! 2026 media kit PDF:
+  `https://lncimg.lance.com.br/uploads/2026/02/Lance-Midia-Kit-2026-.pdf`
+- Extracted PDF text locally and used it as the primary source for seeded facts.
+- Marketing plan attachment was not found in the local workspace/Downloads search, so the seed is based on official LANCE source material plus Board OS analysis.
+
+LANCE seed:
+- Added repeatable script `scripts/seed-lance.mjs`.
+- Seeded `LANCE!` as the active company for `sergio.eleuterio@gmail.com`.
+- Uploaded the official media kit to Supabase storage and created a processed `uploaded_documents` record.
+- Created:
+  - 14 Company Brain entries
+  - 1 document extraction
+  - 1 governance cycle
+  - 1 business plan
+  - 1 Board Pack
+  - 1 board session
+  - 7 agent reviews including Board Brain
+  - 3 agent conversation summaries
+  - 1 board meeting
+  - 1 meeting minutes record
+  - 3 decision candidates
+  - 4 follow-ups
+  - 1 compatibility governance run
+
+LANCE governance thesis:
+- LANCE! has significant reach and ecosystem breadth; the board-level question is not only audience growth, but converting reach into identifiable, retained, consented first-party audience and higher-quality revenue.
+- Key gaps for the next Board Pack: DRE/P&L, OCF, cash/runway, margin by product/format, revenue concentration by advertiser/category, and clear governance for betting, branded content, creators, and data use.
+- Recommended closure: `commit_with_conditions` on the LANCE! App/CRM first-party strategy, gated by financial visibility, retention/data KPIs, reputation/data guardrails, and weekly operating cadence.
+
+Verification:
+- `node --check scripts/seed-lance.mjs` passed.
+- `node scripts/seed-lance.mjs` succeeded against the dedicated Board OS Supabase project.
+- Remote Supabase count check confirmed LANCE! data in all expected tables.
+- `npm run build` passed.
+- `npm run typecheck` passed after build regenerated Next types.
+- `npm run verify:production` passed against `https://www.board-os.ai`.
+
+Backlog carried forward:
+- Deploy/push this cleanup so Vercel picks up the UI/localization changes.
+- Add browser-visible controls for choosing/switching active company instead of relying on newest membership ordering.
+- Add true 1:1 agent challenge execution, beyond the seeded conversation summaries.
+- Add founder approval workflow that converts candidates to approved/rejected/deferred decisions with audit trail.
+- Add reminder scheduling/email notifications.
+- Add document extraction trigger/status UI and relevance controls.
+- Add PDF/PPTX/DOCX/XLSX exports beyond HTML/CSV.
+- Add Stripe Checkout, portal, webhooks, usage enforcement, and admin billing views.

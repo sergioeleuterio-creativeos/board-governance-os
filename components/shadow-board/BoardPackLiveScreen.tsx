@@ -168,9 +168,9 @@ export function BoardPackLiveScreen() {
   return (
     <div className="grid gap-6 xl:grid-cols-[240px_1fr_300px]">
       <Panel className="h-fit">
-        <SectionTitle label="Contents" />
+        <SectionTitle label="Indice" />
         {[
-          'Executive summary',
+          'Sumario executivo',
           'Perguntas estrategicas',
           'Relatorios financeiros',
           'Mapa de riscos',
@@ -184,11 +184,11 @@ export function BoardPackLiveScreen() {
 
       <Panel tone="dossier" className="sb-dossier">
         <p className="sb-code">Board Pack {boardPack ? `- v${boardPack.version}` : ''}</p>
-        <h1>{readout?.company?.name ?? 'Company'}</h1>
-        <StatusPill>{boardPack?.status ?? 'loading'}</StatusPill>
+        <h1>{readout?.company?.name ?? 'Empresa'}</h1>
+        <StatusPill>{boardPack?.status ?? 'carregando'}</StatusPill>
 
-        <DossierSection number="1" title="Executive summary">
-          <p>{boardPack?.executive_summary ?? 'Carregando executive summary...'}</p>
+        <DossierSection number="1" title="Sumario executivo">
+          <p>{boardPack?.executive_summary ?? 'Carregando sumario executivo...'}</p>
         </DossierSection>
 
         <DossierSection number="2" title="Perguntas estrategicas">
@@ -220,17 +220,17 @@ export function BoardPackLiveScreen() {
                 </div>
               </div>
             ))}
-            {!Object.keys(financialReport).length && <p className="sb-muted">No structured financial report available yet.</p>}
+            {!Object.keys(financialReport).length && <p className="sb-muted">Nenhum relatorio financeiro estruturado disponivel ainda.</p>}
           </div>
         </DossierSection>
 
-        <DossierSection number="4" title="Risk map">
+        <DossierSection number="4" title="Mapa de riscos">
           <div className="space-y-3">
             {asArray(boardPack?.risk_map).map((risk, index) => <p key={`${itemText(risk)}-${index}`}>{itemText(risk)}</p>)}
           </div>
         </DossierSection>
 
-        <DossierSection number="5" title="Decision candidates">
+        <DossierSection number="5" title="Candidatos de decisao">
           <div className="space-y-3">
             {asArray(boardPack?.decision_candidates).map((decision, index) => <p key={`${itemText(decision)}-${index}`}>{itemText(decision)}</p>)}
           </div>
@@ -250,7 +250,7 @@ export function BoardPackLiveScreen() {
           </div>
           {notice && <p className="sb-muted mt-3">{notice}</p>}
           {error && <p className="sb-error mt-3">{error}</p>}
-          {exportUrl && <a className="sb-text-link mt-3 block" href={exportUrl} target="_blank" rel="noreferrer">Abrir export</a>}
+          {exportUrl && <a className="sb-text-link mt-3 block" href={exportUrl} target="_blank" rel="noreferrer">Abrir exportacao</a>}
         </Panel>
 
         <Panel>
@@ -265,7 +265,7 @@ export function BoardPackLiveScreen() {
                 />
                 <div>
                   <p className="font-semibold">{review.advisor_name}</p>
-                  <p className="sb-muted">{review.stance ?? review.status} - {review.confidence_score ?? '-'} confidence</p>
+                  <p className="sb-muted">{review.stance ?? review.status} - {review.confidence_score ?? '-'} confianca</p>
                 </div>
               </article>
             ))}

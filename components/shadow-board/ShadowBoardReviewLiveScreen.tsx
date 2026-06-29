@@ -153,16 +153,16 @@ export function ShadowBoardReviewLiveScreen() {
                     <h3>{review.advisor_name}</h3>
                     <StatusPill tone={stanceTone(review.stance)}>{review.stance ?? review.status}</StatusPill>
                   </div>
-                  <p>{review.perspective ?? 'Analysis queued.'}</p>
+                  <p>{review.perspective ?? 'Analise em fila.'}</p>
                   <div className="mt-3 grid gap-3 md:grid-cols-2">
                     <div>
-                      <p className="sb-code">Questions</p>
+                      <p className="sb-code">Perguntas</p>
                       {asArray(review.strategic_questions).slice(0, 3).map((question, index) => (
                         <p key={`${review.id}-q-${index}`}>{textFromItem(question)}</p>
                       ))}
                     </div>
                     <div>
-                      <p className="sb-code">Recommendations</p>
+                      <p className="sb-code">Recomendacoes</p>
                       {asArray(review.recommendations).slice(0, 3).map((recommendation, index) => (
                         <p key={`${review.id}-r-${index}`}>{textFromItem(recommendation)}</p>
                       ))}
@@ -181,13 +181,13 @@ export function ShadowBoardReviewLiveScreen() {
           <h2>{aligned} alinhados - {dissent} dissentimento registrado</h2>
           <div className="mt-5">
             <div className="flex items-center justify-between">
-              <span className="sb-code">Confidence</span>
+              <span className="sb-code">Confianca</span>
               <strong className="sb-big-number text-brass">{confidence}</strong>
             </div>
             <Meter value={confidence} tone={confidence >= 70 ? 'positive' : 'caution'} />
           </div>
           <p className="sb-serif-callout mt-6">
-            {boardBrain?.perspective ?? readout?.board_pack?.executive_summary ?? 'Board Brain synthesis is waiting for a governance run.'}
+            {boardBrain?.perspective ?? readout?.board_pack?.executive_summary ?? 'A sintese do Board Brain aguarda uma governance run.'}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
             {boardBrain?.closure_recommendation && <StatusPill>{boardBrain.closure_recommendation}</StatusPill>}
@@ -195,7 +195,7 @@ export function ShadowBoardReviewLiveScreen() {
           </div>
           <div className="mt-6 grid gap-2">
             <Link href="/decisions" className="btn-gold">Revisar candidatos de decisao</Link>
-            <Link href="/board-pack" className="btn-chamber">Open board pack</Link>
+            <Link href="/board-pack" className="btn-chamber">Abrir Board Pack</Link>
             <Link href="/governance-run" className="btn-chamber-muted">Rodar novamente</Link>
           </div>
         </Panel>

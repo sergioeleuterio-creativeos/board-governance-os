@@ -1,6 +1,5 @@
-import { MobileBehaviorScreen } from '@/components/shadow-board/Screens'
+import { redirect } from 'next/navigation'
 
 export default function MobilePage() {
-  return <MobileBehaviorScreen />
+  redirect('/dashboard')
 }
-

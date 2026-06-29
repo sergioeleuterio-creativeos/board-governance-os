@@ -1,17 +1,13 @@
 import { NextResponse } from 'next/server'
 import { getSessionUser, serviceClient } from '@/lib/auth-server'
 import { ensureUserWorkspace } from '@/lib/shadow-board/bootstrap'
+import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
 
 type CompanyRow = {
   id: string
   organization_id: string
   name: string
   stage: string | null
-}
-
-type CompanyMembershipRow = {
-  company_id: string
-  role: string
 }
 
 type DecisionRow = {
@@ -84,54 +80,6 @@ async function countRows(table: string, companyId: string, configure?: (query: a
   return count ?? 0
 }
 
-async function currentCompanyForUser(userId: string): Promise<CompanyRow | null> {
-  const service = serviceClient()
-  const { data: companyMemberships, error: membershipError } = await service
-    .from('company_memberships')
-    .select('company_id, role')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .order('created_at', { ascending: true })
-
-  if (membershipError) throw new Error(membershipError.message)
-
-  const directCompanyId = ((companyMemberships ?? []) as CompanyMembershipRow[])[0]?.company_id
-  if (directCompanyId) {
-    const { data: company, error } = await service
-      .from('companies')
-      .select('id, organization_id, name, stage')
-      .eq('id', directCompanyId)
-      .maybeSingle()
-
-    if (error) throw new Error(error.message)
-    if (company) return company as CompanyRow
-  }
-
-  const { data: membership, error: organizationMembershipError } = await service
-    .from('organization_memberships')
-    .select('organization_id')
-    .eq('user_id', userId)
-    .eq('status', 'active')
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
-
-  if (organizationMembershipError) throw new Error(organizationMembershipError.message)
-  if (!membership?.organization_id) return null
-
-  const { data: company, error } = await service
-    .from('companies')
-    .select('id, organization_id, name, stage')
-    .eq('organization_id', membership.organization_id)
-    .eq('status', 'active')
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
-
-  if (error) throw new Error(error.message)
-  return company as CompanyRow | null
-}
-
 export async function GET() {
   const user = await getSessionUser()
   if (!user) {
@@ -140,7 +88,7 @@ export async function GET() {
 
   try {
     await ensureUserWorkspace(user)
-    const company = await currentCompanyForUser(user.id)
+    const company = await getCurrentCompanyForUser(user) as CompanyRow | null
 
     if (!company) {
       return NextResponse.json({
