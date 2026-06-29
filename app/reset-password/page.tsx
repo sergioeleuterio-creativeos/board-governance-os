@@ -6,6 +6,10 @@ import { useEffect, useState } from 'react'
 import { createAuthClient } from '@/lib/auth-client'
 import { PRODUCT } from '@/lib/shadow-board/product'
 
+function wait(ms: number) {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
 export default function ResetPasswordPage() {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -17,11 +21,22 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const supabase = createAuthClient()
+    let mounted = true
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return
+      if (event === 'PASSWORD_RECOVERY' || session?.user) {
+        setHasSession(Boolean(session?.user))
+        setCheckingSession(false)
+      }
+    })
 
     async function prepareRecoverySession() {
       const query = new URLSearchParams(window.location.search)
       const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
       const code = query.get('code')
+      const tokenHash = query.get('token_hash')
+      const type = query.get('type')
       const accessToken = hash.get('access_token')
       const refreshToken = hash.get('refresh_token')
 
@@ -29,6 +44,14 @@ export default function ResetPasswordPage() {
         const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
         if (exchangeError) {
           setError(exchangeError.message)
+        }
+      } else if (tokenHash && type) {
+        const { error: otpError } = await supabase.auth.verifyOtp({
+          token_hash: tokenHash,
+          type: type as Parameters<typeof supabase.auth.verifyOtp>[0]['type'],
+        })
+        if (otpError) {
+          setError(otpError.message)
         }
       } else if (accessToken && refreshToken) {
         const { error: sessionError } = await supabase.auth.setSession({
@@ -40,20 +63,38 @@ export default function ResetPasswordPage() {
         }
       }
 
-      if (code || accessToken || refreshToken || window.location.hash) {
+      if (code || tokenHash || type || accessToken || refreshToken || window.location.hash) {
         window.history.replaceState(null, '', '/reset-password')
       }
 
+      for (let attempt = 0; attempt < 8; attempt++) {
+        const { data } = await supabase.auth.getSession()
+        if (data.session?.user) {
+          if (!mounted) return
+          setHasSession(true)
+          setCheckingSession(false)
+          return
+        }
+        await wait(250)
+      }
+
       const { data } = await supabase.auth.getUser()
+      if (!mounted) return
       setHasSession(Boolean(data.user))
       setCheckingSession(false)
     }
 
     prepareRecoverySession().catch(() => {
+      if (!mounted) return
       setError('Nao foi possivel validar o link de recuperacao.')
       setHasSession(false)
       setCheckingSession(false)
     })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
   }, [])
 
   async function handleSubmit(event: React.FormEvent) {

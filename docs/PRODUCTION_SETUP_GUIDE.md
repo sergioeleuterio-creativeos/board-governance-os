@@ -83,8 +83,14 @@ Production checklist:
 2. Set Site URL to the production app URL.
 3. Add redirect URLs for local and production:
    - `http://localhost:3001/auth/callback`
+   - `http://localhost:3001/reset-password`
    - the active local port if different during testing.
-   - `https://<subdomain>.<domain>/auth/callback`
+   - `https://www.board-os.ai/auth/callback`
+   - `https://www.board-os.ai/reset-password`
+   - `https://board-os.ai/auth/callback`
+   - `https://board-os.ai/reset-password`
+   - `https://www.board-os.ai/**`
+   - `https://board-os.ai/**`
 4. Keep `SUPABASE_SERVICE_ROLE_KEY` server-only. It must never be exposed as a public env var.
 
 ## Vercel And Subdomain

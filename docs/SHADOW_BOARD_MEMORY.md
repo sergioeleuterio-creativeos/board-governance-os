@@ -736,6 +736,7 @@ Verification:
 - After Vercel env correction/redeploy, production bundle contains `https://jzmwrwzrmpjftuirqljc.supabase.co`. Password reset endpoint now reaches Supabase Auth. First live reset request hit Supabase's short recovery rate limit; retry after 30 seconds returned `{"success": true}` for Sergio's email.
 - User received the reset email, but the recovery link routed to `/login?error=auth_failed`; likely Supabase delivered recovery credentials in the URL fragment, which the server callback cannot read. Updated recovery redirect to land directly on `/reset-password`, and the reset page now handles both `?code=...` and `#access_token=...&refresh_token=...` recovery link formats client-side.
 - Deployed recovery-link fix and verified the production reset page bundle includes `exchangeCodeForSession`, `setSession`, and `access_token` handling. Sent a fresh recovery email successfully with `{"success": true}` after deploy.
+- User saw `/reset-password` but no recovery session; updated reset page to also handle Supabase `?token_hash=...&type=recovery` links, subscribe to `PASSWORD_RECOVERY`, and wait briefly for Supabase browser session creation before showing the expired/used link state. Production guide now explicitly requires Supabase redirect allowlist entries for `/reset-password`.
 
 New backlog after 2026-06-28:
 - Create OpenAI project/key and add `OPENAI_API_KEY`.
