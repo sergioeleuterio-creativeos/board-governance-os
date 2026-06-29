@@ -738,6 +738,7 @@ Verification:
 - Deployed recovery-link fix and verified the production reset page bundle includes `exchangeCodeForSession`, `setSession`, and `access_token` handling. Sent a fresh recovery email successfully with `{"success": true}` after deploy.
 - User saw `/reset-password` but no recovery session; updated reset page to also handle Supabase `?token_hash=...&type=recovery` links, subscribe to `PASSWORD_RECOVERY`, and wait briefly for Supabase browser session creation before showing the expired/used link state. Production guide now explicitly requires Supabase redirect allowlist entries for `/reset-password`.
 - Follow-up: user still saw expired/used after validation. Changed `/reset-password` so `?code=...` and `?token_hash=...` links are immediately handed to `/auth/callback` for server-side cookie setup; the page keeps direct browser handling only for fragment token links. Recovery callback failures now return to `/reset-password?error=auth_failed`.
+- Used Supabase Admin API with the local service-role key to set a temporary password for `sergio.eleuterio@gmail.com`; direct Supabase `signInWithPassword` verification succeeded. Do not store the temporary password in repo memory.
 
 New backlog after 2026-06-28:
 - Create OpenAI project/key and add `OPENAI_API_KEY`.
