@@ -894,3 +894,65 @@ Backlog carried forward:
 - Add document extraction trigger/status UI and relevance controls.
 - Add PDF/PPTX/DOCX/XLSX exports beyond HTML/CSV.
 - Add Stripe Checkout, portal, webhooks, usage enforcement, and admin billing views.
+
+### 2026-06-29 - LANCE Creative OS marketing plan ingested
+
+User supplied the missing LANCE marketing plan PDF:
+- `/Users/Sergio/Documents/Business/Z&E/Creative OS/Leads/Resenha/Dreamboard/LANCE/LANCE Proposed Marketing Plan_ Creative OS — Brand Strategy & Campaign Operating System.pdf`
+
+Extracted PDF:
+- Title: `Creative OS — Brand Strategy & Campaign Operating System`
+- Created: 2026-06-25
+- Pages: 5
+- Extracted text: about 9.2k characters
+- Temporary extraction path: `/tmp/lance-creative-os-marketing-plan.txt`
+
+Key strategic additions from the plan:
+- LANCE! has real audience reach, but not enough brand attribution among young fans and younger media buyers.
+- Core brand problem: the brand is larger in reality than in perception, especially where advertising budgets are allocated.
+- Primary audience: Brazilian sports fans aged 18-32 who consume football constantly but do not have a brand relationship with the source.
+- Commercial pain: media buyers/coordinators 25-35 often do not carry memory of LANCE! as a category-defining sports brand.
+- Strategic direction: penetration.
+- Marketing objective: make 18-32 Brazilian sports fans choose LANCE! by name, not stumble into it by algorithm.
+- Workstreams: Break-News Habit Loop, Creator and Athlete Voice Layer, Brand Moment Campaign, Physical Availability Audit, Advertising Proposition Rebuild.
+- Marketing KPIs:
+  - direct/branded search traffic 18-32: +25% in 12 months
+  - owned social following, saves, and shares: +40% YoY in 12 months
+  - unaided awareness 18-32: 35%+ in 18 months
+  - media buyer perception score 25-35: measurable positive shift in 12 months
+  - digital ad revenue from brands targeting 18-32: +20% in 12 months
+  - match-day impressions attributed to LANCE!-owned channels: top-3 sports publisher on TikTok/Reels by volume in 12 months
+  - aggregator/news-feed brand consistency: 95% correct brand name, logo, preview in 6 months
+
+Implemented:
+- Updated `scripts/seed-lance.mjs` to ingest two source documents:
+  - Official LANCE! Midia Kit 2026
+  - LANCE Proposed Marketing Plan - Creative OS
+- Reseeded the LANCE! workspace in Supabase with the combined source view.
+- Updated Company Brain entries to include brand invisibility, 18-32 source-agnostic consumption, media-buyer salience, marketing workstreams, marketing KPIs, and the risk of becoming a generic news distributor.
+- Updated Board Pack diagnosis to frame the board-level challenge as `audience without attribution` plus owned-audience monetization.
+- Updated priorities, KPIs, risk map, financial/commercial scorecard, Board Brain synthesis, advisor reviews, decision candidates, meeting minutes, and follow-ups with the Creative OS marketing plan.
+
+Remote Supabase after reseed:
+- LANCE! company remains active.
+- Uploaded documents: 2
+- Document extractions: 2
+- Company Brain entries: 22
+- Governance cycles: 1
+- Business plans: 1
+- Board Packs: 1
+- Board sessions: 1
+- Agent reviews: 7
+- Agent conversations: 3
+- Board meetings: 1
+- Meeting minutes: 1
+- Decisions: 4
+- Follow-ups: 5
+- Compatibility governance runs: 1
+
+Verification:
+- `node --check scripts/seed-lance.mjs` passed.
+- `node scripts/seed-lance.mjs` succeeded against remote Supabase.
+- Remote Supabase count check confirmed the two documents and marketing-plan brain entries.
+- `npm run typecheck` passed.
+- `npm run build` passed.
