@@ -732,6 +732,7 @@ Verification:
 - Verified empty POST to `/api/auth/turnstile` returns `400`.
 - Verified locally that `/` returns `200`, `/dashboard` redirects to `/login?next=%2Fdashboard`, `/company/intake` redirects to login, protected APIs return `401`, robots disallows app routes, and sitemap only lists the public home page.
 - Verified production after deploy: `npm run verify:production` passes, `/dashboard` returns `307` to `/login?next=%2Fdashboard`, password reset endpoint validates missing email, and Turnstile rejects invalid tokens with `403` instead of missing configuration.
+- Password reset still failed in production because the deployed client bundle contains `https://board-os.ai` where the Supabase project URL should be. Fix Vercel env var `NEXT_PUBLIC_SUPABASE_URL` to the dedicated Supabase project URL (`https://jzmwrwzrmpjftuirqljc.supabase.co`) and redeploy before debugging Supabase SMTP/Resend further.
 
 New backlog after 2026-06-28:
 - Create OpenAI project/key and add `OPENAI_API_KEY`.
