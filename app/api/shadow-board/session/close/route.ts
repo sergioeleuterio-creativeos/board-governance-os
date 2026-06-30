@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server'
 import { isAuthError, requireAuth, requireCompanyAdmin, serviceClient } from '@/lib/auth-server'
 import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
 import { consumeUsagePackageUnit } from '@/lib/billing-usage'
+import { getPublicAppUrl } from '@/lib/shadow-board/site-url'
+import { renderSessionClosedEmail } from '@/lib/email/templates'
+import { sendProductEmail } from '@/lib/email/send'
 
 type ConversationRow = {
   id: string
@@ -138,6 +141,16 @@ export async function POST() {
 
     const conversationRows = (conversations ?? []) as ConversationRow[]
     const decisionRows = (decisions ?? []) as DecisionRow[]
+    const decisionIds = decisionRows.map((decision) => decision.id)
+    const { count: followUpCount, error: followUpCountError } = decisionIds.length
+      ? await service
+        .from('follow_ups')
+        .select('id', { count: 'exact', head: true })
+        .in('decision_id', decisionIds)
+      : { count: 0, error: null }
+
+    if (followUpCountError) throw new Error(followUpCountError.message)
+
     const conflictsIdentified = flattenConflicts(conversationRows)
     const decisionsPresented = decisionRows.map((decision) => ({
       id: decision.id,
@@ -285,6 +298,22 @@ export async function POST() {
       },
     })
 
+    let notification: { sent?: boolean; skipped?: boolean; error?: string } = { skipped: true }
+    if (user.email) {
+      try {
+        const email = renderSessionClosedEmail({
+          companyName: company.name,
+          decisionCount: decisionsPresented.length,
+          followUpCount: followUpCount ?? 0,
+          appUrl: getPublicAppUrl(),
+        })
+        await sendProductEmail({ to: user.email, ...email })
+        notification = { sent: true }
+      } catch (emailError) {
+        notification = { error: emailError instanceof Error ? emailError.message : 'notification_failed' }
+      }
+    }
+
     return NextResponse.json({
       board_session_id: session.id,
       board_meeting_id: boardMeetingId,
@@ -293,6 +322,7 @@ export async function POST() {
       minutes,
       decisions_presented: decisionsPresented.length,
       conflicts_identified: conflictsIdentified.length,
+      notification,
     })
   } catch (error) {
     return NextResponse.json(

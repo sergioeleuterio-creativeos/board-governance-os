@@ -218,7 +218,15 @@ Use IBGC as the primary Brazilian governance reference. Complement it with recog
 - OECD/G20 Corporate Governance Principles: https://www.oecd.org/en/publications/g20-oecd-principles-of-corporate-governance-2023_ed750b30-en.html
 - COSO enterprise risk and risk appetite references: https://www.coso.org/
 - UK FRC Corporate Governance Code and board effectiveness references: https://www.frc.org.uk/library/standards-codes-policy/corporate-governance/uk-corporate-governance-code/
+- NACD Directorship Certification role/certification expectations: https://www.nacdonline.org/directorship-certification/
+- INSEAD International Directors Programme: https://www.insead.edu/executive-education/corporate-governance/international-directors-programme
+- Fundacao Dom Cabral executive/governance education context: https://www.fdc.org.br/
 - World Economic Forum Global Risks Report: https://www.weforum.org/publications/global-risks-report-2024/
+
+Implemented overlay:
+- `lib/board/advisor-rubrics.ts` translates the source map into advisor-specific scoring rubrics.
+- `docs/ADVISOR_ADHERENCE_FRAMEWORK.md` documents the current adherence framework and case-library calibration.
+- `/admin/agents` and `scripts/evaluate-advisors.mjs` expose operational adherence checks against generated reviews.
 
 ## Extraction Gaps
 
@@ -232,4 +240,3 @@ Backlog:
 - Add OCR for scanned PDFs and image-heavy source files.
 - Add a source retrieval index so agent prompts can cite only the relevant short reference summaries.
 - Build an IBGC-aligned evaluation set for each advisor.
-

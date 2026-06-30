@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { serviceClient } from '@/lib/auth-server'
 import { renderReminderEmail } from '@/lib/email/templates'
+import { sendProductEmail } from '@/lib/email/send'
 
 type ReminderRow = {
   id: string
@@ -50,36 +51,6 @@ function textForReminder(reminder: ReminderRow) {
   const due = followUp?.due_date ? `Prazo: ${followUp.due_date}` : `Lembrete: ${new Date(reminder.remind_at).toLocaleString('pt-BR')}`
 
   return { title, detail, due }
-}
-
-async function sendResendEmail({
-  to,
-  subject,
-  text,
-  html,
-}: {
-  to: string
-  subject: string
-  text: string
-  html: string
-}) {
-  const response = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      from: process.env.EMAIL_FROM || 'Board Governance OS <mail@board-os.ai>',
-      to: [to],
-      subject,
-      text,
-      html,
-    }),
-  })
-
-  if (!response.ok) throw new Error(await response.text())
-  return response.json()
 }
 
 async function handleReminders(request: NextRequest) {
@@ -148,7 +119,7 @@ async function handleReminders(request: NextRequest) {
         appUrl,
       })
 
-      await sendResendEmail({ to: profile.email, subject, text, html })
+      await sendProductEmail({ to: profile.email, subject, text, html })
 
       await service
         .from('reminders')

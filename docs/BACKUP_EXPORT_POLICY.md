@@ -47,6 +47,8 @@ Exports must include:
 - generated timestamp
 - source data date range where applicable
 - a clear note when content is AI-generated or AI-synthesized
+- considered source references when available
+- usage limitations for board-review materials
 
 ## Retention Defaults
 
@@ -69,7 +71,7 @@ Exports must include:
 
 ## Open Implementation Items
 
-- Add admin export endpoints for audit, decisions, follow-ups, and company brain snapshots.
+- Add admin export endpoints for audit, decisions, follow-ups, and company brain snapshots beyond the current board-pack export surface.
 - Add retention cleanup job for expired generated exports.
 - Add storage signed URL policy review before paid launch.
 - Add staging restore rehearsal notes after the first real dry run.

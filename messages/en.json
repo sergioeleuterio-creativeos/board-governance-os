@@ -55,6 +55,7 @@
       "adminSessions": "Sessions",
       "adminReferrals": "Referrals",
       "adminDocuments": "Documents",
+      "adminAgents": "Agents",
       "adminPartners": "Partners",
       "adminAudit": "Audit"
     },

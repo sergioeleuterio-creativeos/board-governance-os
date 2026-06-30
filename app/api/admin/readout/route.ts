@@ -8,6 +8,8 @@ const countTables = [
   'organization_memberships',
   'board_sessions',
   'uploaded_documents',
+  'agent_reviews',
+  'agent_conversations',
   'decisions',
   'follow_ups',
   'referral_requests',

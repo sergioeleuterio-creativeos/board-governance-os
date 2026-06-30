@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthError, requireAuth, requireCompanyAdmin, serviceClient } from '@/lib/auth-server'
 import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
+import { getPublicAppUrl } from '@/lib/shadow-board/site-url'
+import { configuredAdminEmailRecipients, sendProductEmail } from '@/lib/email/send'
+import { renderReferralRequestEmail } from '@/lib/email/templates'
+import { checkRateLimit, rateLimitKey, rateLimitResponse } from '@/lib/rate-limit'
 
 const allowedAdvisorKeys = ['board_brain', 'finance', 'operator', 'growth', 'risk', 'customer', 'talent'] as const
 
@@ -58,6 +62,9 @@ export async function POST(request: NextRequest) {
     const access = await requireCompanyAdmin(company.id)
     if (isAuthError(access)) return access
 
+    const rateLimit = checkRateLimit(rateLimitKey(request, 'referral-request', `${user.id}:${company.id}`), 20, 60 * 60 * 1000)
+    if (!rateLimit.ok) return rateLimitResponse(rateLimit.retryAfterSeconds)
+
     const service = serviceClient()
     const followUpResult = followUpId
       ? await service
@@ -111,7 +118,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error?.message || 'Failed to create referral request' }, { status: 500 })
     }
 
-    return NextResponse.json({ referral_request: data })
+    let notification: { sent?: boolean; skipped?: boolean; error?: string } = { skipped: true }
+    const recipients = configuredAdminEmailRecipients()
+    if (recipients.length) {
+      try {
+        const email = renderReferralRequestEmail({
+          companyName: company.name,
+          requestedBy: user.email ?? user.id,
+          recommendationContext: contextSummary,
+          appUrl: getPublicAppUrl(),
+        })
+        await sendProductEmail({ to: recipients, ...email })
+        notification = { sent: true }
+      } catch (emailError) {
+        notification = { error: emailError instanceof Error ? emailError.message : 'notification_failed' }
+      }
+    }
+
+    return NextResponse.json({ referral_request: data, notification })
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create referral request' },

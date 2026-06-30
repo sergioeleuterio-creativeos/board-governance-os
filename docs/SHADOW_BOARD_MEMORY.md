@@ -1,6 +1,6 @@
 # Board Governance OS Project Memory
 
-Last updated: 2026-06-28
+Last updated: 2026-06-29
 
 This file is the canonical working memory for Board Governance OS development. Before meaningful planning or implementation, read this file first. At the end of each sprint or workday, update it through the `/endday` routine.
 
@@ -277,6 +277,8 @@ Current root app:
 - protected `/admin`
 - protected `/admin/users`
 - protected `/admin/sessions`
+- protected `/admin/documents`
+- protected `/admin/agents`
 - auth/login remains in repo
 - Supabase schema
 - mock AI provider available
@@ -293,10 +295,14 @@ Important implementation files:
 - `app/globals.css`
 - `tailwind.config.ts`
 - `middleware.ts`
+- `lib/board/advisor-rubrics.ts`
+- `lib/email/send.ts`
+- `lib/rate-limit.ts`
 
-Technical note:
+Technical notes:
 - `tsconfig.json` excludes `Casa OS` so Board Governance OS checks do not fail on the nested reference app.
-- The current git worktree appears untracked as a whole, so `git diff --stat` is empty until files are added to git.
+- Stripe enforcement is intentionally parked until Sergio finishes Stripe account/product setup.
+- `CRON_SECRET` is configured and deployed for the daily reminder route.
 
 ## Approved Production Decisions
 
@@ -343,25 +349,14 @@ Approved advisor names in code:
 
 ## Pending Items
 
-- Convert approved architecture into detailed implementation backlog.
 - Rename remaining code, metadata, and UI labels from Shadow Board/Board OS to Board Governance OS where appropriate.
-- Create data model migration for full governance cycle architecture.
 - Continue migrating older demo screens into the i18n catalog.
 - Define Stripe products and usage package model.
-- Define agent prompt architecture and memory boundaries.
-- Wire Company Brain intake local adapter to Supabase once live project is ready.
 - Add real browser speech-to-text or audio transcription for voice intake once voice approach is selected.
-- Create Board Pack artifact model and export surface.
-- Wire Shadow Board Review UI to real Board Brain plus six advisor runs.
-- Add agent closure recommendation logic.
-- Create Decision Memory workflow.
-- Create reminder and follow-up model.
-- Create referral request flow.
-- Replace static demo data with Supabase-backed data.
+- Finish replacing remaining static seed/demo readouts with Supabase-backed LANCE/client state.
 - Add route-level empty, loading, and error states.
 - Add responsive QA pass for all product routes, not only core wireframe screens.
-- Wire admin session and operator dashboard surfaces to live Supabase data.
-- Add export artifacts for PDF, PPTX, DOCX/HTML, XLSX, and CSV.
+- Add export artifacts for PPTX, DOCX, XLSX, and richer PDF beyond the current HTML/CSV/PDF-ready surface.
 - Add production Vercel/Supabase/Stripe/OpenAI/Resend environment verification.
 
 ## Backlog
@@ -369,26 +364,22 @@ Approved advisor names in code:
 - Partner channel architecture.
 - White-label settings.
 - Resenha-specific test case templates.
-- IBGC training material ingestion.
-- Agent self-testing and continuous improvement routine.
-- Supplier marketplace or vetted referral hub.
-- PDF export.
+- Supplier marketplace or vetted referral hub v2.
 - PPT export.
 - DOCX export.
-- XLSX/CSV export.
-- HTML presentation mode.
-- Admin view for partner/operator support.
+- XLSX export.
+- Admin partner/operator support view.
 - External dependency: create the separate Board Governance OS Supabase project.
 - External dependency: add the Board Governance OS Supabase URL, anon key, and service role key to `.env.local` and Vercel.
 - External dependency: provide/set the first `BOARD_GOVERNANCE_ADMIN_EMAILS` value.
 - External dependency: apply and live-test migrations `0001` and `0002` in the dedicated Supabase project.
 - External dependency: confirm first real admin login, workspace bootstrap, `/admin` access, and `/api/admin/invites`.
-- External dependency: persist Company Brain intake drafts to Supabase tables.
-- External dependency: upload Company Brain intake files to Supabase storage and create `uploaded_documents`.
+- External dependency: configure Stripe products, prices, webhooks, and billing enforcement.
+- External dependency: choose first voice/transcription implementation path.
 
 ## Bugs
 
-- No known bugs logged yet.
+- No active production-blocking bugs logged after the password reset callback fix.
 
 ## Production Sprint Plan
 
@@ -1304,3 +1295,67 @@ Backlog carried forward:
 - Retention cleanup job for expired generated exports.
 - Storage signed URL policy review before paid launch.
 - Staging restore rehearsal once a paid-production Supabase backup exists.
+
+### 2026-06-29 - Advisor QA, LANCE enrichment, notifications, and hardening
+
+User requested:
+- Build advisor adherence evaluation and source/case-library reinforcement.
+- Research governance sources adjacent to IBGC and open company cases for agent training.
+- Re-enrich LANCE as the first showcase company.
+- Continue export polish, notification events, admin observability, and hardening items that do not require Stripe.
+
+Implemented Sprint 8/9/16:
+- Added `lib/board/advisor-rubrics.ts`.
+- Advisor prompts now receive explicit role rubrics, evidence standards, closure expectations, and case-library patterns.
+- Rubrics cover Board Brain, Finance, Operator, Growth, Risk, Customer, and Talent advisors.
+- Rubric sources include IBGC, OECD/G20, COSO, UK FRC, NACD, INSEAD, and Fundacao Dom Cabral.
+- Added a curated open case library for advisor calibration:
+  - LANCE digital sports media repositioning
+  - New York Times subscription transformation
+  - Boeing 737 MAX governance/risk failure
+  - WeWork governance and capital discipline failure
+  - Uber culture/governance reset
+  - Meta/Facebook data trust and stakeholder risk
+  - Natura growth, brand, and channel complexity
+  - Petrobras Pasadena capital allocation/governance failure
+- Added `scripts/evaluate-advisors.mjs` to score latest `agent_reviews` by advisor role adherence.
+- Added `docs/ADVISOR_ADHERENCE_FRAMEWORK.md`.
+
+Implemented Sprint 14:
+- Added Admin Agents API: `/api/admin/agents`.
+- Added Admin Agents page: `/admin/agents`.
+- Admin Agents shows:
+  - latest advisor reviews
+  - adherence scores by advisor
+  - rubric dimensions
+  - closure recommendation presence
+  - case-library and source-reference coverage
+- Admin Overview now reports `agent_reviews` and `agent_conversations` counts.
+
+Implemented Sprint 5/6/7 showcase enrichment:
+- LANCE seed now includes Socio LANCE! subscription signals from the public landing page.
+- LANCE financial/board pack material now includes DRE/P&L, operating cash flow, recurring revenue, margin, cash, and subscription benefit-cost questions.
+- Board Pack export now includes a usage note and considered source references.
+- Export HTML includes AI-synthesis disclaimers and source-reference sections.
+- CSV export includes usage-note and source-reference rows.
+
+Implemented Sprint 12/16:
+- Added shared email sender in `lib/email/send.ts`.
+- Governance Run now sends a non-blocking board-pack-ready email when a run completes.
+- Session close now sends a non-blocking session-closed email with decision/follow-up counts.
+- Referral requests now send a non-blocking admin triage email to configured admin recipients.
+- Added in-memory rate limiting for password reset, governance run, and referral creation.
+- File uploads now enforce request count and per-file byte limits through `MAX_FILES_PER_REQUEST`, `MAX_FILE_BYTES`, or `MAX_UPLOAD_MB`.
+- Admin Documents now exposes document inclusion/exclusion controls for governance memory using the existing document relevance endpoint.
+
+Verification completed:
+- `node --check scripts/seed-lance.mjs` passed.
+- `node --check scripts/evaluate-advisors.mjs` passed.
+- `npm run typecheck` passed after the seeded-review enrichment.
+- `npm run build` passed after the seeded-review enrichment with 63 app routes.
+- Re-ran LANCE seed against live Supabase.
+- Re-ran advisor adherence evaluation against live Supabase after bilingual scoring and seeded-review enrichment.
+- Live LANCE advisor adherence average: 93 across Board Brain plus six advisors.
+
+Remaining release step:
+- Push to GitHub so Vercel can deploy the latest build.

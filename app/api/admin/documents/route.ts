@@ -28,6 +28,13 @@ function mapById<T extends { id: string }>(rows: T[] | null) {
   return new Map((rows ?? []).map((row) => [row.id, row]))
 }
 
+function governanceRelevanceFromMetadata(metadata: unknown) {
+  if (!metadata || typeof metadata !== 'object' || Array.isArray(metadata)) return null
+  const relevance = (metadata as Record<string, unknown>).governance_relevance
+  if (relevance === 'included' || relevance === 'excluded') return relevance
+  return null
+}
+
 export async function GET() {
   const admin = await requireSuperAdmin()
   if (isAuthError(admin)) return admin
@@ -84,6 +91,7 @@ export async function GET() {
   return NextResponse.json({
     documents: documentRows.map((document) => ({
       ...document,
+      governance_relevance: governanceRelevanceFromMetadata(document.metadata),
       organization_name: organizationsById.get(document.organization_id)?.name ?? 'Organizacao sem nome',
       company_name: companiesById.get(document.company_id)?.name ?? 'Empresa sem nome',
       uploaded_by_label: document.uploaded_by

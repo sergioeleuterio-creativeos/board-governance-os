@@ -55,6 +55,8 @@ const countLabels: Record<string, string> = {
   organization_memberships: 'Memberships',
   board_sessions: 'Board sessions',
   uploaded_documents: 'Documentos',
+  agent_reviews: 'Agent reviews',
+  agent_conversations: 'Agent conversations',
   decisions: 'Decisoes',
   follow_ups: 'Follow-ups',
   reminders: 'Lembretes',
@@ -204,6 +206,7 @@ export function AdminOverviewClient() {
             ['Billing', 'Checkout/portal/webhook prontos para price IDs'],
             ['Reminders', 'Agendamento + cron Resend protegido por secret'],
             ['Exports', 'HTML, PDF, PPTX, DOCX, XLSX e CSV'],
+            ['Agent QA', 'Rubricas e scores em /admin/agents'],
             ['Dominio', 'www.board-os.ai em producao'],
             ['Admin', 'Usuarios, sessoes, referrals e filas operacionais'],
           ].map(([label, detail]) => (

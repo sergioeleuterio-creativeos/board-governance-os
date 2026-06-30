@@ -4,6 +4,10 @@ import { runGovernanceAI } from '@/lib/board/ai'
 import type { BoardCompany, GovernanceAIOutput, GovernanceRunInput } from '@/lib/board/types'
 import type { AdvisorKey, ClosureRecommendation } from '@/lib/shadow-board/domain'
 import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
+import { getPublicAppUrl } from '@/lib/shadow-board/site-url'
+import { renderBoardPackReadyEmail } from '@/lib/email/templates'
+import { sendProductEmail } from '@/lib/email/send'
+import { checkRateLimit, rateLimitKey, rateLimitResponse } from '@/lib/rate-limit'
 
 export const maxDuration = 60
 
@@ -439,6 +443,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'company_id is required' }, { status: 400 })
   }
 
+  const rateLimit = checkRateLimit(rateLimitKey(req, 'governance-run', `${user.id}:${body.company_id}`), 8, 60 * 60 * 1000)
+  if (!rateLimit.ok) return rateLimitResponse(rateLimit.retryAfterSeconds)
+
   const service = serviceClient()
   const { data: company, error: companyError } = await service
     .from('companies')
@@ -468,12 +475,28 @@ export async function POST(req: NextRequest) {
       model,
     })
 
+    let notification: { sent?: boolean; skipped?: boolean; error?: string } = { skipped: true }
+    if (user.email) {
+      try {
+        const email = renderBoardPackReadyEmail({
+          companyName: company.name,
+          cycleLabel: period,
+          appUrl: getPublicAppUrl(),
+        })
+        await sendProductEmail({ to: user.email, ...email })
+        notification = { sent: true }
+      } catch (emailError) {
+        notification = { error: emailError instanceof Error ? emailError.message : 'notification_failed' }
+      }
+    }
+
     return NextResponse.json({
       mode: 'live-supabase',
       provider,
       model,
       governance_cycle_id: cycle.id,
       persistence,
+      notification,
       output,
       nextAdapter: 'board-pack-export',
     })

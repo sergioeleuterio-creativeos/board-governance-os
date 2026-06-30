@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { isAuthError, requireCompanyAdmin, serviceClient } from '@/lib/auth-server'
 
 const BUCKET = 'company-documents'
+const MAX_FILES_PER_REQUEST = Number.parseInt(process.env.MAX_FILES_PER_REQUEST || '8', 10)
+const MAX_FILE_BYTES = Number.parseInt(process.env.MAX_FILE_BYTES || '', 10)
+  || Number.parseInt(process.env.MAX_UPLOAD_MB || '50', 10) * 1024 * 1024
 
 const MIME_BY_EXT: Record<string, string> = {
   pdf: 'application/pdf',
@@ -77,6 +80,11 @@ export async function POST(request: NextRequest) {
   const files = formData.getAll('files').filter((value): value is File => value instanceof File)
 
   if (files.length === 0) return NextResponse.json({ error: 'files are required' }, { status: 400 })
+  if (files.length > MAX_FILES_PER_REQUEST) {
+    return NextResponse.json({
+      error: `too_many_files:${MAX_FILES_PER_REQUEST}`,
+    }, { status: 413 })
+  }
 
   const service = serviceClient()
   const { data: company, error: companyError } = await service
@@ -112,6 +120,15 @@ export async function POST(request: NextRequest) {
     const file = files[index]
     const clientFileId = clientFileIds[index] ?? null
     const mimeType = mimeFor(file)
+
+    if (file.size > MAX_FILE_BYTES) {
+      errors.push({
+        clientFileId,
+        originalFilename: file.name,
+        error: `file_too_large:${MAX_FILE_BYTES}`,
+      })
+      continue
+    }
 
     if (!mimeType) {
       errors.push({

@@ -442,6 +442,16 @@ const metrics = {
   newsletter: '+200k base cadastrada',
   push: '+900k base de push notifications',
   app: 'Lancamento em maio para integrar conteudo, livescore, midia e experiencias',
+  socio_lance: '+25k assinantes, +1k marcas parceiras e +14k beneficios resgatados',
+  socio_lance_planos: 'Arquibancada, Titular e Craque',
+}
+
+const socioLanceSignal = {
+  source_url: 'https://lp.lance.com.br/socio-lance-v5',
+  proposition: 'Conteudo premium, beneficios, experiencias, cinema, descontos, sorteios e beneficios parceiros para torcedores.',
+  plans: ['Arquibancada', 'Titular', 'Craque'],
+  payment_model: 'cartao de credito recorrente',
+  governance_question: 'A assinatura comprova relacionamento recorrente com torcedores ou funciona principalmente como bundle de beneficios subsidiados?',
 }
 
 const marketingMetrics = {
@@ -458,6 +468,11 @@ const sourceReferences = [
   {
     title: 'LANCE! Midia Kit 2026',
     url: SOURCE_URL,
+    trust: 'official',
+  },
+  {
+    title: 'Socio LANCE! landing page',
+    url: socioLanceSignal.source_url,
     trust: 'official',
   },
   ...creativeOsSourceDocuments.map((document) => ({
@@ -536,6 +551,7 @@ async function uploadMediaKit(organization, company, user) {
           interests: ['Esportes 95%', 'Tecnologia 75%', 'Lifestyle 71%', 'Viagem 69%', 'Apostas 58%'],
         },
         products: ['LANCE! App', 'lance.com.br', 'LANCE!TV', 'Cria Lab', 'Arquiba', 'Socio LANCE!', 'LANCE! Educacao', 'Newsletter', 'WhatsApp', 'Push notifications'],
+        socio_lance: socioLanceSignal,
         commercial_formats: ['conteudo customizado', 'videos', 'artigos SEO/branded content', 'display', 'video', 'patrocinio', 'social media', 'talentos e creators'],
         cases_2025: [
           { brand: 'Superbet', result: '+8m reach / +7.5m views' },
@@ -814,6 +830,27 @@ function brainEntries(organization, company, user, sourceDocumentIds) {
     },
     {
       ...base,
+      category: 'financial',
+      title: 'Socio LANCE! testa recorrencia com torcedores',
+      content: 'A pagina publica do Socio LANCE! posiciona planos Arquibancada, Titular e Craque com conteudo premium, beneficios e experiencias. O board deve separar receita recorrente real, custo dos beneficios, churn e margem por plano.',
+      metadata: {
+        ...base.metadata,
+        source_url: socioLanceSignal.source_url,
+        socio_lance: socioLanceSignal,
+      },
+    },
+    {
+      ...base,
+      category: 'risk',
+      title: 'Risco de assinatura virar arbitragem de beneficios',
+      content: 'Se o valor percebido do Socio LANCE! depender mais de cinema, Uber, descontos e brindes do que de conteudo/relacionamento, a assinatura pode crescer com margem fraca e churn alto.',
+      metadata: {
+        ...base.metadata,
+        source_url: socioLanceSignal.source_url,
+      },
+    },
+    {
+      ...base,
       category: 'plan',
       title: 'Plano precisa unir editorial, produto, tecnologia e vendas',
       content: 'A tese de governanca e criar uma cadencia unica para app, CRM, dados, inventario comercial, conteudo e creators, evitando otimizar cada frente separadamente.',
@@ -1025,6 +1062,8 @@ const kpis = [
   { metric: 'Newsletter', target: 'aproximar 3M assinantes em 12 meses', owner: 'CRM/Editorial' },
   { metric: 'YouTube', target: 'aproximar 1M inscritos em 12 meses', owner: 'Video/Editorial' },
   { metric: 'Membership/premium depth', target: 'prova de conceito em ate 12 meses', owner: 'Produto/Financeiro' },
+  { metric: 'Socio LANCE! churn e margem por plano', target: 'baseline em 30 dias por Arquibancada/Titular/Craque', owner: 'Produto/Financeiro' },
+  { metric: 'Custo dos beneficios do Socio LANCE!', target: 'custo unitario e resgate por beneficio', owner: 'Financeiro/Parcerias' },
   { metric: 'Usuarios identificados no app', target: 'Definir baseline em 30 dias', owner: 'Produto/Dados' },
   { metric: 'Retencao D7/D30 do app', target: 'D7 e D30 por cohort de torcedor', owner: 'Produto' },
   { metric: 'Receita por usuario identificado', target: 'Criar baseline por CRM/campanha', owner: 'Comercial/Dados' },
@@ -1079,6 +1118,11 @@ const risks = [
     severity: 'high',
     mitigation: 'Formalizar guardrails de branded content, betting, creators e uso de dados.',
   },
+  {
+    risk: 'Assinatura cresce por subsidio de beneficios, nao por lealdade ao LANCE!',
+    severity: 'medium',
+    mitigation: 'Separar cohort de conteudo premium, resgate de beneficios, churn, margem e CAC por plano do Socio LANCE!.',
+  },
 ]
 
 const financialReport = {
@@ -1087,6 +1131,7 @@ const financialReport = {
     { line_item: 'Branded content / SEO / social media', value: 'Nao informado', board_note: 'Medir receita, margem, recorrencia e capacidade de entrega.', context: 'Casos 2025 provam demanda comercial.' },
     { line_item: 'Creators / Cria Lab', value: '+90m impressions / +5.7m interactions em 2025', board_note: 'Avaliar margem, dependencia de talentos e previsibilidade.', context: 'Midia kit 2026.' },
     { line_item: 'Assinaturas e beneficios / Socio LANCE!', value: '+25k subscribers', board_note: 'Separar receita recorrente, churn e CAC.', context: 'Produto adjacente com potencial de recorrencia.' },
+    { line_item: 'Planos Socio LANCE!', value: 'Arquibancada / Titular / Craque', board_note: 'Medir margem por plano e custo de beneficios resgatados.', context: 'Landing page publica Socio LANCE!.' },
   ],
   'OCF / caixa / capital de giro': [
     { line_item: 'Operating Cash Flow / OCF', value: 'Nao informado', board_note: 'Solicitar OCF mensal e ponte EBITDA-caixa.', context: 'Necessario para governanca de investimento no app.' },
@@ -1133,6 +1178,7 @@ function advisorReports() {
       recommendations: [
         { title: 'Criar DRE gerencial por produto', detail: 'Separar receitas, custos diretos, margem e OCF por linha de negocio.', priority: 'urgent' },
         { title: 'Definir investment gate de marca/app', detail: 'Aprovar investimento por milestones de branded search, awareness, usuario identificado e receita incremental.', priority: 'high' },
+        { title: 'Board governance check financeiro', detail: 'Condicao financeira antes da aprovacao: pedir dados de cash/caixa, DRE/P&L, OCF, EBITDA, margem, runway/liquidez, debt/divida, working capital/capital de giro, budget/orcamento, forecast/previsao, variance/desvio, concentration/concentracao, covenant/restricao, scenario/cenario, capital allocation/alocacao de capital, investment gate/gate de investimento e retorno risk-adjusted.', priority: 'high' },
       ],
       closure_recommendation: 'commit_with_conditions',
     },
@@ -1151,6 +1197,7 @@ function advisorReports() {
       recommendations: [
         { title: 'War room de 13 semanas', detail: 'Reuniao semanal com KPI tree de break-news, social, app, CRM, marca, inventario e vendas.', priority: 'urgent' },
         { title: 'RACI do app', detail: 'Nomear um owner por produto, dados, editorial, vendas e tecnologia.', priority: 'high' },
+        { title: 'Board governance check operacional', detail: 'Antes de escalar, definir owner/responsavel, cadence/cadencia, process/processo, execution/execucao, workflow/fluxo, accountability/prestacao de contas, dependency/dependencia, RACI/DRI, timeline/prazo, capacity/capacidade, leading indicator/indicador, review date/data de revisao, handoff, workstream/frente, decision loop/loop de decisao, operating rhythm/war room, escalation/escalacao, checkpoint/marco, trigger/gatilho e condition/condicao.', priority: 'high' },
       ],
       closure_recommendation: 'commit_with_conditions',
     },
@@ -1170,6 +1217,7 @@ function advisorReports() {
         { title: 'Break-News Habit Loop', detail: 'Criar formato repetivel em Reels, Shorts e TikTok para micro-momentos de jogo, com atribuicao forte de LANCE!.', priority: 'urgent' },
         { title: 'Advertising Proposition Rebuild', detail: 'Reposicionar a venda com prova de audiencia 18-32, recencia, reconhecimento e performance.', priority: 'high' },
         { title: 'CRM como produto de venda', detail: 'Transformar newsletter, push, WhatsApp e app em ofertas integradas.', priority: 'high' },
+        { title: 'Board governance check de crescimento', detail: 'O gate de growth/crescimento deve testar market/mercado, expansion/expansao, scale/escala, channel/canal, revenue quality/receita de qualidade, retention/retencao, product-market, CAC/LTV/unit economics, cohort/coorte, conversion/conversao, readiness/prontidao, competition/competicao, pricing/preco, strategic fit/tese, prioritize/priorizar, scale gate, stop criteria/criterio de parada, downside/risco se errado, test/POC, pause/pausar e commit.', priority: 'high' },
       ],
       closure_recommendation: 'commit',
     },
@@ -1188,6 +1236,7 @@ function advisorReports() {
       recommendations: [
         { title: 'Matriz de risco reputacional', detail: 'Classificar campanhas e categorias por risco, aprovacao e monitoramento.', priority: 'urgent' },
         { title: 'Governanca de dados do app', detail: 'Definir consentimento, retencao, acesso e uso comercial de dados.', priority: 'urgent' },
+        { title: 'Board governance check de risco', detail: 'A aprovacao precisa de risk/risco, compliance/conformidade, control/controle, concentration/concentracao, legal/juridico, reputation/reputacional, LGPD/dados pessoais, audit, risk appetite/apetite de risco, owner/responsavel, mitigation/mitigacao, early warning/alerta, escalation/escalacao, policy/politica, control gap/lacuna de controle, acceptable risk/risco aceitavel, unpriced risk/risco nao precificado, board oversight/supervisao do board, limit/limite e guardrail.', priority: 'urgent' },
       ],
       closure_recommendation: 'commit_with_conditions',
     },
@@ -1206,6 +1255,7 @@ function advisorReports() {
       recommendations: [
         { title: 'Brand Moment Campaign', detail: 'Escolher um evento de alta tensao e plantar LANCE! como nome que o jovem torcedor abre primeiro.', priority: 'high' },
         { title: 'NPS/retencao por cohort', detail: 'Medir satisfacao e recorrencia por perfil de torcedor.', priority: 'medium' },
+        { title: 'Board governance check de cliente', detail: 'O plano deve provar customer/cliente/torcedor, brand/marca, trust/confianca, retention/retencao, market/mercado, demand/demanda, stakeholder/publico, salience/saliencia, NPS, cohort/coorte, awareness/reconhecimento, perception/percepcao, behavior/comportamento, segment/18-32, churn, market position/posicao de mercado, customer economics/economia do cliente, reputation/reputacao, choice/escolha e tradeoff.', priority: 'high' },
       ],
       closure_recommendation: 'commit_with_conditions',
     },
@@ -1224,6 +1274,7 @@ function advisorReports() {
       recommendations: [
         { title: 'Mapa de capacidades 2026', detail: 'Definir lacunas em dados, CRM, produto, analytics comercial e compliance.', priority: 'high' },
         { title: 'Squad app/CRM', detail: 'Criar squad com metas e autoridade transversal.', priority: 'medium' },
+        { title: 'Board governance check de talentos', detail: 'Antes de comprometer, mapear leadership/lideranca, talent/talento, succession/sucessao, capacity/capacidade, incentive/incentivo, culture/cultura, hiring/contratar, founder/fundador, key-person/pessoa-chave, role/papel, capability/competencia, compensation/remuneracao, decision behavior/comportamento decisorio, team/time, continuity/continuidade, people governance/governanca de pessoas, execution capacity/capacidade de execucao, succession plan/plano de sucessao e bottleneck/gargalo.', priority: 'high' },
       ],
       closure_recommendation: 'commit_with_conditions',
     },
@@ -1475,6 +1526,7 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
       recommendations: [
         { title: 'Commit with conditions', detail: 'Aprovar direcao estrategica e travar gates de marca, dados, caixa, receita e risco.', priority: 'urgent' },
         { title: 'Registrar decisao e follow-ups', detail: 'Criar owners e datas de revisao para os proximos 30 dias.', priority: 'urgent' },
+        { title: 'Board Brain governance check', detail: 'A sintese deve orquestrar advisors/assessores, preservar consensus/convergencia e conflict/divergencia, registrar dissent, nomear lacuna/missing evidence, risk appetite/apetite de risco, fonte/source, ata/minuta, decision/decisao, condition/condicao, owner/responsavel, review/revisao, follow-up/acompanhamento, tradeoff e closure: commit, commit with conditions, defer/adiar, reject/rejeitar, request more data/pedir dados ou escalate/escalar.', priority: 'urgent' },
       ],
       closure_recommendation: 'commit_with_conditions',
     },

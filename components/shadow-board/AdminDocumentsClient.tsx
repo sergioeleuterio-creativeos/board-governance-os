@@ -13,6 +13,7 @@ type DocumentRecord = {
   file_size_bytes: number | null
   document_type: string | null
   status: string
+  governance_relevance: 'included' | 'excluded' | null
   summary: string | null
   created_at: string
   updated_at: string
@@ -66,6 +67,7 @@ export function AdminDocumentsClient() {
   const [documents, setDocuments] = useState<DocumentRecord[]>([])
   const [loading, setLoading] = useState(true)
   const [reprocessingId, setReprocessingId] = useState<string | null>(null)
+  const [updatingRelevanceId, setUpdatingRelevanceId] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
@@ -117,6 +119,29 @@ export function AdminDocumentsClient() {
 
     setNotice(`Documento reprocessado com ${payload?.result?.charactersExtracted ?? 0} caracteres extraidos.`)
     setReprocessingId(null)
+    await loadDocuments()
+  }
+
+  async function updateRelevance(documentId: string, relevance: 'included' | 'excluded') {
+    setUpdatingRelevanceId(documentId)
+    setError('')
+    setNotice('')
+
+    const response = await fetch(`/api/company-brain/documents/${documentId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ relevance }),
+    })
+    const payload = await response.json().catch(() => null) as { error?: string } | null
+
+    if (!response.ok) {
+      setError(payload?.error ?? 'Nao foi possivel atualizar a relevancia do documento.')
+      setUpdatingRelevanceId(null)
+      return
+    }
+
+    setNotice(relevance === 'included' ? 'Documento incluido na memoria de governanca.' : 'Documento removido da memoria ativa.')
+    setUpdatingRelevanceId(null)
     await loadDocuments()
   }
 
@@ -177,7 +202,16 @@ export function AdminDocumentsClient() {
                 <small>{document.organization_name}</small>
                 <small>{document.uploaded_by_label}</small>
               </span>
-              <span><StatusPill tone={statusTone(document.status)}>{document.status}</StatusPill></span>
+              <span className="space-y-2">
+                <StatusPill tone={statusTone(document.status)}>{document.status}</StatusPill>
+                {document.governance_relevance && (
+                  <div>
+                    <StatusPill tone={document.governance_relevance === 'included' ? 'positive' : 'neutral'}>
+                      {document.governance_relevance === 'included' ? 'na memoria' : 'fora da memoria'}
+                    </StatusPill>
+                  </div>
+                )}
+              </span>
               <span>
                 {document.extraction_count} registros
                 <small>{document.extractions.map((item) => item.extraction_type).join(', ') || 'sem extracao'}</small>
@@ -189,6 +223,24 @@ export function AdminDocumentsClient() {
                 >
                   {reprocessingId === document.id ? 'Reprocessando' : 'Reprocessar'}
                 </button>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className="sb-inline-link"
+                    onClick={() => void updateRelevance(document.id, 'included')}
+                    disabled={updatingRelevanceId === document.id || document.governance_relevance === 'included'}
+                  >
+                    {updatingRelevanceId === document.id ? 'Atualizando' : 'Usar na memoria'}
+                  </button>
+                  <button
+                    type="button"
+                    className="sb-inline-link"
+                    onClick={() => void updateRelevance(document.id, 'excluded')}
+                    disabled={updatingRelevanceId === document.id || document.governance_relevance === 'excluded'}
+                  >
+                    Excluir da memoria
+                  </button>
+                </div>
               </span>
             </div>
           ))}

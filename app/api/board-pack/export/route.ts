@@ -85,8 +85,13 @@ function exportRows(boardPack: BoardPackRow, companyName: string): ExportRow[] {
   const payload = asRecord(boardPack.export_payload)
   const financialReport = asRecord(payload.financial_report)
   const advisorReports = asArray(payload.advisor_reports)
+  const sourceReferences = asArray(payload.source_references)
   const rows: ExportRow[] = [
     { section: 'Empresa', index: 1, content: companyName },
+    { section: 'Nota de uso', index: 1, content: 'Este Board Pack e uma sintese de governanca assistida por IA. Use como estrutura de decisao, nao como substituto de conselho formal, auditoria, parecer juridico ou decisao fiduciaria.' },
+    ...(sourceReferences.length
+      ? sourceReferences.map((source, index) => ({ section: 'Fontes consideradas', index: index + 1, content: valueText(source) }))
+      : [{ section: 'Fontes consideradas', index: 1, content: 'Company Brain, documentos enviados e memoria de decisoes disponiveis no momento da geracao.' }]),
     { section: 'Sumario executivo', index: 1, content: boardPack.executive_summary ?? '' },
   ]
 
@@ -151,6 +156,7 @@ function renderHtml(boardPack: BoardPackRow, companyName: string): string {
   const payload = asRecord(boardPack.export_payload)
   const financialReport = asRecord(payload.financial_report)
   const advisorReports = asArray(payload.advisor_reports)
+  const sourceReferences = asArray(payload.source_references)
 
   return `<!doctype html>
 <html lang="pt-BR">
@@ -165,6 +171,7 @@ function renderHtml(boardPack: BoardPackRow, companyName: string): string {
     h2 { font-size: 22px; margin-top: 34px; border-top: 1px solid #d8c7a1; padding-top: 18px; }
     .meta { color: #6b7280; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
     .summary { font-size: 18px; max-width: 860px; }
+    .disclaimer { background: #f7f2e8; border-left: 4px solid #d0a84e; padding: 14px 16px; margin: 22px 0; }
     li { margin: 8px 0; }
     pre { white-space: pre-wrap; background: #f7f2e8; padding: 14px; border-radius: 6px; overflow-wrap: anywhere; }
     table { width: 100%; border-collapse: collapse; margin: 12px 0 22px; }
@@ -175,7 +182,15 @@ function renderHtml(boardPack: BoardPackRow, companyName: string): string {
 <body>
   <p class="meta">Board Governance OS · Board Pack v${boardPack.version}</p>
   <h1>${escapeHtml(companyName)}</h1>
+  <div class="disclaimer">
+    <strong>Nota de uso.</strong> Este Board Pack e uma sintese de governanca assistida por IA. Use como estrutura de decisao, nao como substituto de conselho formal, auditoria, parecer juridico ou decisao fiduciaria.
+  </div>
   <p class="summary">${escapeHtml(boardPack.executive_summary || 'Nenhum sumario executivo disponivel.')}</p>
+
+  <h2>Fontes consideradas</h2>
+  ${sourceReferences.length
+    ? sourceReferences.map(item => `<pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>`).join('')
+    : '<p>Company Brain, documentos enviados e memoria de decisoes disponiveis no momento da geracao.</p>'}
 
   <h2>Perguntas estrategicas</h2>
   <ol>${questions.map(item => `<li>${escapeHtml(typeof item === 'string' ? item : JSON.stringify(item))}</li>`).join('')}</ol>
@@ -210,9 +225,12 @@ function renderCsv(boardPack: BoardPackRow, companyName: string): string {
   const payload = asRecord(boardPack.export_payload)
   const financialReport = asRecord(payload.financial_report)
   const advisorReports = asArray(payload.advisor_reports)
+  const sourceReferences = asArray(payload.source_references)
   return [
     ['section', 'index', 'content'].map(csvCell).join(','),
     ['company', 1, companyName].map(csvCell).join(','),
+    ['usage_note', 1, 'AI-assisted governance synthesis; not a substitute for formal board, audit, legal, or fiduciary judgment.'].map(csvCell).join(','),
+    ...sectionRows('source_reference', sourceReferences.length ? sourceReferences : ['Company Brain and uploaded documents available at generation time.']),
     ['executive_summary', 1, boardPack.executive_summary ?? ''].map(csvCell).join(','),
     ...sectionRows('strategic_question', boardPack.strategic_questions),
     ...Object.entries(financialReport).flatMap(([section, rows]) => sectionRows(`financial_${section}`, rows)),

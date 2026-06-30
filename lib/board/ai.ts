@@ -1,6 +1,7 @@
 import { BOARD_PERSONAS, BoardCompany, GovernanceAIOutput, GovernanceRunInput } from './types'
 import { INJECTION_GUARD, wrapUserContent } from '@/lib/prompts'
 import { callJSONAI } from './model-router'
+import { advisorRubricsForPrompt, caseLibraryForPrompt } from './advisor-rubrics'
 
 export { resolveAIProvider, resolveModel } from './model-router'
 
@@ -17,6 +18,19 @@ ${wrapUserContent(JSON.stringify(input, null, 2))}
 
 Use these governance personas:
 ${BOARD_PERSONAS.map(p => `- ${p.name}: ${p.focus}`).join('\n')}
+
+Advisor adherence rubrics:
+${advisorRubricsForPrompt()}
+
+Open case-library patterns to use as board reasoning analogies, not copied case text:
+${caseLibraryForPrompt()}
+
+Advisor output rules:
+- Each advisor must stay inside its role definition.
+- Each advisor must ask board-level questions, not generic management tips.
+- Each advisor must name missing evidence from its required evidence list.
+- Each advisor must contribute to closure: commit, commit with conditions, defer, reject, request more data, or escalate.
+- The Board Brain must preserve consensus and dissent instead of averaging them away.
 
 Return one JSON object only. No markdown. Match this shape exactly:
 {

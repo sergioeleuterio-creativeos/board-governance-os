@@ -239,3 +239,40 @@ Later implementation:
 - Webhook route.
 - Subscription and usage package sync into Supabase.
 - Usage enforcement before starting paid Board Governance Sessions.
+
+## Agent QA And Source Discipline
+
+Advisor adherence is now code-backed in `lib/board/advisor-rubrics.ts`.
+
+Current production behavior:
+- Board Brain prompts include advisor-specific rubrics and a curated open case library.
+- `/admin/agents` gives super admins a browser-visible view of latest advisor reviews and adherence signals.
+- `scripts/evaluate-advisors.mjs` can be run against live Supabase to score recent `agent_reviews`.
+
+Source hierarchy:
+- IBGC remains the primary Brazilian governance source.
+- External calibration sources include OECD/G20 corporate governance principles, COSO risk framework, UK FRC Corporate Governance Code, NACD certification role expectations, INSEAD director training, and Fundacao Dom Cabral executive-governance context.
+- Public company cases are used as calibration patterns, not as copied training material.
+
+Operational rule:
+- An advisor output is not production-grade unless it shows role-specific evidence, tradeoffs, board-level questions, risks, and a clear closure recommendation.
+
+## Notifications And Rate Limits
+
+Product notifications use Resend through `lib/email/send.ts`.
+
+Currently wired events:
+- daily cron reminders from `/api/cron/reminders`
+- board-pack-ready notice after Governance Run completion
+- session-closed notice after Shadow Board session closure
+- referral triage notice to configured admins after a referral request
+
+Hardening now in place:
+- password reset requests are rate-limited
+- Governance Run creation is rate-limited
+- referral creation is rate-limited
+- file uploads enforce `MAX_FILES_PER_REQUEST` and `MAX_FILE_BYTES` / `MAX_UPLOAD_MB`
+
+Production check:
+- Keep `BOARD_GOVERNANCE_ADMIN_EMAILS` current so admin triage emails reach the right people.
+- Confirm `RESEND_API_KEY` and `EMAIL_FROM` exist in Vercel before relying on event notifications.
