@@ -1424,3 +1424,4 @@ Verification this batch:
 - `npm run qa:exports` passed against live Supabase; latest checked artifacts include `pdf` and `html`. Warnings are limited to legacy artifacts created before signed URL TTL metadata existed.
 - `npm run qa:mobile -- http://localhost:3011` passed for public mobile routes and protected app redirects.
 - `npm run qa:mobile -- https://www.board-os.ai` is expected to fail on `/privacy` and `/terms` until this batch deploys, because those routes are new.
+- After first production verification, `/privacy` and `/terms` were live but the metadata sitemap still returned only the root URL, so sitemap was moved to an explicit uncached `/sitemap.xml` route handler.
