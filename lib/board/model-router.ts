@@ -76,6 +76,24 @@ export function parseJSON<T>(text: string): T {
   return JSON.parse(cleanJSONText(text)) as T
 }
 
+function classifyAIError(error: unknown) {
+  const raw = error instanceof Error ? error.message : String(error)
+
+  try {
+    const parsed = JSON.parse(raw) as { error?: { code?: string | null; type?: string | null; message?: string | null } }
+    const code = parsed.error?.code || parsed.error?.type
+    if (code) return code
+  } catch {
+    // Fall through to string classification.
+  }
+
+  const lower = raw.toLowerCase()
+  if (lower.includes('insufficient_quota')) return 'insufficient_quota'
+  if (lower.includes('rate_limit')) return 'rate_limit_exceeded'
+  if (lower.includes('invalid_api_key') || lower.includes('incorrect api key')) return 'invalid_api_key'
+  return 'ai_call_failed'
+}
+
 export async function callJSONAI<T>({
   purpose = 'default',
   system,
@@ -146,14 +164,15 @@ export async function callJSONAI<T>({
       usedFallback: false,
     }
   } catch (error) {
-    if (!fallbackOnError) throw error
+    const classifiedError = classifyAIError(error)
+    if (!fallbackOnError) throw new Error(classifiedError)
 
     return {
       provider,
       model,
       output: fallback(),
       usedFallback: true,
-      error: error instanceof Error ? error.message : 'ai_call_failed',
+      error: classifiedError,
     }
   }
 }

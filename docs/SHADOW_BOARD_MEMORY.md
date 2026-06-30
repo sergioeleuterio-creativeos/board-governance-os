@@ -1361,3 +1361,25 @@ Release step completed:
 - Pushed commit `4e798e3` to GitHub so Vercel can deploy the latest build.
 - Production smoke verification passed for public routes and metadata assets.
 - `/admin/agents` responds as a protected route and redirects unauthenticated visitors to `/login?next=%2Fadmin%2Fagents`.
+
+### 2026-06-30 - OpenAI quota fallback hardening
+
+User reported:
+- Clicking `Rodar Board Brain` returned raw OpenAI JSON with `insufficient_quota`.
+
+Diagnosis:
+- This is an OpenAI project/account quota or billing issue, not a Supabase/Vercel/app logic failure.
+- Governance Run was configured with `fallbackOnError: false`, so provider errors surfaced directly to the UI.
+
+Implemented:
+- Model router now classifies provider errors such as `insufficient_quota`, `rate_limit_exceeded`, and `invalid_api_key` instead of exposing raw provider payloads.
+- Governance Run now uses deterministic fallback output when the external AI provider fails.
+- Governance Run response records fallback diagnostics:
+  - `ai.used_fallback`
+  - `ai.fallback_reason`
+  - attempted provider/model
+- Governance Run UI now shows a friendly contingency message when fallback is used.
+- Production setup guide now documents the `insufficient_quota` remediation path.
+
+External action still needed:
+- Add/confirm OpenAI billing and API credits for the Board Governance OS OpenAI project.

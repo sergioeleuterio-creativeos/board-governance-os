@@ -30,9 +30,12 @@ Implementation note:
 - Model selection is env-driven, so changing models should not require code changes.
 - The future model-routing variables should be left blank until implemented, or filled with real model IDs only. Do not use descriptive values such as `lower-cost model`.
 - Agent prompt hardening is still pending; IBGC training will be folded into persona prompts before live paid usage.
+- If OpenAI returns `insufficient_quota`, the key reached the API but the OpenAI project/account has no available paid quota. Add billing/credits in the OpenAI platform or switch `AI_PROVIDER="mock"` temporarily for demos.
+- Governance Run falls back to the deterministic governance engine when the external AI provider fails, so demos can continue while quota is fixed.
 
 Official reference:
 - https://platform.openai.com/docs/quickstart
+- https://platform.openai.com/docs/guides/error-codes/api-errors
 
 ## Cloudflare Turnstile
 

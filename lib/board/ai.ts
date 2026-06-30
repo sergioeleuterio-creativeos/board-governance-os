@@ -88,10 +88,16 @@ export async function runGovernanceAI(company: BoardCompany, input: GovernanceRu
     system,
     prompt,
     fallback: () => mockGovernanceOutput(company, input),
-    fallbackOnError: false,
+    fallbackOnError: true,
   })
 
-  return { provider: result.provider, model: result.model, output: result.output }
+  return {
+    provider: result.provider,
+    model: result.model,
+    output: result.output,
+    usedFallback: result.usedFallback,
+    fallbackReason: result.error ?? null,
+  }
 }
 
 function mockGovernanceOutput(company: BoardCompany, input: GovernanceRunInput): GovernanceAIOutput {

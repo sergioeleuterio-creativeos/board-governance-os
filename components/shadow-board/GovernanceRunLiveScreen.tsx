@@ -56,6 +56,14 @@ type ErrorResponse = {
 }
 
 type RunResponse = {
+  provider: string
+  model: string
+  ai?: {
+    used_fallback?: boolean
+    fallback_reason?: string | null
+    attempted_provider?: string
+    attempted_model?: string
+  }
   governance_cycle_id: string
   persistence: {
     businessPlanId: string
@@ -177,7 +185,10 @@ export function GovernanceRunLiveScreen() {
     }
 
     setLastRun(payload)
-    setNotice(`Governance run concluida. Closure sugerido: ${payload.persistence.closureRecommendation}.`)
+    const fallbackNotice = payload.ai?.used_fallback
+      ? ' Motor de contingencia usado porque a IA externa nao esta disponivel no momento.'
+      : ''
+    setNotice(`Governance run concluida.${fallbackNotice} Closure sugerido: ${payload.persistence.closureRecommendation}.`)
     setRunning(false)
     await loadReadout()
   }

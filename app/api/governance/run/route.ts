@@ -464,13 +464,15 @@ export async function POST(req: NextRequest) {
     const period = typeof body.period === 'string' && body.period.trim() ? body.period.trim() : defaultPeriod()
     const input = body.input as GovernanceRunInput | undefined ?? await buildInputFromCompanyBrain(company.id, period)
     const cycle = await ensureGovernanceCycle(company as BoardCompany & { organization_id: string }, body.governance_cycle_id)
-    const { provider, model, output } = await runGovernanceAI(company as BoardCompany, input)
+    const aiResult = await runGovernanceAI(company as BoardCompany, input)
+    const provider = aiResult.usedFallback ? 'mock' : aiResult.provider
+    const model = aiResult.usedFallback ? 'mock-governance_synthesis-v1' : aiResult.model
     const persistence = await saveCanonicalRun({
       company: company as BoardCompany & { id: string; organization_id: string },
       governanceCycleId: cycle.id,
       userId: user.id,
       input,
-      output,
+      output: aiResult.output,
       provider,
       model,
     })
@@ -494,10 +496,16 @@ export async function POST(req: NextRequest) {
       mode: 'live-supabase',
       provider,
       model,
+      ai: {
+        used_fallback: aiResult.usedFallback,
+        fallback_reason: aiResult.fallbackReason,
+        attempted_provider: aiResult.provider,
+        attempted_model: aiResult.model,
+      },
       governance_cycle_id: cycle.id,
       persistence,
       notification,
-      output,
+      output: aiResult.output,
       nextAdapter: 'board-pack-export',
     })
   } catch (error) {
