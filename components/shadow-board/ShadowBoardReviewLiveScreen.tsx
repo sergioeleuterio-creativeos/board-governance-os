@@ -261,7 +261,7 @@ export function ShadowBoardReviewLiveScreen() {
             </button>
             <button
               type="button"
-              className="btn-chamber"
+              className="btn-secondary"
               onClick={closeSession}
               disabled={closing || loading || !readout?.board_session || readout.board_session.status === 'closed'}
             >
