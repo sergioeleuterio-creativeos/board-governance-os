@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { User } from '@supabase/supabase-js'
+import { cookies } from 'next/headers'
 import { serviceClient } from '@/lib/auth-server'
 import { ensureUserWorkspace } from '@/lib/shadow-board/bootstrap'
 
@@ -19,14 +20,27 @@ export type CurrentCompany = {
   metadata?: Record<string, unknown> | null
 }
 
+export const CURRENT_COMPANY_COOKIE = 'board_governance_current_company_id'
+
 function preferOperationalCompany(companies: CurrentCompany[]) {
   return companies.find((company) => company.metadata?.training_pack !== true) ?? companies[0] ?? null
+}
+
+async function selectedCompanyId() {
+  const cookieStore = await cookies()
+  return cookieStore.get(CURRENT_COMPANY_COOKIE)?.value ?? null
+}
+
+function preferSelectedCompany(companies: CurrentCompany[], selectedId: string | null) {
+  if (!selectedId) return null
+  return companies.find((company) => company.id === selectedId) ?? null
 }
 
 export async function getCurrentCompanyForUser(user: User): Promise<CurrentCompany | null> {
   await ensureUserWorkspace(user)
 
   const service = serviceClient()
+  const selectedId = await selectedCompanyId()
   const { data: companyMemberships, error: companyMembershipError } = await service
     .from('company_memberships')
     .select('company_id, role')
@@ -45,7 +59,8 @@ export async function getCurrentCompanyForUser(user: User): Promise<CurrentCompa
 
     if (error) throw new Error(error.message)
     const companiesById = new Map(((companies ?? []) as CurrentCompany[]).map((company) => [company.id, company]))
-    const preferred = preferOperationalCompany(companyIds.map((id) => companiesById.get(id)).filter(Boolean) as CurrentCompany[])
+    const orderedCompanies = companyIds.map((id) => companiesById.get(id)).filter(Boolean) as CurrentCompany[]
+    const preferred = preferSelectedCompany(orderedCompanies, selectedId) ?? preferOperationalCompany(orderedCompanies)
     if (preferred) return preferred
   }
 
@@ -70,5 +85,6 @@ export async function getCurrentCompanyForUser(user: User): Promise<CurrentCompa
     .limit(50)
 
   if (error) throw new Error(error.message)
-  return preferOperationalCompany((companies ?? []) as CurrentCompany[])
+  const availableCompanies = (companies ?? []) as CurrentCompany[]
+  return preferSelectedCompany(availableCompanies, selectedId) ?? preferOperationalCompany(availableCompanies)
 }

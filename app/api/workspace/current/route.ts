@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
+import { cookies } from 'next/headers'
 import { getSessionUser, serviceClient } from '@/lib/auth-server'
 import { ensureUserWorkspace } from '@/lib/shadow-board/bootstrap'
+import { CURRENT_COMPANY_COOKIE } from '@/lib/shadow-board/current-company-server'
 
 type OrganizationMembershipRow = {
   organization_id: string
@@ -30,6 +32,20 @@ function preferOperationalCompany(companies: CompanyRow[]) {
   return companies.find((company) => company.metadata?.training_pack !== true) ?? companies[0] ?? null
 }
 
+function preferSelectedCompany(companies: CompanyRow[], selectedId: string | null) {
+  if (!selectedId) return null
+  return companies.find((company) => company.id === selectedId) ?? null
+}
+
+function sortCompanies(companies: CompanyRow[]) {
+  return [...companies].sort((a, b) => {
+    const trainingA = a.metadata?.training_pack === true ? 1 : 0
+    const trainingB = b.metadata?.training_pack === true ? 1 : 0
+    if (trainingA !== trainingB) return trainingA - trainingB
+    return a.name.localeCompare(b.name)
+  })
+}
+
 export async function GET() {
   const user = await getSessionUser()
   if (!user) {
@@ -37,6 +53,8 @@ export async function GET() {
   }
 
   const bootstrap = await ensureUserWorkspace(user)
+  const cookieStore = await cookies()
+  const selectedCompanyId = cookieStore.get(CURRENT_COMPANY_COOKIE)?.value ?? null
   const service = serviceClient()
   const { data: profile, error: profileError } = await service
     .from('user_profiles')
@@ -97,7 +115,8 @@ export async function GET() {
   }
 
   const companiesById = new Map(((directCompanies.data ?? []) as CompanyRow[]).map((company) => [company.id, company]))
-  const directCompany = preferOperationalCompany(directCompanyIds.map((id) => companiesById.get(id)).filter(Boolean) as CompanyRow[])
+  const orderedDirectCompanies = directCompanyIds.map((id) => companiesById.get(id)).filter(Boolean) as CompanyRow[]
+  const directCompany = preferSelectedCompany(orderedDirectCompanies, selectedCompanyId) ?? preferOperationalCompany(orderedDirectCompanies)
 
   const fallbackCompany = !directCompany && primaryOrganizationId
     ? await service
@@ -113,7 +132,9 @@ export async function GET() {
     return NextResponse.json({ error: fallbackCompany.error.message }, { status: 500 })
   }
 
-  const company = (directCompany ?? preferOperationalCompany((fallbackCompany.data ?? []) as CompanyRow[])) as CompanyRow | null
+  const fallbackCompanies = (fallbackCompany.data ?? []) as CompanyRow[]
+  const company = (directCompany ?? preferSelectedCompany(fallbackCompanies, selectedCompanyId) ?? preferOperationalCompany(fallbackCompanies)) as CompanyRow | null
+  const availableCompanies = sortCompanies(orderedDirectCompanies.length ? orderedDirectCompanies : fallbackCompanies)
   const latestSession = company
     ? await service
       .from('board_sessions')
@@ -133,6 +154,7 @@ export async function GET() {
     organization,
     organization_memberships: organizationMemberships ?? [],
     company,
+    companies: availableCompanies,
     company_role: ((companyMemberships ?? []) as CompanyMembershipRow[]).find((membership) => membership.company_id === company?.id)?.role ?? null,
     latest_session: latestSession.data ?? null,
   })

@@ -1531,3 +1531,48 @@ Open items after this batch:
 - Add evaluation-results persistence for advisor/model runs across the training packs.
 - Complete OpenAI Platform billing so `Rodar Board Brain` can use live model calls instead of the deterministic fallback.
 - Keep Stripe enforcement disabled until Stripe products, prices, and webhooks are ready.
+
+### 2026-06-30 - Training evaluation loop and active company switching
+
+User direction:
+- Continue all next sprint work that does not require OpenAI API credits or Stripe setup.
+- Keep billing enforcement parked while Sergio sets up OpenAI API credits and Stripe.
+
+Implemented:
+- `/api/admin/training-packs` now supports `action: evaluate`.
+- `/admin/training-packs` now has:
+  - `Avaliar todos`
+  - per-pack `Avaliar advisors`
+  - latest evaluation score, review count, weak-review count, and last-run date.
+- Training-pack evaluations are persisted as `audit_events` with event type `training_pack.evaluation_run`.
+- `scripts/evaluate-advisors.mjs` now supports `--training-packs --persist`.
+- Added `npm run evaluate:training-packs`.
+- Refreshed seeded advisor reports in `lib/board/training-pack-seed.ts` so each advisor includes role-specific scope, evidence, board-level language, and closure language.
+- Updated `Atualizar pack` so it passes `reset: true` and refreshes an existing pack instead of silently returning the old seed.
+- Ran `npm run seed:training-packs -- --reset` against live Supabase.
+- Ran `npm run evaluate:training-packs` against live Supabase.
+- Latest training-pack evaluation scored all 10 training companies and persisted the runs.
+- Added an active-company switcher:
+  - `/api/workspace/current-company` validates access and sets `board_governance_current_company_id`.
+  - `getCurrentCompanyForUser` honors the validated cookie.
+  - `/api/workspace/current` returns the selectable companies list.
+  - Topbar company selector can now switch between LANCE/main company and training/demo companies intentionally.
+- Kept default selection behavior conservative: non-training companies are still preferred when no explicit company is selected.
+- Updated `docs/GOVERNANCE_SOURCE_AND_CASE_PACKS.md`.
+
+Verification:
+- `npm run typecheck` passed.
+- `npm run build` passed with 71 app routes.
+- `node --check scripts/seed-training-packs.mjs` passed.
+- `node --check scripts/evaluate-advisors.mjs` passed.
+- Live seed refresh and live evaluation both completed successfully.
+
+Notes:
+- Current evaluation persistence uses `audit_events` metadata to avoid a migration dependency. A dedicated evaluation-results table remains useful later if we start comparing model/provider runs at volume.
+- Training-pack adherence scores are calibration checks for seed structure. They should not be interpreted as proof of live OpenAI advisor quality until real model runs are evaluated.
+
+Open items after this batch:
+- Deploy/push this batch and run production smoke.
+- Generate fresh export artifacts from production and visually QA PDF/PPTX/DOCX/XLSX.
+- Add model/provider comparison dashboards after OpenAI API billing is active.
+- Keep Stripe enforcement disabled until Stripe setup is complete.

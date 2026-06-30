@@ -100,35 +100,28 @@ function score(review) {
   const closure = coverage(text, rubric.closure)
   const total = Math.round(scope * 0.3 + evidence * 0.25 + board * 0.25 + closure * 0.2)
 
-  return { total, scope, evidence, board, closure }
+  return {
+    total,
+    scope_fidelity: scope,
+    evidence_discipline: evidence,
+    board_level_relevance: board,
+    closure_contribution: closure,
+    missing_requirements: [
+      scope < 35 ? 'Weak scope fidelity for advisor role.' : null,
+      evidence < 25 ? 'Missing or weak evidence requirements.' : null,
+      board < 25 ? 'Not enough board-level decision language.' : null,
+      closure < 25 ? 'No clear contribution to closure.' : null,
+    ].filter(Boolean),
+  }
 }
 
-async function main() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!url || !key) {
-    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
-  }
-
-  const companySlugArg = process.argv.find((arg) => arg.startsWith('--company='))
-  const companySlug = companySlugArg?.split('=')[1] ?? 'lance'
-  const supabase = createClient(url, key, { auth: { persistSession: false } })
-
-  const { data: company, error: companyError } = await supabase
-    .from('companies')
-    .select('id, name, slug')
-    .eq('slug', companySlug)
-    .maybeSingle()
-
-  if (companyError) throw new Error(companyError.message)
-  if (!company) throw new Error(`Company not found: ${companySlug}`)
-
+async function evaluateCompany({ supabase, company, persist }) {
   const { data: reviews, error } = await supabase
     .from('agent_reviews')
     .select('id, advisor_key, advisor_name, perspective, strategic_questions, recommendations, closure_recommendation, created_at')
     .eq('company_id', company.id)
     .order('created_at', { ascending: false })
-    .limit(40)
+    .limit(80)
 
   if (error) throw new Error(error.message)
 
@@ -144,18 +137,104 @@ async function main() {
   const rows = Array.from(latestByAdvisor.values()).map((review) => ({
     advisor: review.advisor_name,
     key: review.advisor_key,
+    review_id: review.id,
+    created_at: review.created_at,
     ...review.adherence,
   }))
   const average = rows.length
     ? Math.round(rows.reduce((sum, row) => sum + row.total, 0) / rows.length)
     : 0
+  const weakReviews = rows.filter((row) => row.total < 65).length
+  const missingRequirements = rows.reduce((sum, row) => sum + row.missing_requirements.length, 0)
 
-  console.log(JSON.stringify({
+  if (persist) {
+    const trainingPackId = typeof company.metadata?.training_pack_id === 'string'
+      ? company.metadata.training_pack_id
+      : company.slug.replace(/^training-/, '')
+    const { error: auditError } = await supabase
+      .from('audit_events')
+      .insert({
+        organization_id: company.organization_id,
+        company_id: company.id,
+        event_type: 'training_pack.evaluation_run',
+        entity_type: 'company',
+        entity_id: company.id,
+        metadata: {
+          training_pack_id: trainingPackId,
+          company_name: company.name,
+          average_adherence: average,
+          reviews_scored: rows.length,
+          weak_reviews: weakReviews,
+          missing_requirements: missingRequirements,
+          rows,
+        },
+      })
+
+    if (auditError) throw new Error(auditError.message)
+  }
+
+  return {
     company: company.name,
+    slug: company.slug,
     latest_reviews_scored: rows.length,
     average,
+    weak_reviews: weakReviews,
+    missing_requirements: missingRequirements,
     rows,
-  }, null, 2))
+  }
+}
+
+async function main() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  if (!url || !key) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY')
+  }
+
+  const companySlugArg = process.argv.find((arg) => arg.startsWith('--company='))
+  const trainingPacks = process.argv.includes('--training-packs')
+  const persist = process.argv.includes('--persist')
+  const companySlug = companySlugArg?.split('=')[1] ?? 'lance'
+  const supabase = createClient(url, key, { auth: { persistSession: false } })
+
+  if (trainingPacks) {
+    const { data: companies, error: companiesError } = await supabase
+      .from('companies')
+      .select('id, organization_id, name, slug, metadata')
+      .like('slug', 'training-%')
+      .order('created_at', { ascending: false })
+
+    if (companiesError) throw new Error(companiesError.message)
+
+    const results = []
+    for (const company of companies ?? []) {
+      results.push(await evaluateCompany({ supabase, company, persist }))
+    }
+
+    const average = results.length
+      ? Math.round(results.reduce((sum, result) => sum + result.average, 0) / results.length)
+      : 0
+
+    console.log(JSON.stringify({
+      mode: 'training_packs',
+      persisted: persist,
+      companies_scored: results.length,
+      average,
+      results,
+    }, null, 2))
+    return
+  }
+
+  const { data: company, error: companyError } = await supabase
+    .from('companies')
+    .select('id, organization_id, name, slug, metadata')
+    .eq('slug', companySlug)
+    .maybeSingle()
+
+  if (companyError) throw new Error(companyError.message)
+  if (!company) throw new Error(`Company not found: ${companySlug}`)
+
+  console.log(JSON.stringify(await evaluateCompany({ supabase, company, persist }), null, 2))
 }
 
 main().catch((error) => {

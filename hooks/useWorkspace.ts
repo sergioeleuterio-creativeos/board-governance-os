@@ -36,6 +36,18 @@ export type CurrentWorkspace = {
     default_locale: string
     created_at: string
   } | null
+  companies: Array<{
+    id: string
+    organization_id: string
+    name: string
+    slug: string
+    status: string
+    industry: string | null
+    stage: string | null
+    revenue_range: string | null
+    default_locale: string
+    created_at: string
+  }>
   company_role: string | null
   latest_session: {
     id: string

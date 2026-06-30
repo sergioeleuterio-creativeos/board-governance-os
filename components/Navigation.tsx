@@ -4,6 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
+import { useState } from 'react'
 import { PRODUCT } from '@/lib/shadow-board/product'
 import { useAuth } from '@/hooks/useAuth'
 import { useWorkspace } from '@/hooks/useWorkspace'
@@ -79,10 +80,14 @@ export default function Navigation() {
   const tShell = useTranslations('shell')
   const { user, profile, isAdmin, loading } = useAuth()
   const { workspace } = useWorkspace()
+  const [switchingCompany, setSwitchingCompany] = useState(false)
   if (pathname === '/' || pathname === '/login' || pathname === '/reset-password' || pathname === '/board-pack/presentation') return null
 
   const companyName = workspace?.company?.name ?? workspace?.organization?.name ?? 'Board Governance OS'
   const companyInitials = initialsFor(companyName)
+  const selectableCompanies = workspace?.companies?.length
+    ? workspace.companies
+    : workspace?.company ? [workspace.company] : []
   const periodLabel = workspace?.latest_session
     ? `${workspace.latest_session.session_type} - ${workspace.latest_session.status}`
     : workspace?.company?.stage ?? workspace?.organization_memberships[0]?.role ?? 'Workspace'
@@ -95,6 +100,18 @@ export default function Navigation() {
       fallback: 'Usuario',
     })
   const displayRole = user ? (isAdmin ? 'Admin' : tShell('founderRole')) : 'Preview'
+
+  async function handleCompanyChange(companyId: string) {
+    if (!companyId || companyId === workspace?.company?.id) return
+    setSwitchingCompany(true)
+    const response = await fetch('/api/workspace/current-company', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ company_id: companyId }),
+    })
+    if (response.ok) window.location.reload()
+    setSwitchingCompany(false)
+  }
 
   return (
     <>
@@ -141,11 +158,22 @@ export default function Navigation() {
       </aside>
 
       <header className="sb-topbar">
-        <button className="sb-company-switcher">
+        <div className="sb-company-switcher">
           <span>{companyInitials}</span>
-          {companyName}
+          <select
+            value={workspace?.company?.id ?? ''}
+            onChange={(event) => void handleCompanyChange(event.target.value)}
+            disabled={switchingCompany || selectableCompanies.length < 2}
+            aria-label="Selecionar empresa"
+          >
+            {selectableCompanies.length
+              ? selectableCompanies.map((company) => (
+                <option key={company.id} value={company.id}>{company.name}</option>
+              ))
+              : <option value="">{companyName}</option>}
+          </select>
           <small>{periodLabel}</small>
-        </button>
+        </div>
         <div className="sb-search">
           <span>{tShell('search')}</span>
           <kbd>Cmd K</kbd>

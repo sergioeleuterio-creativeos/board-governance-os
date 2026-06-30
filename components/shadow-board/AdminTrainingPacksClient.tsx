@@ -10,6 +10,17 @@ type TrainingCompany = {
   created_at: string
 }
 
+type TrainingEvaluation = {
+  id: string
+  created_at: string
+  metadata?: {
+    average_adherence?: number
+    reviews_scored?: number
+    weak_reviews?: number
+    missing_requirements?: number
+  } | null
+}
+
 type TrainingPack = {
   id: string
   companyName: string
@@ -31,6 +42,7 @@ type TrainingPack = {
   boardQuestions: string[]
   trainingUse: string[]
   existing_company: TrainingCompany | null
+  latest_evaluation: TrainingEvaluation | null
 }
 
 type TrainingPacksResponse = {
@@ -45,6 +57,9 @@ type SeedResponse = {
     board_pack_id: string
     board_session_id: string
     created: boolean
+    skipped?: boolean
+    reason?: string
+    evaluation?: TrainingEvaluation
   }>
   error?: string
 }
@@ -65,18 +80,20 @@ export function AdminTrainingPacksClient() {
   const [readout, setReadout] = useState<TrainingPacksResponse | null>(null)
   const [loading, setLoading] = useState(true)
   const [seeding, setSeeding] = useState('')
+  const [evaluating, setEvaluating] = useState('')
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
   const metrics = useMemo(() => {
     const packs = readout?.packs ?? []
     const seeded = packs.filter((pack) => pack.existing_company).length
+    const evaluated = packs.filter((pack) => pack.latest_evaluation).length
     const sources = new Set(packs.flatMap((pack) => pack.sourceInstitutions)).size
     return [
       ['Packs', String(packs.length), 'casos publicos estruturados'],
       ['Empresas criadas', String(seeded), 'demo/training companies'],
+      ['Avaliacoes', String(evaluated), 'ultimos runs salvos'],
       ['Fontes', String(sources), 'instituicoes e bases publicas'],
-      ['Advisors', '7', 'lentes testadas por pack'],
     ] as const
   }, [readout])
 
@@ -97,14 +114,14 @@ export function AdminTrainingPacksClient() {
     setLoading(false)
   }
 
-  async function seedPack(packId?: string) {
+  async function seedPack(packId?: string, reset = false) {
     setSeeding(packId ?? 'all')
     setError('')
     setNotice('')
     const response = await fetch('/api/admin/training-packs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(packId ? { pack_id: packId } : { seed_all: true }),
+      body: JSON.stringify(packId ? { pack_id: packId, reset } : { seed_all: true }),
     })
     const payload = await response.json().catch(() => null) as SeedResponse | ErrorResponse | null
 
@@ -119,6 +136,29 @@ export function AdminTrainingPacksClient() {
     await loadPacks()
   }
 
+  async function evaluatePack(packId?: string) {
+    setEvaluating(packId ?? 'all')
+    setError('')
+    setNotice('')
+    const response = await fetch('/api/admin/training-packs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(packId ? { action: 'evaluate', pack_id: packId } : { action: 'evaluate', evaluate_all: true }),
+    })
+    const payload = await response.json().catch(() => null) as SeedResponse | ErrorResponse | null
+
+    if (!response.ok || !isSeedResponse(payload)) {
+      setError(payload?.error ?? 'Nao foi possivel avaliar os packs.')
+      setEvaluating('')
+      return
+    }
+
+    const skipped = payload.results.filter((result) => result.skipped).length
+    setNotice(`${payload.results.length - skipped} avaliacao(oes) salvas.${skipped ? ` ${skipped} pack(s) sem empresa criada.` : ''}`)
+    setEvaluating('')
+    await loadPacks()
+  }
+
   useEffect(() => {
     void loadPacks()
   }, [])
@@ -129,7 +169,16 @@ export function AdminTrainingPacksClient() {
         eyebrow="Operacoes"
         title="Packs de treinamento"
         description="Crie empresas demo a partir de casos publicos para testar advisors, board packs e memoria de decisao."
-        action={<button className="btn-primary" type="button" onClick={() => void seedPack()} disabled={!!seeding}>{seeding === 'all' ? 'Criando...' : 'Criar todos'}</button>}
+        action={(
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-secondary" type="button" onClick={() => void evaluatePack()} disabled={!!evaluating || !!seeding}>
+              {evaluating === 'all' ? 'Avaliando...' : 'Avaliar todos'}
+            </button>
+            <button className="btn-primary" type="button" onClick={() => void seedPack()} disabled={!!seeding || !!evaluating}>
+              {seeding === 'all' ? 'Criando...' : 'Criar todos'}
+            </button>
+          </div>
+        )}
       />
 
       {error && <Panel><p className="sb-error">{error}</p></Panel>}
@@ -159,6 +208,26 @@ export function AdminTrainingPacksClient() {
                     {pack.advisorStress.map((advisor) => <StatusPill key={advisor}>{advisor}</StatusPill>)}
                   </div>
                   <p className="sb-muted mt-3">{pack.companySeed.decisionPressure}</p>
+                  {pack.latest_evaluation && (
+                    <div className="mt-4 grid gap-3 sm:grid-cols-4">
+                      <div>
+                        <p className="sb-code">Aderencia</p>
+                        <p className="sb-row-title">{pack.latest_evaluation.metadata?.average_adherence ?? 0}/100</p>
+                      </div>
+                      <div>
+                        <p className="sb-code">Reviews</p>
+                        <p className="sb-row-title">{pack.latest_evaluation.metadata?.reviews_scored ?? 0}</p>
+                      </div>
+                      <div>
+                        <p className="sb-code">Atencao</p>
+                        <p className="sb-row-title">{pack.latest_evaluation.metadata?.weak_reviews ?? 0}</p>
+                      </div>
+                      <div>
+                        <p className="sb-code">Ultimo run</p>
+                        <p className="sb-muted">{new Date(pack.latest_evaluation.created_at).toLocaleDateString('pt-BR')}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="grid min-w-[180px] gap-2">
                   <StatusPill tone={pack.existing_company ? 'positive' : 'neutral'}>
@@ -167,10 +236,18 @@ export function AdminTrainingPacksClient() {
                   <button
                     type="button"
                     className="btn-secondary"
-                    onClick={() => void seedPack(pack.id)}
+                    onClick={() => void seedPack(pack.id, !!pack.existing_company)}
                     disabled={!!seeding}
                   >
                     {seeding === pack.id ? 'Criando...' : pack.existing_company ? 'Atualizar pack' : 'Criar empresa'}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn-secondary"
+                    onClick={() => void evaluatePack(pack.id)}
+                    disabled={!!evaluating || !!seeding || !pack.existing_company}
+                  >
+                    {evaluating === pack.id ? 'Avaliando...' : 'Avaliar advisors'}
                   </button>
                 </div>
               </div>

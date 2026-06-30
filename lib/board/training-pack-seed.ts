@@ -30,6 +30,56 @@ const advisors = [
   ['talent', 'Talent Advisor', 'testa lideranca, capacidade, incentivos, sucessao e risco de pessoa-chave'],
 ] as const
 
+const advisorEvidenceLanguage: Record<string, {
+  scope: string
+  evidence: string
+  board: string
+  closure: string
+}> = {
+  board_brain: {
+    scope: 'orchestrate synthesis, consensus, conflict, dissent and board-level governance boundary',
+    evidence: 'missing evidence, risk appetite, advisor disagreement, source trail and minutes discipline',
+    board: 'decision, condition, owner, review date, follow-up and tradeoff memory',
+    closure: 'commit with conditions, defer, reject, request more data or escalate to human review',
+  },
+  finance: {
+    scope: 'cash, ROI, payback, margin, runway, debt, working capital, DRE/P&L, OCF and EBITDA',
+    evidence: 'budget, forecast, variance, concentration, liquidity and covenant exposure',
+    board: 'capital allocation, investment gate, risk-adjusted scenario and approval condition',
+    closure: 'financial condition, gate, approve with conditions, request data or defer',
+  },
+  operator: {
+    scope: 'owner, cadence, process, execution, workflow, accountability, dependency, RACI and DRI',
+    evidence: 'timeline, capacity, leading indicator, review date, blocked item and handoff',
+    board: 'workstream, decision loop, operating rhythm, escalation and checkpoint',
+    closure: 'assign owner, schedule cadence, review trigger and commit with conditions',
+  },
+  growth: {
+    scope: 'growth, market, expansion, scale, channel, revenue quality, retention and product-market readiness',
+    evidence: 'CAC, LTV, unit economics, cohort, conversion, competition, pricing and readiness',
+    board: 'strategic fit, prioritize, scale gate, stop criteria and downside if wrong',
+    closure: 'scale, test, pause, gate or commit based on evidence',
+  },
+  risk: {
+    scope: 'risk, compliance, control, concentration, legal, reputation, LGPD, ESG and audit exposure',
+    evidence: 'risk appetite, owner, mitigation, early warning, escalation, policy and control gap',
+    board: 'acceptable risk, unpriced risk, board oversight, limit and guardrail',
+    closure: 'mitigate, escalate, condition, reject or defer',
+  },
+  customer: {
+    scope: 'customer, brand, trust, retention, market, demand, stakeholder, salience and brand memory',
+    evidence: 'NPS, cohort, awareness, perception, behavior, segment, churn and 18-32 demand signals',
+    board: 'market position, customer economics, reputation, customer choice and tradeoff',
+    closure: 'prove, measure, protect, prioritize and commit with conditions',
+  },
+  talent: {
+    scope: 'leadership, talent, succession, capacity, incentives, culture, hiring and founder bottleneck',
+    evidence: 'key-person risk, role clarity, span, capability, compensation, decision behavior and team capacity',
+    board: 'continuity, people governance, execution capacity, succession plan and bottleneck',
+    closure: 'hire, assign, realign, succession condition and commit with conditions',
+  },
+}
+
 function slugify(value: string) {
   return value
     .toLowerCase()
@@ -130,6 +180,7 @@ function decisionCandidates(pack: CompanyTrainingPack) {
 function advisorReviewFor(pack: CompanyTrainingPack, advisorKey: string, advisorName: string, focus: string) {
   const stressed = pack.advisorStress.includes(advisorKey as any)
   const question = pack.boardQuestions.find((item) => item.toLowerCase().includes(advisorKey)) ?? pack.boardQuestions[0]
+  const language = advisorEvidenceLanguage[advisorKey] ?? advisorEvidenceLanguage.board_brain
   return {
     advisor_key: advisorKey,
     advisor_name: advisorName,
@@ -137,16 +188,20 @@ function advisorReviewFor(pack: CompanyTrainingPack, advisorKey: string, advisor
     stance: stressed ? 'support_with_conditions' : 'neutral',
     risk_score: stressed ? 72 : 58,
     confidence_score: stressed ? 76 : 68,
-    perspective: `${advisorName} deve ${focus}. Neste pack, o ponto critico e transformar "${pack.companySeed.decisionPressure}" em uma decisao com evidencia, owner, condicoes e revisao.`,
+    perspective: `${advisorName} deve ${focus}. Escopo da lente: ${language.scope}. Neste pack, o ponto critico e transformar "${pack.companySeed.decisionPressure}" em uma decisao com evidencia, owner, condicoes e revisao.`,
     strategic_questions: [
       question,
+      `Qual evidencia minima de ${language.evidence} muda a recomendacao?`,
+      `Qual decisao de board precisa registrar ${language.board}?`,
       `Que evidencia de ${pack.companySeed.knownUnknowns[0] ?? 'risco'} mudaria a recomendacao?`,
       'Qual condicao faria o board aprovar, adiar ou escalar revisao humana?',
     ],
     source_references: sourceReferences(pack).slice(0, 3),
     recommendations: [
       `Exigir evidencia minima antes de aprovar escala em ${pack.companyName}.`,
-      'Registrar owner, risco, condicoes e data de revisao.',
+      `Criar ${language.board} antes de sair da reuniao.`,
+      `Usar ${language.closure} como fechamento possivel da sessao.`,
+      'Registrar owner, risco, condicoes, minutes, follow-up e data de revisao.',
       stressed ? 'Tratar este advisor como lente principal no primeiro review.' : 'Usar esta lente para desafiar pontos cegos da decisao.',
     ],
     closure_recommendation: 'commit_with_conditions',

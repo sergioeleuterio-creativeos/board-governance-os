@@ -265,6 +265,15 @@
     font-weight: 700;
   }
 
+  .sb-company-switcher select {
+    max-width: 220px;
+    border: 0;
+    background: transparent;
+    color: var(--ink-900);
+    font: inherit;
+    outline: none;
+  }
+
   .sb-company-switcher span {
     width: 26px;
     height: 26px;

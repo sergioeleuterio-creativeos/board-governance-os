@@ -11,10 +11,13 @@ Implemented:
 - Ten company training packs in `lib/board/training-sources.ts`.
 - Prompt case-library feed now uses the structured packs through `caseLibraryForPrompt()`.
 - Admin Agents still exposes the case library and source references through `/admin/agents`.
+- `/admin/training-packs` creates and refreshes demo/training companies from the packs.
+- `/admin/training-packs` can run advisor adherence evaluation against existing pack companies.
+- `npm run seed:training-packs -- --reset` refreshes pack companies from the CLI.
+- `npm run evaluate:training-packs` scores all training-pack advisor reviews and stores results in `audit_events`.
 
 Not yet implemented:
-- One-click "create company from training pack" admin flow.
-- Automated batch evaluation that runs all six advisors against each pack and stores adherence deltas.
+- Dedicated evaluation-results table for long-term model comparisons. Current persistence uses `audit_events` metadata.
 - Licensed ingestion of proprietary HBS/Kellogg/Stanford/MIT/FGV/USP case text. Do not ingest paid case PDFs unless the license allows it.
 
 ## Governance Source Map
@@ -84,8 +87,6 @@ Short term:
 - Run one board question per pack and inspect `/admin/agents` for adherence by advisor.
 
 Next build step:
-- Add `/admin/training-packs`.
-- Add "Create demo company" from a pack.
-- Add "Run advisor evaluation" to generate a governance run without touching real client companies.
-- Store results in an evaluation table with advisor score, missing requirements, fallback status, and source coverage.
-
+- Add longitudinal evaluation dashboards by model/provider once OpenAI billing is live.
+- Move evaluation results from audit metadata into a dedicated table if run volume becomes high.
+- Add source freshness review dates and manual pack-retirement status.
