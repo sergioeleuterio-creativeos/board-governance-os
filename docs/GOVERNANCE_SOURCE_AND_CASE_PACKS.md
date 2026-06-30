@@ -1,0 +1,91 @@
+# Governance Sources And Company Training Packs
+
+Last updated: 2026-06-30
+
+Board Governance OS uses public governance frameworks and public company sources as calibration material. These packs are reasoning patterns and seed scenarios, not copied business-school case text.
+
+## Status
+
+Implemented:
+- Structured source map in `lib/board/training-sources.ts`.
+- Ten company training packs in `lib/board/training-sources.ts`.
+- Prompt case-library feed now uses the structured packs through `caseLibraryForPrompt()`.
+- Admin Agents still exposes the case library and source references through `/admin/agents`.
+
+Not yet implemented:
+- One-click "create company from training pack" admin flow.
+- Automated batch evaluation that runs all six advisors against each pack and stores adherence deltas.
+- Licensed ingestion of proprietary HBS/Kellogg/Stanford/MIT/FGV/USP case text. Do not ingest paid case PDFs unless the license allows it.
+
+## Governance Source Map
+
+Primary Brazilian source:
+- IBGC training material and internal map: `docs/IBGC_AGENT_TRAINING.md`
+
+International governance and director-role sources now mapped:
+- OECD/G20 Principles of Corporate Governance 2023
+- COSO Enterprise Risk Management
+- UK FRC Corporate Governance Code 2024
+- NACD Directorship Certification
+- INSEAD International Directors Programme
+- Institute of Directors Chartered Director Programme
+- Fundacao Dom Cabral executive governance context
+
+Advisor coverage:
+- Board Brain: IBGC, OECD, FRC, NACD, INSEAD, IoD, FDC.
+- Finance Advisor: IBGC financial governance, OECD disclosure, COSO risk appetite, FRC audit/risk/internal control, NACD.
+- Operator Advisor: IBGC meeting discipline, COSO controls, IoD boardroom practice, FDC execution context.
+- Growth Advisor: IBGC strategy material, INSEAD/FDC strategy and leadership contexts, company transformation cases.
+- Risk Advisor: COSO, OECD, FRC, IBGC integrity/legal responsibility, platform/safety/control cases.
+- Customer Advisor: IBGC stakeholder/communication material, Creative OS method, public customer-trust and subscription cases.
+- Talent Advisor: IBGC people/succession material, FRC succession/remuneration, INSEAD/IoD board effectiveness, Uber/Netflix culture cases.
+
+## Company Packs
+
+The first ten packs:
+
+1. LANCE! - sports media reach to owned audience and paid relationship.
+2. The New York Times Company - digital subscription and newsroom/product transformation.
+3. Netflix - content investment, cash discipline, culture, and global scale.
+4. Boeing - 737 MAX safety, incentives, controls, and board oversight.
+5. WeWork / The We Company - founder control, unit economics, governance rights, and IPO readiness.
+6. Uber - culture, leadership, platform risk, and control reset.
+7. Meta / Facebook - data trust, platform governance, and stakeholder risk.
+8. Natura &Co - sustainable growth, stakeholder model, portfolio complexity, and cash discipline.
+9. Magazine Luiza / Magalu - retail digital transformation, marketplace expansion, and profitability discipline.
+10. Petrobras - Pasadena capital allocation, information quality, controls, and accountability.
+
+Each pack contains:
+- Public source URLs.
+- Company archetype.
+- Business model.
+- Governance stage.
+- Strategic context.
+- Decision pressure.
+- Known unknowns.
+- Advisor stress map.
+- Board questions.
+- Training use.
+
+## Business-School Case Boundary
+
+Harvard, Kellogg, Stanford, MIT Sloan, FGV, USP and similar institutions are useful for finding case patterns and bibliographic references. Most full teaching notes and full cases are proprietary. For the product:
+
+- Use public abstracts, official company filings, public reports, court/regulatory/government reports, investor relations pages, and public articles as the default input.
+- Use business-school case titles and abstracts only as signposts unless we have license permission.
+- Never paste full paid cases or teaching notes into prompts, seeds, embeddings, or memory.
+- If we buy/license a case, record the license terms before ingestion.
+
+## How To Use These Packs
+
+Short term:
+- Use LANCE as the live showcase company.
+- Use the other nine packs to test whether the six advisors stay in their lanes.
+- Run one board question per pack and inspect `/admin/agents` for adherence by advisor.
+
+Next build step:
+- Add `/admin/training-packs`.
+- Add "Create demo company" from a pack.
+- Add "Run advisor evaluation" to generate a governance run without touching real client companies.
+- Store results in an evaluation table with advisor score, missing requirements, fallback status, and source coverage.
+

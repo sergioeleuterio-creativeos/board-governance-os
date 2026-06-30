@@ -1,8 +1,8 @@
 # Advisor Adherence Framework
 
-Last updated: 2026-06-29
+Last updated: 2026-06-30
 
-The six governance lenses are useful only if they stay distinct. Board Governance OS now has coded rubrics in `lib/board/advisor-rubrics.ts`, an admin readout at `/admin/agents`, and a CLI evaluator in `scripts/evaluate-advisors.mjs`.
+The six governance lenses are useful only if they stay distinct. Board Governance OS now has coded rubrics in `lib/board/advisor-rubrics.ts`, structured source/case packs in `lib/board/training-sources.ts`, an admin readout at `/admin/agents`, and a CLI evaluator in `scripts/evaluate-advisors.mjs`.
 
 ## Evaluation Dimensions
 
@@ -45,22 +45,27 @@ Primary governance sources:
 - UK FRC Corporate Governance Code
 - NACD Directorship Certification references
 - INSEAD International Directors Programme
+- Institute of Directors Chartered Director Programme
 - Fundacao Dom Cabral executive governance context
 
 These references are used as rubrics and summaries. Proprietary source text is not copied into prompts.
 
+The detailed source/case operating map is in `docs/GOVERNANCE_SOURCE_AND_CASE_PACKS.md`.
+
 ## Case Library
 
-The first open case library lives in code and is exposed through `/admin/agents`.
+The first open case library lives in `lib/board/training-sources.ts` and is exposed through `/admin/agents`.
 
 Cases:
 - LANCE! - sports media reach to owned audience
 - The New York Times - digital subscription transformation
+- Netflix - content investment, cash discipline, culture, and global scale
 - Boeing 737 MAX - safety, incentives, and board oversight
 - WeWork - governance, controls, and IPO readiness
 - Uber - culture, leadership, and control reset
 - Facebook / Meta - data trust and stakeholder risk
 - Natura - sustainable growth and stakeholder model
+- Magazine Luiza / Magalu - digital transformation, marketplace expansion, and profitability discipline
 - Petrobras Pasadena - capital allocation and governance controls
 
 These are not copied business-school cases. They are public-source governance scenarios used to stress-test advisor behavior.

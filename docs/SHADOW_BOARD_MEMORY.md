@@ -1427,3 +1427,32 @@ Verification this batch:
 - Final production verification passed:
   - `npm run verify:production -- https://www.board-os.ai`
   - `npm run qa:mobile -- https://www.board-os.ai`
+
+### 2026-06-30 - Governance source map and company training packs
+
+User asked whether company packs were organized to create new companies and train the system, and requested more sources similar to IBGC plus open case-study targets from business schools and universities.
+
+Implemented:
+- Added `lib/board/training-sources.ts`.
+- Moved advisor source references and board case library out of `advisor-rubrics.ts` into a structured source/packs file.
+- Added ten company training packs:
+  - LANCE!
+  - The New York Times Company
+  - Netflix
+  - Boeing
+  - WeWork / The We Company
+  - Uber
+  - Meta / Facebook
+  - Natura &Co
+  - Magazine Luiza / Magalu
+  - Petrobras
+- Each pack now contains public source URLs, company archetype, business model, governance stage, strategic context, decision pressure, known unknowns, advisor stress map, board questions, and training use.
+- Added mapped advisor source references: IBGC, OECD/G20, COSO, UK FRC, NACD, INSEAD, Institute of Directors, and Fundacao Dom Cabral.
+- Added `docs/GOVERNANCE_SOURCE_AND_CASE_PACKS.md` to document the public-source boundary and the legal boundary around paid business-school cases.
+- Updated `docs/ADVISOR_ADHERENCE_FRAMEWORK.md`.
+
+Still pending:
+- Build `/admin/training-packs`.
+- Add "create demo company from pack".
+- Add batch advisor evaluation runs across all packs.
+- Add an evaluation-results table for pack/advisor/model comparisons.

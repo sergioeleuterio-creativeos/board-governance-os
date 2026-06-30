@@ -1,4 +1,7 @@
 import type { AdvisorKey } from '@/lib/shadow-board/domain'
+import { BOARD_CASE_LIBRARY } from './training-sources'
+
+export { ADVISOR_SOURCE_REFERENCES, BOARD_CASE_LIBRARY, TRAINING_COMPANY_PACKS } from './training-sources'
 
 export type AdvisorAdherenceKey =
   | AdvisorKey
@@ -41,130 +44,6 @@ export type AdvisorAdherenceScore = {
   closure_contribution: number
   missing_requirements: string[]
 }
-
-export const ADVISOR_SOURCE_REFERENCES = [
-  {
-    name: 'IBGC governance training map',
-    url: 'docs/IBGC_AGENT_TRAINING.md',
-    use: 'Brazilian governance baseline, advisory-board boundary, board discipline, minutes, risk, and people governance.',
-  },
-  {
-    name: 'OECD/G20 Principles of Corporate Governance 2023',
-    url: 'https://www.oecd.org/en/publications/g20-oecd-principles-of-corporate-governance-2023_ed750b30-en.html',
-    use: 'Shareholder/stakeholder governance, disclosure, board responsibilities, sustainability, and control expectations.',
-  },
-  {
-    name: 'COSO Enterprise Risk Management',
-    url: 'https://www.coso.org/',
-    use: 'Risk appetite, control environment, enterprise risk language, and escalation discipline.',
-  },
-  {
-    name: 'UK FRC Corporate Governance Code',
-    url: 'https://www.frc.org.uk/library/standards-codes-policy/corporate-governance/uk-corporate-governance-code/',
-    use: 'Board effectiveness, risk, audit, remuneration, accountability, and comply-or-explain thinking.',
-  },
-  {
-    name: 'NACD Directorship Certification',
-    url: 'https://www.nacdonline.org/directorship-certification/',
-    use: 'Director certification posture: strategy, risk oversight, governance operations, and fiduciary discipline.',
-  },
-  {
-    name: 'INSEAD International Directors Programme',
-    url: 'https://www.insead.edu/executive-education/corporate-governance/international-directors-programme',
-    use: 'International director education, board role, stewardship, and cross-border governance maturity.',
-  },
-  {
-    name: 'Fundacao Dom Cabral executive governance education',
-    url: 'https://www.fdc.org.br/',
-    use: 'Brazilian executive education context for governance, strategy, leadership, and implementation discipline.',
-  },
-]
-
-export const BOARD_CASE_LIBRARY = [
-  {
-    id: 'lance-owned-audience',
-    title: 'LANCE! - from sports reach to owned audience',
-    sourceInstitution: 'Board Governance OS / LANCE public sources / Creative OS source pack',
-    publicSources: [
-      'https://www.lance.com.br/',
-      'https://lncimg.lance.com.br/uploads/2026/02/Lance-Midia-Kit-2026-.pdf',
-      'https://lp.lance.com.br/socio-lance-v5',
-    ],
-    boardProblem: 'A large sports media brand must turn anonymous reach into identifiable audience, product habit, CRM, and higher-quality revenue.',
-    advisorStress: ['finance', 'growth', 'risk', 'customer', 'operator'],
-  },
-  {
-    id: 'nyt-subscription-transformation',
-    title: 'The New York Times - digital subscription and newsroom transformation',
-    sourceInstitution: 'Public company reporting and public innovation-report discussion',
-    publicSources: [
-      'https://www.nytco.com/investors/',
-      'https://www.nytimes.com/projects/2020-report/index.html',
-    ],
-    boardProblem: 'A legacy media company must convert brand trust and journalism into a durable subscription and product operating model.',
-    advisorStress: ['growth', 'customer', 'finance', 'operator', 'talent'],
-  },
-  {
-    id: 'boeing-737max-safety-governance',
-    title: 'Boeing 737 MAX - safety, incentives, and board oversight',
-    sourceInstitution: 'US House Transportation Committee public investigation',
-    publicSources: [
-      'https://transportation.house.gov/committee-activity/boeing-737-max-investigation',
-    ],
-    boardProblem: 'A company must reconcile commercial pressure, engineering quality, safety oversight, and risk escalation.',
-    advisorStress: ['risk', 'operator', 'talent', 'finance'],
-  },
-  {
-    id: 'wework-governance-ipo-readiness',
-    title: 'WeWork - governance, controls, and IPO readiness',
-    sourceInstitution: 'SEC filings and public market analysis',
-    publicSources: [
-      'https://www.sec.gov/edgar/browse/?CIK=1813756',
-    ],
-    boardProblem: 'A high-growth company must separate founder narrative from controls, unit economics, governance rights, and capital-market readiness.',
-    advisorStress: ['finance', 'risk', 'talent', 'growth'],
-  },
-  {
-    id: 'uber-culture-controls',
-    title: 'Uber - culture, leadership, and control reset',
-    sourceInstitution: 'Public board and culture recommendations',
-    publicSources: [
-      'https://www.uber.com/newsroom/holder-recommendations/',
-    ],
-    boardProblem: 'A scaling company must turn culture issues into governance, accountability, leadership, and operating controls.',
-    advisorStress: ['talent', 'risk', 'operator', 'customer'],
-  },
-  {
-    id: 'meta-data-trust',
-    title: 'Facebook / Meta - data trust, platform governance, and stakeholder risk',
-    sourceInstitution: 'Public regulatory and parliamentary reporting',
-    publicSources: [
-      'https://publications.parliament.uk/pa/cm201719/cmselect/cmcumeds/1791/1791.pdf',
-    ],
-    boardProblem: 'A platform company must govern data, reputation, market power, public trust, and commercial model consequences.',
-    advisorStress: ['risk', 'customer', 'growth', 'operator'],
-  },
-  {
-    id: 'natura-sustainability-growth',
-    title: 'Natura - sustainable growth, stakeholder model, and international complexity',
-    sourceInstitution: 'Company integrated reports and Brazilian strategy references',
-    publicSources: [
-      'https://ri.naturaeco.com/en/',
-    ],
-    boardProblem: 'A values-led company must govern growth, portfolio complexity, stakeholder trust, ESG commitments, and financial discipline.',
-    advisorStress: ['growth', 'finance', 'risk', 'customer', 'talent'],
-  },
-  {
-    id: 'petrobras-pasadena-governance',
-    title: 'Petrobras Pasadena - capital allocation and governance controls',
-    sourceInstitution: 'Public reports and Brazilian governance-training references',
-    publicSources: [
-      'https://www.petrobras.com.br/en/investors',
-    ],
-    boardProblem: 'A large capital allocation decision exposes diligence, controls, accountability, information quality, and board challenge discipline.',
-    advisorStress: ['finance', 'risk', 'board_brain', 'operator'],
-  },
-] as const
 
 export const ADVISOR_RUBRICS: Record<AdvisorAdherenceKey, AdvisorRubric> = {
   board_brain: {
