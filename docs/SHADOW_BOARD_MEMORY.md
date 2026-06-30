@@ -1357,5 +1357,7 @@ Verification completed:
 - Re-ran advisor adherence evaluation against live Supabase after bilingual scoring and seeded-review enrichment.
 - Live LANCE advisor adherence average: 93 across Board Brain plus six advisors.
 
-Remaining release step:
-- Push to GitHub so Vercel can deploy the latest build.
+Release step completed:
+- Pushed commit `4e798e3` to GitHub so Vercel can deploy the latest build.
+- Production smoke verification passed for public routes and metadata assets.
+- `/admin/agents` responds as a protected route and redirects unauthenticated visitors to `/login?next=%2Fadmin%2Fagents`.
