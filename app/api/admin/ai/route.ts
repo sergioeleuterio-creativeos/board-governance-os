@@ -31,6 +31,8 @@ function boolValue(value: unknown) {
 function aiSignalFrom(event: AuditEventRow) {
   const metadata = asRecord(event.metadata)
   const diagnostics = asRecord(metadata.ai_diagnostics)
+  const healthResults = Array.isArray(metadata.results) ? metadata.results : []
+  const firstHealthResult = asRecord(healthResults[0])
   const usedFallback = boolValue(metadata.used_fallback)
     ?? boolValue(metadata.challenge_used_fallback)
     ?? boolValue(diagnostics.used_fallback)
@@ -39,13 +41,14 @@ function aiSignalFrom(event: AuditEventRow) {
     ?? stringValue(metadata.challenge_error)
     ?? stringValue(metadata.error)
     ?? stringValue(diagnostics.fallback_reason)
+    ?? (metadata.ok === false ? 'ai_health_check_failed' : null)
   const attemptedProvider = stringValue(diagnostics.attempted_provider) ?? stringValue(metadata.provider)
-  const attemptedModel = stringValue(diagnostics.attempted_model) ?? stringValue(metadata.model)
+  const attemptedModel = stringValue(diagnostics.attempted_model) ?? stringValue(metadata.model) ?? stringValue(firstHealthResult.model)
 
   return {
     used_fallback: usedFallback,
     fallback_reason: fallbackReason,
-    provider: stringValue(metadata.provider) ?? attemptedProvider,
+    provider: stringValue(metadata.provider) ?? attemptedProvider ?? stringValue(firstHealthResult.provider),
     model: stringValue(metadata.model) ?? attemptedModel,
     attempted_provider: attemptedProvider,
     attempted_model: attemptedModel,
@@ -70,6 +73,7 @@ export async function GET() {
     'governance.run_completed',
     'shadow_board.challenge_rounds_generated',
     'shadow_board.agent_deep_dive_created',
+    'ai.health_check',
     'notification.board_pack_ready',
     'notification.session_closed',
     'notification.referral_triage',

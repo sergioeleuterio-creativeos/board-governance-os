@@ -1576,3 +1576,34 @@ Open items after this batch:
 - Generate fresh export artifacts from production and visually QA PDF/PPTX/DOCX/XLSX.
 - Add model/provider comparison dashboards after OpenAI API billing is active.
 - Keep Stripe enforcement disabled until Stripe setup is complete.
+
+### 2026-06-30 - OpenAI billing unlocked and AI health deploy
+
+User confirmed:
+- OpenAI API billing/credits are now set.
+- Continue API-related deploys and non-Stripe work.
+
+Implemented:
+- Added `/api/admin/ai/health`.
+  - `GET` reports configured provider/model routing without exposing secrets.
+  - `POST` runs one tiny JSON health call per unique configured model and logs an `ai.health_check` audit event.
+- `/admin/ai` now has `Testar IA`, showing provider/model health results and recording them in the AI Ops event stream.
+- AI Ops now includes `ai.health_check` events.
+- `callJSONAI` now passes `max_tokens` to OpenAI chat completions for explicit cost/output control.
+- Added `scripts/check-ai-health.mjs`.
+- Added `npm run ai:health`.
+- Updated `docs/PRODUCTION_SETUP_GUIDE.md` with the local and browser health-check workflow.
+
+Verification:
+- A direct local OpenAI call returned `200` using configured model `gpt-4.1`.
+- `npm run ai:health` passed:
+  - provider: `openai`
+  - model: `gpt-4.1`
+  - purposes covered: default, intake, document extraction, advisor review, governance synthesis, agent challenge, final decision
+- `npm run typecheck` passed.
+
+Open items after this batch:
+- Deploy/push and run production smoke.
+- After production deploy, use `/admin/ai -> Testar IA` to confirm Vercel env vars are also healthy.
+- Run a real Board Brain governance run from the app against LANCE or a training pack, then re-check `/admin/agents` and `/admin/ai`.
+- Stripe remains parked.

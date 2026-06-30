@@ -46,6 +46,20 @@ type AIOpsResponse = {
   notification_events: NotificationEvent[]
 }
 
+type AIHealthResponse = {
+  provider: string
+  ok: boolean
+  results: Array<{
+    provider: string
+    model: string
+    purposes: string[]
+    ok: boolean
+    label?: string
+    error?: string
+  }>
+  error?: string
+}
+
 type ErrorResponse = {
   error?: string
 }
@@ -68,6 +82,7 @@ function eventLabel(type: string) {
     'governance.run_completed': 'Rodada de governanca',
     'shadow_board.challenge_rounds_generated': 'Desafios entre advisors',
     'shadow_board.agent_deep_dive_created': 'Aprofundamento de advisor',
+    'ai.health_check': 'Teste de IA',
     'notification.board_pack_ready': 'Email: board pack pronto',
     'notification.session_closed': 'Email: sessao encerrada',
     'notification.referral_triage': 'Email: triagem de conexao',
@@ -93,7 +108,9 @@ function notificationStatusLabel(status: string) {
 export function AdminAIClient() {
   const [readout, setReadout] = useState<AIOpsResponse | null>(null)
   const [loading, setLoading] = useState(true)
+  const [checking, setChecking] = useState(false)
   const [error, setError] = useState('')
+  const [healthNotice, setHealthNotice] = useState('')
 
   const metrics = useMemo(() => {
     const totals = readout?.totals
@@ -123,6 +140,29 @@ export function AdminAIClient() {
     setLoading(false)
   }
 
+  async function runHealthCheck() {
+    setChecking(true)
+    setError('')
+    setHealthNotice('')
+
+    const response = await fetch('/api/admin/ai/health', { method: 'POST' })
+    const payload = await response.json().catch(() => null) as AIHealthResponse | null
+    const passed = response.ok && payload?.ok === true
+
+    if (!payload) {
+      setError('Nao foi possivel testar a IA.')
+    } else {
+      const models = payload.results?.map((result) => result.model).filter(Boolean).join(', ') || 'sem modelo'
+      setHealthNotice(passed
+        ? `IA ativa: ${payload.provider} (${models}).`
+        : `Teste de IA falhou: ${payload.results?.find((result) => !result.ok)?.error ?? payload.error ?? 'erro desconhecido'}.`
+      )
+    }
+
+    setChecking(false)
+    await loadAIOps()
+  }
+
   useEffect(() => {
     void loadAIOps()
   }, [])
@@ -133,10 +173,18 @@ export function AdminAIClient() {
         eyebrow="Operacoes"
         title="IA e notificacoes"
         description="Contingencias, erros de modelo e emails operacionais em um so painel."
-        action={<button className="btn-secondary" type="button" onClick={() => void loadAIOps()}>Atualizar</button>}
+        action={(
+          <div className="flex flex-wrap gap-2">
+            <button className="btn-secondary" type="button" onClick={() => void runHealthCheck()} disabled={checking}>
+              {checking ? 'Testando...' : 'Testar IA'}
+            </button>
+            <button className="btn-secondary" type="button" onClick={() => void loadAIOps()}>Atualizar</button>
+          </div>
+        )}
       />
 
       {error && <Panel><p className="sb-error">{error}</p></Panel>}
+      {healthNotice && <Panel><p className="sb-code">{healthNotice}</p></Panel>}
 
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {metrics.map(([label, value, detail]) => (

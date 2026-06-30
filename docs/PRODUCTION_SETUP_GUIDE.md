@@ -256,6 +256,8 @@ Current production behavior:
 - Board Brain prompts include advisor-specific rubrics and a curated open case library.
 - `/admin/agents` gives super admins a browser-visible view of latest advisor reviews and adherence signals.
 - `scripts/evaluate-advisors.mjs` can be run against live Supabase to score recent `agent_reviews`.
+- `/admin/ai` includes `Testar IA` to run a tiny provider/model health check and log the result.
+- `npm run ai:health` checks the local OpenAI key and configured model routing from the CLI.
 
 Source hierarchy:
 - IBGC remains the primary Brazilian governance source.
@@ -264,6 +266,7 @@ Source hierarchy:
 
 Operational rule:
 - An advisor output is not production-grade unless it shows role-specific evidence, tradeoffs, board-level questions, risks, and a clear closure recommendation.
+- After changing OpenAI keys, credits, or model env vars, run `npm run ai:health` locally and `Testar IA` in `/admin/ai` after deploy.
 
 ## Notifications And Rate Limits
 

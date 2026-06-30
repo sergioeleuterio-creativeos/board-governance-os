@@ -17,6 +17,7 @@ const protectedRoutes = [
   '/follow-ups',
   '/admin',
   '/admin/training-packs',
+  '/admin/ai',
   '/demo/lance',
 ]
 

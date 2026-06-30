@@ -121,6 +121,7 @@ export async function callJSONAI<T>({
         body: JSON.stringify({
           model,
           temperature,
+          max_tokens: maxTokens,
           response_format: { type: 'json_object' },
           messages: [
             { role: 'system', content: system },
