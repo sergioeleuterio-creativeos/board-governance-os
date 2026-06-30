@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { AdvisorMark, MetricCard, Panel, RowCard, SectionTitle, StatusPill } from './ui'
 import { DashboardHeader } from './DashboardHeader'
+import { formatClosure, formatStatus, formatStance } from '@/lib/shadow-board/display-labels'
 
 type DashboardDecision = {
   id: string
@@ -76,14 +77,6 @@ function advisorStatusColor(status: string) {
   if (status === 'failed') return '#A23B2D'
   if (status === 'running') return '#A8772A'
   return '#8A8478'
-}
-
-function statusLabel(status: string) {
-  if (status === 'complete') return 'concluido'
-  if (status === 'failed') return 'falhou'
-  if (status === 'running') return 'rodando'
-  if (status === 'queued') return 'em fila'
-  return status
 }
 
 export function DashboardLiveScreen() {
@@ -179,8 +172,8 @@ export function DashboardLiveScreen() {
                 key={item.id}
                 code={item.id.slice(0, 8)}
                 title={item.title || 'Decisao sem titulo'}
-                detail={`${item.status} - ${item.closure_recommendation ?? 'sem closure'} - ${item.owner_label ?? 'sem owner'}`}
-                tag={item.risk_level ?? item.status}
+                detail={`${formatStatus(item.status)} - ${formatClosure(item.closure_recommendation)} - ${item.owner_label ?? 'sem responsavel'}`}
+                tag={formatStatus(item.risk_level ?? item.status)}
                 tone={decisionTone(item.risk_level)}
               />
             ))}
@@ -216,11 +209,11 @@ export function DashboardLiveScreen() {
                   <div className="min-w-0 flex-1">
                     <p className="font-semibold">{adv.name}</p>
                     <p className="sb-muted truncate">
-                      {adv.stance ?? adv.scope}
+                      {adv.stance ? formatStance(adv.stance) : adv.scope}
                       {adv.confidence_score ? ` - ${adv.confidence_score}% confianca` : ''}
                     </p>
                   </div>
-                  <span className="sb-code" style={{ color: advisorStatusColor(adv.status) }}>{statusLabel(adv.status)}</span>
+                  <span className="sb-code" style={{ color: advisorStatusColor(adv.status) }}>{formatStatus(adv.status)}</span>
                 </div>
               ))}
             </div>

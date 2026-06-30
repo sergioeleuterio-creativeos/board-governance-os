@@ -99,7 +99,7 @@ export default function Navigation() {
       email: profile?.email ?? user?.email,
       fallback: 'Usuario',
     })
-  const displayRole = user ? (isAdmin ? 'Admin' : tShell('founderRole')) : 'Preview'
+  const displayRole = user ? (isAdmin ? 'Admin' : tShell('founderRole')) : 'Visitante'
 
   async function handleCompanyChange(companyId: string) {
     if (!companyId || companyId === workspace?.company?.id) return

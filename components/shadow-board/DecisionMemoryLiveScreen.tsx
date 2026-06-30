@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { DossierSection, PageHeader, Panel, RowCard, SectionTitle, StatusPill } from './ui'
+import { formatClosure, formatStatus } from '@/lib/shadow-board/display-labels'
 
 type DecisionRecord = {
   id: string
@@ -186,8 +187,8 @@ export function DecisionMemoryLiveScreen() {
                 <RowCard
                   code={decision.id.slice(0, 8)}
                   title={decision.title || 'Decisao sem titulo'}
-                  detail={`${decision.status} - ${decision.closure_recommendation ?? 'sem closure'} - revisao ${dateLabel(decision.review_date)}`}
-                  tag={decision.risk_level ?? decision.status}
+                  detail={`${formatStatus(decision.status)} - ${formatClosure(decision.closure_recommendation)} - revisao ${dateLabel(decision.review_date)}`}
+                  tag={formatStatus(decision.risk_level ?? decision.status)}
                   tone={toneForStatus(decision.status)}
                 />
               </button>
@@ -207,8 +208,8 @@ export function DecisionMemoryLiveScreen() {
             <p className="sb-code">{selected.id.slice(0, 8)} - Registro de decisao</p>
             <h1>{selected.title || 'Decisao sem titulo'}</h1>
             <div className="flex flex-wrap gap-2">
-              <StatusPill tone={toneForStatus(selected.status)}>{selected.status}</StatusPill>
-              {selected.closure_recommendation && <StatusPill>{selected.closure_recommendation}</StatusPill>}
+              <StatusPill tone={toneForStatus(selected.status)}>{formatStatus(selected.status)}</StatusPill>
+              {selected.closure_recommendation && <StatusPill>{formatClosure(selected.closure_recommendation)}</StatusPill>}
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-[1fr_auto]">
@@ -221,7 +222,7 @@ export function DecisionMemoryLiveScreen() {
                   disabled={savingId === selected.id}
                 >
                   {decisionStatuses.map((status) => (
-                    <option key={status} value={status}>{status}</option>
+                    <option key={status} value={status}>{formatStatus(status)}</option>
                   ))}
                 </select>
               </label>
@@ -294,7 +295,7 @@ export function DecisionMemoryLiveScreen() {
                     <p className="sb-code">{String(decision.relationship ?? 'future_impact')}</p>
                     <h3 className="sb-row-title">{String(decision.title ?? 'Decisao relacionada')}</h3>
                     <p className="sb-muted">
-                      {String(decision.status ?? 'sem status')} - score {String(decision.overlap_score ?? 0)}
+                      {formatStatus(typeof decision.status === 'string' ? decision.status : null)} - score {String(decision.overlap_score ?? 0)}
                     </p>
                   </article>
                 ))}

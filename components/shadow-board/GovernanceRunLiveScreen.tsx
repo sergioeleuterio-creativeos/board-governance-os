@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { useWorkspace } from '@/hooks/useWorkspace'
 import { MetricCard, PageHeader, Panel, SectionTitle, StatusPill } from './ui'
+import { formatClosure, formatStatus } from '@/lib/shadow-board/display-labels'
 
 type LatestGovernanceRun = {
   id: string
@@ -188,7 +189,7 @@ export function GovernanceRunLiveScreen() {
     const fallbackNotice = payload.ai?.used_fallback
       ? ' Motor de contingencia usado porque a IA externa nao esta disponivel no momento.'
       : ''
-    setNotice(`Governance run concluida.${fallbackNotice} Closure sugerido: ${payload.persistence.closureRecommendation}.`)
+    setNotice(`Governance run concluida.${fallbackNotice} Fechamento sugerido: ${formatClosure(payload.persistence.closureRecommendation)}.`)
     setRunning(false)
     await loadReadout()
   }
@@ -237,8 +238,8 @@ export function GovernanceRunLiveScreen() {
                 ?? (loading ? 'Carregando diagnostico...' : 'Nenhuma governance run gerada ainda.')}
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
-              {readout?.latest_session?.status && <StatusPill>{readout.latest_session.status}</StatusPill>}
-              {readout?.latest_session?.closure_recommendation && <StatusPill>{readout.latest_session.closure_recommendation}</StatusPill>}
+              {readout?.latest_session?.status && <StatusPill>{formatStatus(readout.latest_session.status)}</StatusPill>}
+              {readout?.latest_session?.closure_recommendation && <StatusPill>{formatClosure(readout.latest_session.closure_recommendation)}</StatusPill>}
             </div>
           </div>
           <div>

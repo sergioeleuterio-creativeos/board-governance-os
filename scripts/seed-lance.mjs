@@ -1177,8 +1177,8 @@ function advisorReports() {
       ],
       recommendations: [
         { title: 'Criar DRE gerencial por produto', detail: 'Separar receitas, custos diretos, margem e OCF por linha de negocio.', priority: 'urgent' },
-        { title: 'Definir investment gate de marca/app', detail: 'Aprovar investimento por milestones de branded search, awareness, usuario identificado e receita incremental.', priority: 'high' },
-        { title: 'Board governance check financeiro', detail: 'Condicao financeira antes da aprovacao: pedir dados de cash/caixa, DRE/P&L, OCF, EBITDA, margem, runway/liquidez, debt/divida, working capital/capital de giro, budget/orcamento, forecast/previsao, variance/desvio, concentration/concentracao, covenant/restricao, scenario/cenario, capital allocation/alocacao de capital, investment gate/gate de investimento e retorno risk-adjusted.', priority: 'high' },
+        { title: 'Definir gate de investimento de marca/app', detail: 'Aprovar investimento por marcos de busca de marca, reconhecimento, usuario identificado e receita incremental.', priority: 'high' },
+        { title: 'Checklist financeiro de board', detail: 'Condicao financeira antes da aprovacao: pedir dados de caixa, DRE/P&L, OCF, EBITDA, margem, runway/liquidez, divida, capital de giro, orcamento, previsao, desvio, concentracao, restricoes, cenarios, alocacao de capital, gate de investimento e retorno ajustado ao risco.', priority: 'high' },
       ],
       closure_recommendation: 'commit_with_conditions',
     },
@@ -1191,13 +1191,13 @@ function advisorReports() {
       perspective: 'O ecossistema tem muitas frentes simultaneas. A prioridade operacional e instalar uma cadencia semanal que una editorial, produto, tecnologia, dados, social e comercial para capturar match-day moments e transformar atribuicao de marca em rotina.',
       strategic_questions: [
         'Quem decide tradeoffs entre alcance editorial, experiencia do app e demanda comercial?',
-        'Qual ritual semanal transforma aprendizados em owners e prazos?',
+        'Qual ritual semanal transforma aprendizados em responsaveis e prazos?',
         'Quais tres KPIs semanais fecham a semana: velocidade, atribuicao, saves/shares, branded search ou receita?',
       ],
       recommendations: [
         { title: 'War room de 13 semanas', detail: 'Reuniao semanal com KPI tree de break-news, social, app, CRM, marca, inventario e vendas.', priority: 'urgent' },
-        { title: 'RACI do app', detail: 'Nomear um owner por produto, dados, editorial, vendas e tecnologia.', priority: 'high' },
-        { title: 'Board governance check operacional', detail: 'Antes de escalar, definir owner/responsavel, cadence/cadencia, process/processo, execution/execucao, workflow/fluxo, accountability/prestacao de contas, dependency/dependencia, RACI/DRI, timeline/prazo, capacity/capacidade, leading indicator/indicador, review date/data de revisao, handoff, workstream/frente, decision loop/loop de decisao, operating rhythm/war room, escalation/escalacao, checkpoint/marco, trigger/gatilho e condition/condicao.', priority: 'high' },
+        { title: 'RACI do app', detail: 'Nomear um responsavel por produto, dados, editorial, vendas e tecnologia.', priority: 'high' },
+        { title: 'Checklist operacional de board', detail: 'Antes de escalar, definir responsavel, cadencia, processo, execucao, fluxo de trabalho, prestacao de contas, dependencias, RACI/DRI, prazo, capacidade, indicador lider, data de revisao, passagem de bastao, frente de trabalho, loop de decisao, ritmo operacional, escalacao, checkpoint, gatilho e condicao.', priority: 'high' },
       ],
       closure_recommendation: 'commit_with_conditions',
     },
@@ -1217,7 +1217,7 @@ function advisorReports() {
         { title: 'Break-News Habit Loop', detail: 'Criar formato repetivel em Reels, Shorts e TikTok para micro-momentos de jogo, com atribuicao forte de LANCE!.', priority: 'urgent' },
         { title: 'Advertising Proposition Rebuild', detail: 'Reposicionar a venda com prova de audiencia 18-32, recencia, reconhecimento e performance.', priority: 'high' },
         { title: 'CRM como produto de venda', detail: 'Transformar newsletter, push, WhatsApp e app em ofertas integradas.', priority: 'high' },
-        { title: 'Board governance check de crescimento', detail: 'O gate de growth/crescimento deve testar market/mercado, expansion/expansao, scale/escala, channel/canal, revenue quality/receita de qualidade, retention/retencao, product-market, CAC/LTV/unit economics, cohort/coorte, conversion/conversao, readiness/prontidao, competition/competicao, pricing/preco, strategic fit/tese, prioritize/priorizar, scale gate, stop criteria/criterio de parada, downside/risco se errado, test/POC, pause/pausar e commit.', priority: 'high' },
+        { title: 'Checklist de crescimento para board', detail: 'O gate de crescimento deve testar mercado, expansao, escala, canal, qualidade de receita, retencao, fit produto-mercado, CAC/LTV/unit economics, coorte, conversao, prontidao, competicao, preco, tese estrategica, priorizacao, gate de escala, criterio de parada, downside se a aposta estiver errada, teste/POC, pausa e compromisso.', priority: 'high' },
       ],
       closure_recommendation: 'commit',
     },
@@ -1236,7 +1236,7 @@ function advisorReports() {
       recommendations: [
         { title: 'Matriz de risco reputacional', detail: 'Classificar campanhas e categorias por risco, aprovacao e monitoramento.', priority: 'urgent' },
         { title: 'Governanca de dados do app', detail: 'Definir consentimento, retencao, acesso e uso comercial de dados.', priority: 'urgent' },
-        { title: 'Board governance check de risco', detail: 'A aprovacao precisa de risk/risco, compliance/conformidade, control/controle, concentration/concentracao, legal/juridico, reputation/reputacional, LGPD/dados pessoais, audit, risk appetite/apetite de risco, owner/responsavel, mitigation/mitigacao, early warning/alerta, escalation/escalacao, policy/politica, control gap/lacuna de controle, acceptable risk/risco aceitavel, unpriced risk/risco nao precificado, board oversight/supervisao do board, limit/limite e guardrail.', priority: 'urgent' },
+        { title: 'Checklist de risco para board', detail: 'A aprovacao precisa explicitar risco, compliance, controles, concentracao, juridico, reputacao, LGPD/dados pessoais, auditoria, apetite de risco, responsavel, mitigacao, alertas antecipados, escalacao, politica, lacunas de controle, risco aceitavel, risco nao precificado, supervisao do board, limites e guardrails.', priority: 'urgent' },
       ],
       closure_recommendation: 'commit_with_conditions',
     },
@@ -1250,12 +1250,12 @@ function advisorReports() {
       strategic_questions: [
         'Qual promessa faz o torcedor 18-32 citar LANCE! pelo nome na conversa?',
         'Como clubes, idols e competicoes personalizam a experiencia?',
-        'Como medir valor de marca alem de views e impressions?',
+        'Como medir valor de marca alem de visualizacoes e impressoes?',
       ],
       recommendations: [
-        { title: 'Brand Moment Campaign', detail: 'Escolher um evento de alta tensao e plantar LANCE! como nome que o jovem torcedor abre primeiro.', priority: 'high' },
-        { title: 'NPS/retencao por cohort', detail: 'Medir satisfacao e recorrencia por perfil de torcedor.', priority: 'medium' },
-        { title: 'Board governance check de cliente', detail: 'O plano deve provar customer/cliente/torcedor, brand/marca, trust/confianca, retention/retencao, market/mercado, demand/demanda, stakeholder/publico, salience/saliencia, NPS, cohort/coorte, awareness/reconhecimento, perception/percepcao, behavior/comportamento, segment/18-32, churn, market position/posicao de mercado, customer economics/economia do cliente, reputation/reputacao, choice/escolha e tradeoff.', priority: 'high' },
+        { title: 'Campanha de momento de marca', detail: 'Escolher um evento de alta tensao e plantar LANCE! como nome que o jovem torcedor abre primeiro.', priority: 'high' },
+        { title: 'NPS/retencao por coorte', detail: 'Medir satisfacao e recorrencia por perfil de torcedor.', priority: 'medium' },
+        { title: 'Checklist de cliente para board', detail: 'O plano deve provar cliente/torcedor, marca, confianca, retencao, mercado, demanda, stakeholders, saliencia, NPS, coorte, reconhecimento, percepcao, comportamento, segmento 18-32, churn, posicao de mercado, economia do cliente, reputacao, escolha e tradeoffs.', priority: 'high' },
       ],
       closure_recommendation: 'commit_with_conditions',
     },
@@ -1265,16 +1265,16 @@ function advisorReports() {
       stance: 'neutral',
       risk_score: 62,
       confidence_score: 66,
-      perspective: 'A estrategia exige capacidade senior em produto, dados, CRM, receita e governanca editorial. O risco e pedir que times editoriais e comerciais absorvam a transformacao sem novos papels.',
+      perspective: 'A estrategia exige capacidade senior em produto, dados, CRM, receita e governanca editorial. O risco e pedir que times editoriais e comerciais absorvam a transformacao sem novos papeis.',
       strategic_questions: [
-        'Quem e o owner executivo de dados first-party?',
-        'Existe lideranca clara para CRM/app monetization?',
+        'Quem e o responsavel executivo de dados first-party?',
+        'Existe lideranca clara para monetizacao de CRM/app?',
         'Quais capacidades precisam ser contratadas ou realocadas?',
       ],
       recommendations: [
         { title: 'Mapa de capacidades 2026', detail: 'Definir lacunas em dados, CRM, produto, analytics comercial e compliance.', priority: 'high' },
         { title: 'Squad app/CRM', detail: 'Criar squad com metas e autoridade transversal.', priority: 'medium' },
-        { title: 'Board governance check de talentos', detail: 'Antes de comprometer, mapear leadership/lideranca, talent/talento, succession/sucessao, capacity/capacidade, incentive/incentivo, culture/cultura, hiring/contratar, founder/fundador, key-person/pessoa-chave, role/papel, capability/competencia, compensation/remuneracao, decision behavior/comportamento decisorio, team/time, continuity/continuidade, people governance/governanca de pessoas, execution capacity/capacidade de execucao, succession plan/plano de sucessao e bottleneck/gargalo.', priority: 'high' },
+        { title: 'Checklist de talentos para board', detail: 'Antes de comprometer, mapear lideranca, talentos, sucessao, capacidade, incentivos, cultura, contratacoes, gargalo do fundador, risco de pessoa-chave, papeis, competencias, remuneracao, comportamento decisorio, time, continuidade, governanca de pessoas, capacidade de execucao, plano de sucessao e gargalos.', priority: 'high' },
       ],
       closure_recommendation: 'commit_with_conditions',
     },
@@ -1475,7 +1475,7 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
         'Debater prova de conceito de membership/premium depth.',
         'Aprovar KPI tree do app/CRM e gates de investimento.',
         'Debater guardrails de betting, branded content, creators e dados.',
-        'Definir decisoes, owners e review dates dos proximos 30 dias.',
+        'Definir decisoes, responsaveis e datas de revisao dos proximos 30 dias.',
       ],
       decision_candidates: decisionCandidates,
       export_payload: {
@@ -1524,9 +1524,9 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
         'Qual decisao deve ser registrada hoje para evitar drift estrategico?',
       ],
       recommendations: [
-        { title: 'Commit with conditions', detail: 'Aprovar direcao estrategica e travar gates de marca, dados, caixa, receita e risco.', priority: 'urgent' },
-        { title: 'Registrar decisao e follow-ups', detail: 'Criar owners e datas de revisao para os proximos 30 dias.', priority: 'urgent' },
-        { title: 'Board Brain governance check', detail: 'A sintese deve orquestrar advisors/assessores, preservar consensus/convergencia e conflict/divergencia, registrar dissent, nomear lacuna/missing evidence, risk appetite/apetite de risco, fonte/source, ata/minuta, decision/decisao, condition/condicao, owner/responsavel, review/revisao, follow-up/acompanhamento, tradeoff e closure: commit, commit with conditions, defer/adiar, reject/rejeitar, request more data/pedir dados ou escalate/escalar.', priority: 'urgent' },
+        { title: 'Aprovar com condicoes', detail: 'Aprovar direcao estrategica e travar gates de marca, dados, caixa, receita e risco.', priority: 'urgent' },
+        { title: 'Registrar decisao e follow-ups', detail: 'Criar responsaveis e datas de revisao para os proximos 30 dias.', priority: 'urgent' },
+        { title: 'Checklist do Board Brain', detail: 'A sintese deve orquestrar advisors, preservar convergencias e divergencias, registrar dissenso, nomear lacunas de evidencia, explicitar apetite de risco, fontes, ata, decisao, condicoes, responsavel, revisao, follow-ups, tradeoffs e fechamento: aprovar, aprovar com condicoes, adiar, rejeitar, pedir mais dados ou escalar.', priority: 'urgent' },
       ],
       closure_recommendation: 'commit_with_conditions',
     },
@@ -1580,11 +1580,11 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
       relationship: 'agreement',
       transcript: [
         { speaker: 'Finance Advisor', note: 'DRE gerencial e OCF precisam entrar no board pack.' },
-        { speaker: 'Operator Advisor', note: 'A cadencia semanal deve produzir esses dados e decisions owners.' },
+        { speaker: 'Operator Advisor', note: 'A cadencia semanal deve produzir esses dados, decisoes e responsaveis.' },
       ],
       summary: 'Finance e Operator concordam que governanca financeira e ritual operacional precisam nascer juntos.',
       conflicts: [],
-      agreements: ['DRE gerencial, owners e review dates sao pre-condicoes.'],
+      agreements: ['DRE gerencial, responsaveis e datas de revisao sao pre-condicoes.'],
     },
     {
       organization_id: organization.id,
@@ -1621,7 +1621,7 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
         'Guardrails de reputacao, betting e dados',
       ],
       attendees: ['Board Brain', 'Finance Advisor', 'Operator Advisor', 'Growth Advisor', 'Risk Advisor', 'Customer Advisor', 'Talent Advisor'],
-      orchestrator_summary: 'Reuniao preparada para decidir commit with conditions sobre reposicionamento, jornalistas como ativos de autoridade, app/CRM e receita de qualidade.',
+      orchestrator_summary: 'Reuniao preparada para decidir aprovacao com condicoes sobre reposicionamento, jornalistas como ativos de autoridade, app/CRM e receita de qualidade.',
     })
     .select('id')
     .single())
@@ -1656,7 +1656,7 @@ async function seedGovernanceChain(organization, company, user, sourceDocumentId
     governance_cycle_id: governanceCycle.id,
     board_meeting_id: boardMeeting.id,
     board_session_id: boardSession.id,
-    minutes: 'Pre-minuta gerada pelo Board Brain: o board converge na tese de tornar LANCE! a fonte nomeada do jovem torcedor e construir owned audience, mas recomenda commit with conditions com gates de marca, financeiros, operacionais, reputacionais e de dados.',
+    minutes: 'Pre-minuta gerada pelo Board Brain: o board converge na tese de tornar LANCE! a fonte nomeada do jovem torcedor e construir audiencia propria, mas recomenda aprovacao com condicoes e gates de marca, financeiros, operacionais, reputacionais e de dados.',
     decisions_presented: decisionCandidates,
     conflicts_identified: [
       'Growth quer acelerar match-day formats, marca e monetizacao via app/CRM; Risk exige guardrails de dados, betting e editorial.',

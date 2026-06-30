@@ -1607,3 +1607,55 @@ Open items after this batch:
 - After production deploy, use `/admin/ai -> Testar IA` to confirm Vercel env vars are also healthy.
 - Run a real Board Brain governance run from the app against LANCE or a training pack, then re-check `/admin/agents` and `/admin/ai`.
 - Stripe remains parked.
+
+### 2026-06-30 - pt-BR output cleanup, LANCE reseed, and advisor prompt localization
+
+User reported:
+- Some outputs were still mixed EN/pt-BR.
+- Example: `LANCE! precisa transformar Prioritize CRM, Socio LANCE!, content/product cadence... em uma decisao... owner e revisao.`
+
+Implemented:
+- Translated the 10 public training company packs in `lib/board/training-sources.ts` to Portuguese-first source content.
+- Added a diagnosis fragment guard in `lib/board/training-pack-seed.ts` so decision-pressure fragments do not create awkward `. em uma decisao` sentences.
+- Localized training-pack advisor seed language, board-pack agenda, KPIs, priorities, risks, and decision/follow-up wording.
+- Localized the governance AI prompt and deterministic fallback in `lib/board/ai.ts`.
+- Localized advisor rubric text sent to AI prompts in `lib/board/advisor-rubrics.ts`.
+- Added shared display helpers in `lib/shadow-board/display-labels.ts` to render raw values like `commit_with_conditions` as user-facing labels like `Aprovar com condicoes`.
+- Applied those labels to Dashboard, Governance Run, Shadow Board Review, Decision Memory, Admin Overview, and Admin Sessions.
+- Cleaned user-facing "owner/closure/preview/founder" copy in pt-BR screens and messages.
+- Cleaned old reference/demo mock copy so future reuse does not reintroduce obvious English labels.
+- Cleaned the dedicated LANCE seed script so LANCE advisor reports, board meeting notes, and minutes are Portuguese-first.
+- Reseeded live Supabase:
+  - `npm run seed:training-packs -- --reset`
+  - `node scripts/seed-lance.mjs`
+- Cleaned stale Supabase rows that still had the old `Prioritize CRM... owner e revisao` diagnosis.
+- Normalized stale diagnosis punctuation rows already in Supabase.
+- Re-ran and persisted training-pack adherence evaluation.
+
+Live data verification:
+- Latest LANCE/training LANCE diagnoses now have:
+  - `english_hits: 0`
+  - `punctuation_hits: 0`
+- Latest training-pack adherence evaluation:
+  - 10 companies scored
+  - average score 93
+  - 0 weak reviews
+  - 0 missing requirements
+
+Verification:
+- `npm run typecheck` passed.
+- `npm run build` passed with 72 app routes.
+- `npm run ai:health` passed against OpenAI `gpt-4.1`.
+- `npm run qa:security` passed.
+- `npm run qa:exports` passed with only legacy artifact warnings for older signed URL metadata.
+- `node --check` passed for:
+  - `scripts/seed-lance.mjs`
+  - `scripts/seed-training-packs.mjs`
+  - `scripts/evaluate-advisors.mjs`
+
+Open items after this batch:
+- Push/deploy and run production smoke after Vercel finishes.
+- Run one real Board Brain governance run against LANCE with OpenAI active, then inspect `/admin/agents` and `/admin/ai`.
+- Generate fresh PDF/PPTX/DOCX/XLSX exports from production and visually QA them.
+- Keep Stripe billing enforcement parked until Stripe setup is complete.
+- Replace placeholder privacy/terms with final legal copy before external launch.

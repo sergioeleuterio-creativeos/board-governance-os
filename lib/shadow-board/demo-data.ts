@@ -73,10 +73,10 @@ export const advisors = [
 ] as const
 
 export const metrics = [
-  { label: 'Risk index', value: '68', detail: '/ 100 - Elevated', delta: '+4', tone: 'critical' },
-  { label: 'Plan confidence', value: '74', detail: '/ 100 - Solid', delta: '+6', tone: 'positive' },
-  { label: 'Open decisions', value: '9', detail: '3 awaiting you', tone: 'neutral' },
-  { label: 'Overdue follow-ups', value: '4', detail: '2 critical', tone: 'caution' },
+  { label: 'Indice de risco', value: '68', detail: '/ 100 - elevado', delta: '+4', tone: 'critical' },
+  { label: 'Confianca do plano', value: '74', detail: '/ 100 - solida', delta: '+6', tone: 'positive' },
+  { label: 'Decisoes abertas', value: '9', detail: '3 aguardando voce', tone: 'neutral' },
+  { label: 'Follow-ups atrasados', value: '4', detail: '2 criticos', tone: 'caution' },
 ] as const
 
 export const decisionQueue = [
@@ -216,7 +216,7 @@ export const structuredAdvisorReports = [
   {
     code: 'FN',
     title: 'Finance Advisor report',
-    stance: 'Commit with conditions',
+    stance: 'Aprovar com condicoes',
     finding: 'Hub expansion should not proceed until runway is above 12 months and customer concentration is under 25%.',
     questions: ['What is the monthly cash burn after hub capex?', 'Which financing terms are negotiable this quarter?'],
     recommendations: ['Freeze discretionary hub spend', 'Produce a 13-week cash forecast', 'Review gross margin by customer cohort'],
@@ -224,10 +224,10 @@ export const structuredAdvisorReports = [
   {
     code: 'OP',
     title: 'Operator Advisor report',
-    stance: 'Commit with owner gates',
+    stance: 'Aprovar com gates de responsavel',
     finding: 'Execution capacity is the binding constraint; founder remains too central to operating loops.',
     questions: ['Which weekly cadence exposes delays early?', 'Who owns VP Ops hiring before the next review?'],
-    recommendations: ['Install weekly KPI review', 'Define VP Ops role scorecard', 'Assign one owner per workstream'],
+    recommendations: ['Instalar revisao semanal de KPIs', 'Definir scorecard do VP Ops', 'Atribuir um responsavel por frente'],
   },
   {
     code: 'RK',
@@ -235,7 +235,7 @@ export const structuredAdvisorReports = [
     stance: 'Request evidence gate',
     finding: 'Revenue concentration and runway create compounding downside if expansion starts too early.',
     questions: ['What happens if the largest customer churns during hub build?', 'Which decision is reversible?'],
-    recommendations: ['Cap concentration at 25%', 'Add review dates to every material decision', 'Document downside triggers'],
+    recommendations: ['Limitar concentracao a 25%', 'Adicionar datas de revisao a toda decisao material', 'Documentar gatilhos de downside'],
   },
 ] as const
 
@@ -256,7 +256,7 @@ export const reviewNotes = [
 
 export const decisionLedger = [
   ['DEC-118', 'Pause Sao Paulo hub expansion', 'Awaiting approval - linked to DEC-109, DEC-112', 'SELECTED'],
-  ['DEC-116', 'Cap single-customer exposure at 25%', 'Owner: Finance - review Dec 2026', 'APPROVED'],
+  ['DEC-116', 'Limitar exposicao a um unico cliente a 25%', 'Responsavel: Finance - revisao Dez 2026', 'APROVADA'],
   ['DEC-114', 'Raise a bridge round this quarter', 'Rationale: dilution before traction milestones', 'REJECTED'],
   ['DEC-109', 'Keep in-house fleet vs. 3PL', 'Review date reached - revisit with current data', 'REVIEW DUE'],
 ] as const

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { AdvisorMark, Meter, PageHeader, Panel, SectionTitle, StatusPill } from './ui'
+import { formatClosure, formatStance, formatStatus } from '@/lib/shadow-board/display-labels'
 
 type AgentReview = {
   id: string
@@ -247,7 +248,7 @@ export function ShadowBoardReviewLiveScreen() {
       <PageHeader
         eyebrow="05 - Shadow Board Review"
         title={readout?.company?.name ? `${readout.company.name} em sessao` : 'Board Pack em sessao'}
-        description="Seis lentes de governanca revisam de forma independente, com sintese e recomendacao de closure do Board Brain."
+        description="Seis lentes de governanca revisam de forma independente, com sintese e recomendacao de fechamento do Board Brain."
         action={
           <div className="flex flex-wrap gap-2">
             <button
@@ -295,7 +296,7 @@ export function ShadowBoardReviewLiveScreen() {
                 <div>
                   <div className="flex flex-wrap items-center gap-2">
                     <h3>{review.advisor_name}</h3>
-                    <StatusPill tone={stanceTone(review.stance)}>{review.stance ?? review.status}</StatusPill>
+                    <StatusPill tone={stanceTone(review.stance)}>{review.stance ? formatStance(review.stance) : formatStatus(review.status)}</StatusPill>
                     <button
                       type="button"
                       className="btn-chamber-muted"
@@ -342,9 +343,9 @@ export function ShadowBoardReviewLiveScreen() {
             {boardBrain?.perspective ?? readout?.board_pack?.executive_summary ?? 'A sintese do Board Brain aguarda uma governance run.'}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            {boardBrain?.closure_recommendation && <StatusPill>{boardBrain.closure_recommendation}</StatusPill>}
-            {readout?.board_session?.closure_recommendation && <StatusPill tone="positive">{readout.board_session.closure_recommendation}</StatusPill>}
-            {readout?.board_pack?.status && <StatusPill>{readout.board_pack.status}</StatusPill>}
+            {boardBrain?.closure_recommendation && <StatusPill>{formatClosure(boardBrain.closure_recommendation)}</StatusPill>}
+            {readout?.board_session?.closure_recommendation && <StatusPill tone="positive">{formatClosure(readout.board_session.closure_recommendation)}</StatusPill>}
+            {readout?.board_pack?.status && <StatusPill>{formatStatus(readout.board_pack.status)}</StatusPill>}
           </div>
           {readout?.board_session?.closure_summary && (
             <p className="sb-muted mt-4">{readout.board_session.closure_summary}</p>

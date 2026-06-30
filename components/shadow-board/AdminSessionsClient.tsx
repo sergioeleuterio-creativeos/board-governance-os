@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { PageHeader, Panel, SectionTitle, StatusPill } from './ui'
+import { formatClosure, formatStatus } from '@/lib/shadow-board/display-labels'
 
 type StatusTone = 'positive' | 'critical' | 'caution' | 'neutral'
 
@@ -84,7 +85,7 @@ export function AdminSessionsClient() {
     return [
       ['Sessoes', String(sessions.length), `${open} abertas`],
       ['Fechadas', String(closed), 'com memoria registrada'],
-      ['Sem closure', String(withoutClosure), 'precisam recomendacao'],
+      ['Sem fechamento', String(withoutClosure), 'precisam recomendacao'],
     ] as const
   }, [sessions])
 
@@ -138,7 +139,7 @@ export function AdminSessionsClient() {
       <PageHeader
         eyebrow="Admin - Sessoes"
         title="Monitor de board sessions"
-        description="Acompanhamento ao vivo de status, consumo, janela de revisao e recomendacao de closure."
+        description="Acompanhamento ao vivo de status, consumo, janela de revisao e recomendacao de fechamento."
         action={<button className="btn-secondary" type="button" onClick={() => void loadSessions()}>Atualizar</button>}
       />
 
@@ -194,7 +195,7 @@ export function AdminSessionsClient() {
             <div className="sb-table-row" key={session.id}>
               <span>
                 <strong>{session.id.slice(0, 8)}</strong>
-                <small>{session.session_type}</small>
+                <small>{formatStatus(session.session_type)}</small>
                 <small>{session.governance_cycle_title ?? 'Ciclo sem titulo'}</small>
               </span>
               <span>
@@ -209,10 +210,10 @@ export function AdminSessionsClient() {
                   disabled={savingSessionId === session.id}
                 >
                   {sessionStatuses.map((status) => (
-                    <option key={status} value={status}>{status}</option>
+                    <option key={status} value={status}>{formatStatus(status)}</option>
                   ))}
                 </select>
-                <StatusPill tone={statusTone(session.status)}>{session.status}</StatusPill>
+                <StatusPill tone={statusTone(session.status)}>{formatStatus(session.status)}</StatusPill>
               </span>
               <span>
                 <select
@@ -222,10 +223,10 @@ export function AdminSessionsClient() {
                   disabled={savingSessionId === session.id}
                 >
                   {closureOptions.map((closure) => (
-                    <option key={closure || 'empty'} value={closure}>{closure || 'Sem closure'}</option>
+                    <option key={closure || 'empty'} value={closure}>{formatClosure(closure)}</option>
                   ))}
                 </select>
-                <small>{session.closure_summary ?? 'Sem resumo de closure'}</small>
+                <small>{session.closure_summary ?? 'Sem resumo de fechamento'}</small>
               </span>
               <span>
                 {windowLabel(session)}

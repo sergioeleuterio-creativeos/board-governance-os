@@ -186,7 +186,7 @@ export function FollowUpsLiveScreen() {
       <PageHeader
         eyebrow="07 - Follow-ups"
         title="Cadencia e follow-through"
-        description="Cada decisao carrega owners e datas. Esta tela mantem a memoria operacional viva."
+        description="Cada decisao carrega responsaveis e datas. Esta tela mantem a memoria operacional viva."
       />
 
       {(error || notice) && (
@@ -198,7 +198,7 @@ export function FollowUpsLiveScreen() {
 
       <section className="grid gap-4 md:grid-cols-3">
         <MetricCard label="Atrasados" value={String(metrics.overdue)} detail="acoes criticas" tone={metrics.overdue ? 'critical' : 'positive'} />
-        <MetricCard label="Esta semana" value={String(metrics.dueWeek)} detail="check-ins de owner" tone={metrics.dueWeek ? 'caution' : 'neutral'} />
+        <MetricCard label="Esta semana" value={String(metrics.dueWeek)} detail="check-ins de responsavel" tone={metrics.dueWeek ? 'caution' : 'neutral'} />
         <MetricCard label="No trilho" value={String(metrics.onTrack)} detail="loops ativos" tone="positive" />
       </section>
       <Panel>

@@ -195,10 +195,10 @@ export function GovernanceRunScreen() {
             </ul>
           </div>
           <div>
-            <SectionTitle label="Workstreams, KPIs & owners" />
+            <SectionTitle label="Frentes, KPIs e responsaveis" />
             <div className="sb-table">
               <div className="sb-table-head">
-                <span>Workstream</span><span>KPI</span><span>Owner</span><span>Timeline</span>
+                <span>Frente</span><span>KPI</span><span>Responsavel</span><span>Prazo</span>
               </div>
               {workstreams.map(row => (
                 <div className="sb-table-row" key={row[0]}>
@@ -412,7 +412,7 @@ export function DecisionMemoryScreen() {
         <PageHeader
           eyebrow="06 - Decision Memory"
           title="The decision ledger"
-          description="118 closed decisions - permanent records with rationale, tradeoffs, owners, and review dates"
+          description="118 decisoes encerradas - registros permanentes com racional, tradeoffs, responsaveis e datas de revisao"
         />
         <Panel>
           <div className="mb-4 flex flex-wrap gap-2">
@@ -420,7 +420,7 @@ export function DecisionMemoryScreen() {
           </div>
           <div className="space-y-3">
             {decisionLedger.map(([id, title, detail, tag]) => (
-              <RowCard key={id} code={id} title={title} detail={detail} tag={tag} tone={tag === 'REJECTED' ? 'critical' : tag === 'APPROVED' ? 'positive' : 'caution'} />
+              <RowCard key={id} code={id} title={title} detail={detail} tag={tag} tone={tag === 'REJECTED' ? 'critical' : tag === 'APROVADA' ? 'positive' : 'caution'} />
             ))}
           </div>
         </Panel>
@@ -435,7 +435,7 @@ export function DecisionMemoryScreen() {
         </DossierSection>
         <div className="grid gap-4 sm:grid-cols-2">
           <Panel>
-            <p className="sb-code">Owner</p>
+            <p className="sb-code">Responsavel</p>
             <p className="font-semibold">Finance Advisor</p>
           </Panel>
           <Panel>
@@ -457,18 +457,18 @@ export function FollowUpsScreen() {
       <PageHeader
         eyebrow="07 - Follow-ups"
         title="Cadence & follow-through"
-        description="Every decision carries owners and dates - this is where they get honored."
+        description="Cada decisao carrega responsaveis e datas - e aqui que elas sao acompanhadas."
       />
       <section className="grid gap-4 md:grid-cols-3">
         <MetricCard label="Overdue" value="4" detail="critical actions" tone="critical" />
-        <MetricCard label="Due this week" value="7" detail="owner check-ins" tone="caution" />
+        <MetricCard label="Esta semana" value="7" detail="check-ins de responsavel" tone="caution" />
         <MetricCard label="On track" value="21" detail="active loops" tone="positive" />
       </section>
       <Panel>
         <SectionTitle label="Follow-up tracker" />
         <div className="sb-table sb-followup-table">
           <div className="sb-table-head">
-            <span>Follow-up</span><span>Owner</span><span>Due</span><span>Source</span>
+            <span>Follow-up</span><span>Responsavel</span><span>Prazo</span><span>Fonte</span>
           </div>
           {followUps.map(item => (
             <div className="sb-table-row" key={item.action}>

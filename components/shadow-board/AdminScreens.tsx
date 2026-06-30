@@ -8,7 +8,7 @@ const adminMetrics = [
 ] as const
 
 const adminQueue = [
-  ['ADM-012', 'Nuveo Logistica session needs closure review', 'Board Brain recommended commit with conditions', 'Session'],
+  ['ADM-012', 'Sessao da Nuveo Logistica precisa revisar fechamento', 'Board Brain recomendou aprovar com condicoes', 'Sessao'],
   ['INV-008', 'Resenha partner admin invite pending', 'Eduardo Picarelli - partner_admin', 'Invite'],
   ['DOC-031', 'Q1 close.xlsx extraction failed', 'Retry after file parser worker is live', 'Document'],
   ['BIL-004', 'Quarterly package quota near limit', '1 session left in current usage package', 'Billing'],
@@ -123,7 +123,7 @@ export function AdminUsersScreen() {
       </Panel>
 
       <section className="grid gap-4 md:grid-cols-3">
-        <Panel><p className="sb-code">Role model</p><h2 className="sb-row-title">Organization first</h2><p className="sb-muted mt-2">Owner, admin, member, advisor_operator, partner_admin, super_admin.</p></Panel>
+        <Panel><p className="sb-code">Modelo de acesso</p><h2 className="sb-row-title">Organizacao primeiro</h2><p className="sb-muted mt-2">Dono, admin, membro, operador de advisor, admin parceiro, super admin.</p></Panel>
         <Panel><p className="sb-code">Company access</p><h2 className="sb-row-title">Scoped company roles</h2><p className="sb-muted mt-2">Founder, admin, member, viewer, advisor_operator.</p></Panel>
         <Panel><p className="sb-code">Invite flow</p><h2 className="sb-row-title">Magic-link ready</h2><p className="sb-muted mt-2">New users bootstrap profile and workspace after auth callback.</p></Panel>
       </section>
@@ -162,7 +162,7 @@ export function AdminSessionsScreen() {
       <section className="grid gap-4 lg:grid-cols-3">
         <Panel><p className="sb-code">Admin session</p><h2 className="sb-row-title">Operator can intervene</h2><p className="sb-muted mt-2">Admin sessions let Sergio or an operator inspect context and recover failed workflows.</p></Panel>
         <Panel><p className="sb-code">Usage control</p><h2 className="sb-row-title">Session as billable unit</h2><p className="sb-muted mt-2">Each review session tracks consumed usage units and deep-dive limits.</p></Panel>
-        <Panel><p className="sb-code">Closure</p><h2 className="sb-row-title">No open-ended advice</h2><p className="sb-muted mt-2">Commit, commit with conditions, defer, reject, request data, or escalate.</p></Panel>
+        <Panel><p className="sb-code">Fechamento</p><h2 className="sb-row-title">Sem conselho em aberto</h2><p className="sb-muted mt-2">Aprovar, aprovar com condicoes, adiar, rejeitar, pedir dados ou escalar.</p></Panel>
       </section>
     </div>
   )

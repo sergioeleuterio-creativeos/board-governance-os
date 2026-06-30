@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { PageHeader, Panel, SectionTitle, StatusPill } from './ui'
+import { formatClosure, formatStatus } from '@/lib/shadow-board/display-labels'
 
 type CountRow = {
   table: string
@@ -157,10 +158,10 @@ export function AdminOverviewClient() {
                     <p className="sb-code">{session.id.slice(0, 8)}</p>
                     <h3 className="sb-row-title">{session.company_name ?? session.company_id}</h3>
                     <p className="sb-muted mt-1">
-                      {session.session_type} - {session.closure_recommendation ?? 'sem closure'} - {dateLabel(session.created_at)}
+                      {formatStatus(session.session_type)} - {formatClosure(session.closure_recommendation)} - {dateLabel(session.created_at)}
                     </p>
                   </div>
-                  <StatusPill tone={sessionTone(session.status)}>{session.status}</StatusPill>
+                  <StatusPill tone={sessionTone(session.status)}>{formatStatus(session.status)}</StatusPill>
                 </div>
               </article>
             ))}

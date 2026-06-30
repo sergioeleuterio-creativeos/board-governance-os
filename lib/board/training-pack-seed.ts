@@ -23,7 +23,7 @@ type TrainingSeedResult = {
 const advisors = [
   ['board_brain', 'Board Brain', 'orquestra conflito, consenso, condicoes de decisao e memoria futura'],
   ['finance', 'Finance Advisor', 'testa caixa, ROI, margem, alocacao de capital e gates financeiros'],
-  ['operator', 'Operator Advisor', 'transforma a recomendacao em owners, cadencia, dependencias e sinais de execucao'],
+  ['operator', 'Operator Advisor', 'transforma a recomendacao em responsaveis, cadencia, dependencias e sinais de execucao'],
   ['growth', 'Growth Advisor', 'testa escala, mercado, receita de qualidade, canais e criterios de crescimento'],
   ['risk', 'Risk Advisor', 'identifica riscos nao precificados, controles, concentracao, compliance e escalacao'],
   ['customer', 'Customer Advisor', 'testa marca, confianca, retencao, posicao de mercado e qualidade da demanda'],
@@ -37,46 +37,46 @@ const advisorEvidenceLanguage: Record<string, {
   closure: string
 }> = {
   board_brain: {
-    scope: 'orchestrate synthesis, consensus, conflict, dissent and board-level governance boundary',
-    evidence: 'missing evidence, risk appetite, advisor disagreement, source trail and minutes discipline',
-    board: 'decision, condition, owner, review date, follow-up and tradeoff memory',
-    closure: 'commit with conditions, defer, reject, request more data or escalate to human review',
+    scope: 'orquestrar sintese, consenso, conflito, dissenso e limite de governanca no nivel de board',
+    evidence: 'evidencias ausentes, apetite de risco, divergencia entre advisors, trilha de fontes e disciplina de ata',
+    board: 'decisao, condicao, responsavel, data de revisao, follow-up e memoria de tradeoffs',
+    closure: 'comprometer com condicoes, adiar, rejeitar, pedir mais dados ou escalar para revisao humana',
   },
   finance: {
-    scope: 'cash, ROI, payback, margin, runway, debt, working capital, DRE/P&L, OCF and EBITDA',
-    evidence: 'budget, forecast, variance, concentration, liquidity and covenant exposure',
-    board: 'capital allocation, investment gate, risk-adjusted scenario and approval condition',
-    closure: 'financial condition, gate, approve with conditions, request data or defer',
+    scope: 'caixa, ROI, payback, margem, runway, divida, capital de giro, DRE/P&L, OCF e EBITDA',
+    evidence: 'orcamento, forecast, desvio, concentracao, liquidez e exposicao a covenants',
+    board: 'alocacao de capital, gate de investimento, cenario ajustado a risco e condicao de aprovacao',
+    closure: 'condicao financeira, gate, aprovar com condicoes, pedir dados ou adiar',
   },
   operator: {
-    scope: 'owner, cadence, process, execution, workflow, accountability, dependency, RACI and DRI',
-    evidence: 'timeline, capacity, leading indicator, review date, blocked item and handoff',
-    board: 'workstream, decision loop, operating rhythm, escalation and checkpoint',
-    closure: 'assign owner, schedule cadence, review trigger and commit with conditions',
+    scope: 'responsavel, cadencia, processo, execucao, fluxo de trabalho, accountability, dependencia, RACI e DRI',
+    evidence: 'cronograma, capacidade, indicador lider, data de revisao, bloqueio e passagem de bastao',
+    board: 'frente de trabalho, loop de decisao, ritmo operacional, escalacao e checkpoint',
+    closure: 'nomear responsavel, agendar cadencia, gatilho de revisao e compromisso com condicoes',
   },
   growth: {
-    scope: 'growth, market, expansion, scale, channel, revenue quality, retention and product-market readiness',
-    evidence: 'CAC, LTV, unit economics, cohort, conversion, competition, pricing and readiness',
-    board: 'strategic fit, prioritize, scale gate, stop criteria and downside if wrong',
-    closure: 'scale, test, pause, gate or commit based on evidence',
+    scope: 'crescimento, mercado, expansao, escala, canal, qualidade de receita, retencao e prontidao produto-mercado',
+    evidence: 'CAC, LTV, unit economics, coorte, conversao, competicao, precificacao e prontidao',
+    board: 'fit estrategico, priorizacao, gate de escala, criterio de parada e downside se a aposta estiver errada',
+    closure: 'escalar, testar, pausar, criar gate ou comprometer com base em evidencia',
   },
   risk: {
-    scope: 'risk, compliance, control, concentration, legal, reputation, LGPD, ESG and audit exposure',
-    evidence: 'risk appetite, owner, mitigation, early warning, escalation, policy and control gap',
-    board: 'acceptable risk, unpriced risk, board oversight, limit and guardrail',
-    closure: 'mitigate, escalate, condition, reject or defer',
+    scope: 'risco, compliance, controle, concentracao, juridico, reputacao, LGPD, ESG e exposicao de auditoria',
+    evidence: 'apetite de risco, responsavel, mitigacao, alerta antecipado, escalacao, politica e lacuna de controle',
+    board: 'risco aceitavel, risco nao precificado, supervisao do board, limite e guardrail',
+    closure: 'mitigar, escalar, condicionar, rejeitar ou adiar',
   },
   customer: {
-    scope: 'customer, brand, trust, retention, market, demand, stakeholder, salience and brand memory',
-    evidence: 'NPS, cohort, awareness, perception, behavior, segment, churn and 18-32 demand signals',
-    board: 'market position, customer economics, reputation, customer choice and tradeoff',
-    closure: 'prove, measure, protect, prioritize and commit with conditions',
+    scope: 'cliente, marca, confianca, retencao, mercado, demanda, stakeholder, saliencia e memoria de marca',
+    evidence: 'NPS, coorte, conhecimento de marca, percepcao, comportamento, segmento, churn e sinais de demanda 18-32',
+    board: 'posicao de mercado, economia do cliente, reputacao, escolha do cliente e tradeoff',
+    closure: 'provar, medir, proteger, priorizar e comprometer com condicoes',
   },
   talent: {
-    scope: 'leadership, talent, succession, capacity, incentives, culture, hiring and founder bottleneck',
-    evidence: 'key-person risk, role clarity, span, capability, compensation, decision behavior and team capacity',
-    board: 'continuity, people governance, execution capacity, succession plan and bottleneck',
-    closure: 'hire, assign, realign, succession condition and commit with conditions',
+    scope: 'lideranca, talento, sucessao, capacidade, incentivos, cultura, contratacao e gargalo do fundador',
+    evidence: 'risco de pessoa-chave, clareza de papeis, amplitude de gestao, capacidade, remuneracao, comportamento decisorio e capacidade do time',
+    board: 'continuidade, governanca de pessoas, capacidade de execucao, plano de sucessao e gargalo',
+    closure: 'contratar, atribuir, realinhar, condicionar sucessao e comprometer com condicoes',
   },
 }
 
@@ -96,6 +96,10 @@ function addDays(days: number) {
   return date.toISOString().slice(0, 10)
 }
 
+function asSentenceFragment(value: string) {
+  return value.trim().replace(/[.\s]+$/g, '')
+}
+
 async function must<T = any>(label: string, query: PromiseLike<{ data: T; error: { message: string } | null }>) {
   const { data, error } = await query
   if (error) throw new Error(`${label}: ${error.message}`)
@@ -104,9 +108,9 @@ async function must<T = any>(label: string, query: PromiseLike<{ data: T; error:
 
 function sourceReferences(pack: CompanyTrainingPack) {
   return pack.sourceUrls.map((url, index) => ({
-    title: pack.sourceInstitutions[index] ?? pack.sourceInstitutions[0] ?? 'Public source',
+    title: pack.sourceInstitutions[index] ?? pack.sourceInstitutions[0] ?? 'Fonte publica',
     url,
-    use: 'Public-source calibration for training/demo pack.',
+    use: 'Calibracao por fonte publica para pack de treinamento/demo.',
   }))
 }
 
@@ -132,7 +136,7 @@ function boardRisks(pack: CompanyTrainingPack) {
   return pack.companySeed.knownUnknowns.slice(0, 5).map((unknown, index) => ({
     title: unknown,
     risk: index < 2 ? 'high' : 'medium',
-    mitigation: 'Nomear owner, fonte de evidencia e gatilho de revisao antes de aprovar escala.',
+    mitigation: 'Nomear responsavel, fonte de evidencia e gatilho de revisao antes de aprovar escala.',
   }))
 }
 
@@ -149,7 +153,7 @@ function priorityRanking(pack: CompanyTrainingPack) {
       rationale: 'Transforma ambicao em condicoes de aprovacao, pausa ou escala.',
     },
     {
-      title: 'Registrar decisao, owner e cadencia',
+      title: 'Registrar decisao, responsavel e cadencia',
       priority: 'media',
       rationale: 'Evita que a recomendacao se perca depois da reuniao.',
     },
@@ -161,7 +165,7 @@ function decisionCandidates(pack: CompanyTrainingPack) {
     {
       title: `Aprovar ciclo de validacao: ${pack.caseTitle}`,
       decision: pack.companySeed.decisionPressure,
-      owner_suggestion: 'Founder + owner funcional indicado',
+      owner_suggestion: 'Fundador + responsavel funcional indicado',
       risk_level: 'high',
       confidence_score: 72,
       conditions: pack.companySeed.knownUnknowns.slice(0, 3),
@@ -172,7 +176,7 @@ function decisionCandidates(pack: CompanyTrainingPack) {
       owner_suggestion: 'Board Brain + Finance Advisor',
       risk_level: 'medium',
       confidence_score: 78,
-      conditions: ['DRE/P&L minimo', 'OCF/runway', 'owner operacional', 'data de revisao'],
+      conditions: ['DRE/P&L minimo', 'OCF/runway', 'responsavel operacional', 'data de revisao'],
     },
   ]
 }
@@ -181,6 +185,7 @@ function advisorReviewFor(pack: CompanyTrainingPack, advisorKey: string, advisor
   const stressed = pack.advisorStress.includes(advisorKey as any)
   const question = pack.boardQuestions.find((item) => item.toLowerCase().includes(advisorKey)) ?? pack.boardQuestions[0]
   const language = advisorEvidenceLanguage[advisorKey] ?? advisorEvidenceLanguage.board_brain
+  const decisionPressure = asSentenceFragment(pack.companySeed.decisionPressure)
   return {
     advisor_key: advisorKey,
     advisor_name: advisorName,
@@ -188,7 +193,7 @@ function advisorReviewFor(pack: CompanyTrainingPack, advisorKey: string, advisor
     stance: stressed ? 'support_with_conditions' : 'neutral',
     risk_score: stressed ? 72 : 58,
     confidence_score: stressed ? 76 : 68,
-    perspective: `${advisorName} deve ${focus}. Escopo da lente: ${language.scope}. Neste pack, o ponto critico e transformar "${pack.companySeed.decisionPressure}" em uma decisao com evidencia, owner, condicoes e revisao.`,
+    perspective: `${advisorName} deve ${focus}. Escopo da lente: ${language.scope}. Neste pack, o ponto critico e transformar "${decisionPressure}" em uma decisao com evidencia, responsavel, condicoes e revisao.`,
     strategic_questions: [
       question,
       `Qual evidencia minima de ${language.evidence} muda a recomendacao?`,
@@ -201,7 +206,7 @@ function advisorReviewFor(pack: CompanyTrainingPack, advisorKey: string, advisor
       `Exigir evidencia minima antes de aprovar escala em ${pack.companyName}.`,
       `Criar ${language.board} antes de sair da reuniao.`,
       `Usar ${language.closure} como fechamento possivel da sessao.`,
-      'Registrar owner, risco, condicoes, minutes, follow-up e data de revisao.',
+      'Registrar responsavel, risco, condicoes, ata, follow-up e data de revisao.',
       stressed ? 'Tratar este advisor como lente principal no primeiro review.' : 'Usar esta lente para desafiar pontos cegos da decisao.',
     ],
     closure_recommendation: 'commit_with_conditions',
@@ -356,11 +361,11 @@ export async function seedTrainingPackCompany({
       company_id: company.id,
       governance_cycle_id: cycle.id,
       status: 'ready_for_review',
-      diagnosis: `${pack.companyName} precisa transformar ${pack.companySeed.decisionPressure} em uma decisao governavel, com evidencia minima, apetite de risco, owner e revisao.`,
+      diagnosis: `${pack.companyName} precisa transformar ${asSentenceFragment(pack.companySeed.decisionPressure)} em uma decisao governavel, com evidencia minima, apetite de risco, responsavel e revisao.`,
       priorities: priorityRanking(pack),
       kpis: [
         { metric: 'Evidencias criticas fechadas', target: '80% antes da decisao' },
-        { metric: 'Owners definidos', target: '100% das frentes' },
+        { metric: 'Responsaveis definidos', target: '100% das frentes' },
         { metric: 'Gates financeiros', target: 'DRE, OCF e payback minimo' },
       ],
       workstreams: [
@@ -395,7 +400,7 @@ export async function seedTrainingPackCompany({
         'Confirmar contexto e lacunas de evidencia',
         'Revisar DRE/P&L, OCF, unit economics e risco',
         'Ouvir dissensos dos advisors',
-        'Definir decisao, condicoes, owner e revisao',
+        'Definir decisao, condicoes, responsavel e revisao',
       ],
       decision_candidates: decisionCandidates(pack),
       export_payload: {
@@ -490,7 +495,7 @@ export async function seedTrainingPackCompany({
       user_id: actorUserId,
       owner_label: 'Operator Advisor',
       owner: 'Operator Advisor',
-      title: 'Definir owner, cadencia e sinais de execucao',
+      title: 'Definir responsavel, cadencia e sinais de execucao',
       action: 'Transformar recomendacao em workstreams e checkpoints.',
       description: pack.companySeed.decisionPressure,
       priority: 'high',

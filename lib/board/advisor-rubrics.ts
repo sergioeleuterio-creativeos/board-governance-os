@@ -49,12 +49,12 @@ export const ADVISOR_RUBRICS: Record<AdvisorAdherenceKey, AdvisorRubric> = {
   board_brain: {
     key: 'board_brain',
     name: 'Board Brain',
-    roleDefinition: 'Orchestrates advisors, preserves governance boundary, synthesizes dissent, names missing evidence, and converts analysis into decisions, minutes, follow-ups, and review triggers.',
-    boardQuestion: 'What is the board-level decision, what belongs to management, what risk appetite is implied, and what must be reviewed later?',
-    requiredEvidence: ['decision context', 'advisor consensus', 'advisor conflict', 'missing evidence', 'risk appetite', 'review cadence'],
-    requiredOutputs: ['single synthesis', 'closure recommendation', 'decision conditions', 'owners', 'follow-ups', 'memory impact'],
-    outOfScopeWarnings: ['acting as CEO', 'pretending to be a statutory board member', 'erasing dissent', 'giving generic advice without closure'],
-    sourceBasis: ['IBGC board role and advisory transition', 'IBGC minutes and meeting simulation', 'OECD board responsibilities'],
+    roleDefinition: 'Orquestra advisors, preserva o limite de governanca, sintetiza dissensos, nomeia evidencias ausentes e converte analise em decisoes, ata, follow-ups e gatilhos de revisao.',
+    boardQuestion: 'Qual e a decisao de nivel board, o que pertence a gestao, qual apetite de risco esta implicito e o que precisa voltar para revisao?',
+    requiredEvidence: ['contexto da decisao', 'consenso dos advisors', 'conflito entre advisors', 'evidencias ausentes', 'apetite de risco', 'cadencia de revisao'],
+    requiredOutputs: ['sintese unica', 'recomendacao de fechamento', 'condicoes da decisao', 'responsaveis', 'follow-ups', 'impacto na memoria'],
+    outOfScopeWarnings: ['agir como CEO', 'fingir ser conselheiro estatutario', 'apagar dissenso', 'dar conselho generico sem fechamento'],
+    sourceBasis: ['papel do board e transicao para advisory board segundo IBGC', 'atas e simulacao de reuniao IBGC', 'responsabilidades do board segundo OCDE'],
     scoringKeywords: {
       scope: ['orchestrate|orquestra|sintese|synthesis', 'consensus|converge|alinhad', 'conflict|dissent|diverg', 'board-level|questao de board|governanca'],
       evidence: ['missing evidence|lacuna|ausencia', 'risk appetite|apetite de risco', 'advisor|assessor', 'minutes|minuta|ata', 'source|fonte'],
@@ -65,12 +65,12 @@ export const ADVISOR_RUBRICS: Record<AdvisorAdherenceKey, AdvisorRubric> = {
   finance: {
     key: 'finance',
     name: 'Finance Advisor',
-    roleDefinition: 'Tests cash, ROI, margins, capital efficiency, runway, debt, working capital, valuation impact, and capital allocation.',
-    boardQuestion: 'Can this decision create risk-adjusted value without hiding cash, margin, debt, or concentration risk?',
-    requiredEvidence: ['DRE/P&L', 'operating cash flow', 'runway', 'gross margin', 'EBITDA', 'budget vs actual', 'customer concentration', 'payback'],
-    requiredOutputs: ['financial gates', 'investment conditions', 'sensitivity scenarios', 'capital allocation tradeoffs', 'missing financial data'],
-    outOfScopeWarnings: ['brand-only recommendations', 'execution plans without financial gates', 'growth approval without payback discipline'],
-    sourceBasis: ['IBGC financial governance', 'COSO risk appetite', 'PwC audit committee excellence', 'capital-market governance references'],
+    roleDefinition: 'Testa caixa, ROI, margens, eficiencia de capital, runway, divida, capital de giro, impacto em valuation e alocacao de capital.',
+    boardQuestion: 'Esta decisao cria valor ajustado ao risco sem esconder caixa, margem, divida ou risco de concentracao?',
+    requiredEvidence: ['DRE/P&L', 'fluxo de caixa operacional', 'runway', 'margem bruta', 'EBITDA', 'orcado vs realizado', 'concentracao de clientes', 'payback'],
+    requiredOutputs: ['gates financeiros', 'condicoes de investimento', 'cenarios de sensibilidade', 'tradeoffs de alocacao de capital', 'dados financeiros ausentes'],
+    outOfScopeWarnings: ['recomendacoes apenas de marca', 'planos de execucao sem gates financeiros', 'aprovacao de crescimento sem disciplina de payback'],
+    sourceBasis: ['governanca financeira IBGC', 'apetite de risco COSO', 'excelencia de comite de auditoria PwC', 'referencias de governanca de mercado de capitais'],
     scoringKeywords: {
       scope: ['cash|caixa', 'ROI|retorno|payback', 'margin|margem', 'runway|liquidez', 'debt|divida', 'working capital|capital de giro', 'DRE|P&L|OCF|EBITDA'],
       evidence: ['budget|orcamento', 'forecast|previsao', 'variance|variancia|desvio', 'concentration|concentracao', 'liquidity|liquidez', 'covenant|restricao'],
@@ -81,12 +81,12 @@ export const ADVISOR_RUBRICS: Record<AdvisorAdherenceKey, AdvisorRubric> = {
   operator: {
     key: 'operator',
     name: 'Operator Advisor',
-    roleDefinition: 'Turns recommendations into operating cadence, accountability loops, owners, dates, dependencies, leading indicators, and recovery paths.',
-    boardQuestion: 'Can the company execute this decision with clear owners, cadence, dependencies, and review signals?',
-    requiredEvidence: ['owner map', 'operating cadence', 'dependencies', 'timeline', 'capacity', 'process constraints', 'leading indicators'],
-    requiredOutputs: ['workstreams', 'RACI/DRI', 'weekly or monthly cadence', 'dependencies', 'review dates', 'execution risk triggers'],
-    outOfScopeWarnings: ['strategy without implementation loop', 'unclear ownership', 'long plans without operating rhythm'],
-    sourceBasis: ['IBGC meeting practice', 'IBGC board effectiveness', 'complexity/resilience material'],
+    roleDefinition: 'Transforma recomendacoes em cadencia operacional, loops de responsabilizacao, responsaveis, datas, dependencias, indicadores lideres e caminhos de recuperacao.',
+    boardQuestion: 'A empresa consegue executar esta decisao com responsaveis, cadencia, dependencias e sinais de revisao claros?',
+    requiredEvidence: ['mapa de responsaveis', 'cadencia operacional', 'dependencias', 'cronograma', 'capacidade', 'restricoes de processo', 'indicadores lideres'],
+    requiredOutputs: ['frentes de trabalho', 'RACI/DRI', 'cadencia semanal ou mensal', 'dependencias', 'datas de revisao', 'gatilhos de risco de execucao'],
+    outOfScopeWarnings: ['estrategia sem loop de implementacao', 'responsabilidade pouco clara', 'planos longos sem ritmo operacional'],
+    sourceBasis: ['pratica de reuniao IBGC', 'efetividade de conselho IBGC', 'material de complexidade e resiliencia'],
     scoringKeywords: {
       scope: ['owner|responsavel', 'cadence|cadencia|ritual', 'process|processo', 'execution|execucao', 'workflow|fluxo', 'accountability|prestacao de contas', 'dependency|dependencia', 'RACI|DRI'],
       evidence: ['timeline|prazo', 'capacity|capacidade', 'leading indicator|indicador', 'review date|data de revisao', 'blocked|bloqueio', 'handoff'],
@@ -97,12 +97,12 @@ export const ADVISOR_RUBRICS: Record<AdvisorAdherenceKey, AdvisorRubric> = {
   growth: {
     key: 'growth',
     name: 'Growth Advisor',
-    roleDefinition: 'Tests market expansion, revenue quality, strategic maturity, innovation risk, product-market readiness, and downside if growth is wrong.',
-    boardQuestion: 'Is this growth choice strategically fit, commercially attractive, and operationally ready enough to scale?',
-    requiredEvidence: ['market size', 'channel quality', 'revenue quality', 'retention', 'unit economics', 'product readiness', 'competitive position'],
-    requiredOutputs: ['growth ranking', 'strategic fit', 'readiness gates', 'channel assumptions', 'growth risks', 'stop/scale criteria'],
-    outOfScopeWarnings: ['growth for its own sake', 'vanity metrics', 'ignoring cash and operating readiness'],
-    sourceBasis: ['IBGC strategic maturity', 'innovation risk', 'long-term strategy cases', 'international strategy board education'],
+    roleDefinition: 'Testa expansao de mercado, qualidade de receita, maturidade estrategica, risco de inovacao, prontidao produto-mercado e downside se o crescimento estiver errado.',
+    boardQuestion: 'Esta escolha de crescimento tem fit estrategico, atratividade comercial e prontidao operacional suficiente para escalar?',
+    requiredEvidence: ['tamanho de mercado', 'qualidade de canal', 'qualidade de receita', 'retencao', 'unit economics', 'prontidao de produto', 'posicao competitiva'],
+    requiredOutputs: ['ranking de crescimento', 'fit estrategico', 'gates de prontidao', 'premissas de canal', 'riscos de crescimento', 'criterios de parar/escalar'],
+    outOfScopeWarnings: ['crescimento pelo crescimento', 'metricas de vaidade', 'ignorar caixa e prontidao operacional'],
+    sourceBasis: ['maturidade estrategica IBGC', 'risco de inovacao', 'casos de estrategia de longo prazo', 'educacao internacional de board em estrategia'],
     scoringKeywords: {
       scope: ['growth|crescimento', 'market|mercado', 'expansion|expansao', 'scale|escala|escalar', 'channel|canal', 'revenue quality|receita de qualidade', 'retention|retencao', 'product-market|produto-mercado'],
       evidence: ['CAC|LTV|unit economics', 'cohort|coorte', 'conversion|conversao', 'readiness|prontidao', 'competition|competicao', 'pricing|preco'],
@@ -113,12 +113,12 @@ export const ADVISOR_RUBRICS: Record<AdvisorAdherenceKey, AdvisorRubric> = {
   risk: {
     key: 'risk',
     name: 'Risk Advisor',
-    roleDefinition: 'Names concentration, compliance, legal, control, stakeholder, data, ESG, and reputation risks, especially inconvenient ones.',
-    boardQuestion: 'What risk is visible but not priced, owned, mitigated, or escalated?',
-    requiredEvidence: ['risk appetite', 'risk owner', 'controls', 'compliance exposure', 'concentration', 'early-warning indicators', 'escalation path'],
-    requiredOutputs: ['risk appetite statement', 'mitigation owner', 'control gap', 'early warning indicators', 'escalation criteria'],
-    outOfScopeWarnings: ['fear without mitigation', 'compliance theater', 'approval without controls'],
-    sourceBasis: ['IBGC legal responsibility and integrity', 'COSO ERM', 'FRC risk/internal control', 'OECD disclosure and stakeholder governance'],
+    roleDefinition: 'Nomeia riscos de concentracao, compliance, juridico, controles, stakeholders, dados, ESG e reputacao, especialmente os inconvenientes.',
+    boardQuestion: 'Qual risco esta visivel, mas ainda nao foi precificado, assumido, mitigado ou escalado?',
+    requiredEvidence: ['apetite de risco', 'responsavel pelo risco', 'controles', 'exposicao de compliance', 'concentracao', 'indicadores de alerta', 'caminho de escalacao'],
+    requiredOutputs: ['declaracao de apetite de risco', 'responsavel pela mitigacao', 'lacuna de controle', 'indicadores de alerta', 'criterios de escalacao'],
+    outOfScopeWarnings: ['medo sem mitigacao', 'teatro de compliance', 'aprovacao sem controles'],
+    sourceBasis: ['responsabilidade legal e integridade IBGC', 'COSO ERM', 'FRC risco/controle interno', 'divulgacao e governanca de stakeholders OCDE'],
     scoringKeywords: {
       scope: ['risk|risco', 'compliance|conformidade', 'control|controle', 'concentration|concentracao', 'legal|juridico', 'reputation|reputacional', 'LGPD|dados pessoais', 'ESG|audit'],
       evidence: ['risk appetite|apetite de risco', 'owner|responsavel', 'mitigation|mitigacao', 'early warning|alerta', 'escalation|escalacao', 'policy|politica', 'control gap|lacuna de controle'],
@@ -129,12 +129,12 @@ export const ADVISOR_RUBRICS: Record<AdvisorAdherenceKey, AdvisorRubric> = {
   customer: {
     key: 'customer',
     name: 'Customer Advisor',
-    roleDefinition: 'Tests brand, customer trust, retention, market position, stakeholder perception, demand quality, and commercial consequence.',
-    boardQuestion: 'Does this decision improve customer trust, customer economics, and market position in a way the company can repeat?',
-    requiredEvidence: ['customer segment', 'retention', 'brand salience', 'trust', 'market position', 'stakeholder perception', 'demand quality'],
-    requiredOutputs: ['customer consequence', 'brand/trust risk', 'retention question', 'market-position tradeoff', 'customer proof metric'],
-    outOfScopeWarnings: ['campaign tips without governance consequence', 'brand adjectives without business behavior', 'views without trust or retention'],
-    sourceBasis: ['IBGC communication and stakeholder context', 'Creative OS brand operating-system method', 'strategy/customer cases'],
+    roleDefinition: 'Testa marca, confianca do cliente, retencao, posicao de mercado, percepcao de stakeholders, qualidade de demanda e consequencia comercial.',
+    boardQuestion: 'Esta decisao melhora confianca do cliente, economia do cliente e posicao de mercado de um jeito repetivel?',
+    requiredEvidence: ['segmento de cliente', 'retencao', 'saliencia de marca', 'confianca', 'posicao de mercado', 'percepcao de stakeholders', 'qualidade de demanda'],
+    requiredOutputs: ['consequencia para cliente', 'risco de marca/confianca', 'pergunta de retencao', 'tradeoff de posicao de mercado', 'metrica de prova do cliente'],
+    outOfScopeWarnings: ['dicas de campanha sem consequencia de governanca', 'adjetivos de marca sem comportamento de negocio', 'views sem confianca ou retencao'],
+    sourceBasis: ['comunicacao e contexto de stakeholders IBGC', 'metodo Creative OS de sistema operacional de marca', 'casos de estrategia/cliente'],
     scoringKeywords: {
       scope: ['customer|cliente|torcedor', 'brand|marca', 'trust|confianca', 'retention|retencao', 'market|mercado', 'demand|demanda', 'stakeholder|publico', 'salience|saliencia|lembranca'],
       evidence: ['NPS', 'cohort|coorte', 'awareness|reconhecimento', 'perception|percepcao', 'behavior|comportamento', 'segment|segmento|18-32', 'churn'],
@@ -145,12 +145,12 @@ export const ADVISOR_RUBRICS: Record<AdvisorAdherenceKey, AdvisorRubric> = {
   talent: {
     key: 'talent',
     name: 'Talent Advisor',
-    roleDefinition: 'Tests leadership capacity, succession, incentives, culture, founder bottleneck, key-person risk, hiring, and execution capacity.',
-    boardQuestion: 'Can the current organization execute and sustain this decision with the right leadership, incentives, and capacity?',
-    requiredEvidence: ['leadership map', 'succession risk', 'key-person risk', 'capacity', 'incentives', 'culture', 'hiring gaps', 'decision behavior'],
-    requiredOutputs: ['capability gaps', 'succession questions', 'incentive risks', 'hiring/reallocation needs', 'founder bottleneck', 'people governance conditions'],
-    outOfScopeWarnings: ['HR suggestions without governance consequence', 'hiring without capacity logic', 'culture statements without incentives'],
-    sourceBasis: ['IBGC people committee and succession', 'IBGC SCARF and decision dynamics', 'board effectiveness and diversity material'],
+    roleDefinition: 'Testa capacidade de lideranca, sucessao, incentivos, cultura, gargalo do founder, risco de pessoa-chave, contratacoes e capacidade de execucao.',
+    boardQuestion: 'A organizacao atual consegue executar e sustentar esta decisao com lideranca, incentivos e capacidade adequados?',
+    requiredEvidence: ['mapa de lideranca', 'risco de sucessao', 'risco de pessoa-chave', 'capacidade', 'incentivos', 'cultura', 'lacunas de contratacao', 'comportamento decisorio'],
+    requiredOutputs: ['lacunas de capacidade', 'perguntas de sucessao', 'riscos de incentivo', 'necessidades de contratacao/realocacao', 'gargalo do founder', 'condicoes de governanca de pessoas'],
+    outOfScopeWarnings: ['sugestoes de RH sem consequencia de governanca', 'contratacao sem logica de capacidade', 'declaracoes de cultura sem incentivos'],
+    sourceBasis: ['comite de pessoas e sucessao IBGC', 'SCARF e dinamicas de decisao IBGC', 'material de efetividade e diversidade de board'],
     scoringKeywords: {
       scope: ['leadership|lideranca', 'talent|talento|pessoas', 'succession|sucessao', 'capacity|capacidade', 'incentive|incentivo', 'culture|cultura', 'hiring|contratar|contratada', 'founder|fundador'],
       evidence: ['key-person|pessoa-chave', 'role|papel', 'span|amplitude', 'capability|capabilidade|competencia', 'compensation|remuneracao', 'decision behavior|comportamento decisorio', 'team|time'],
@@ -201,7 +201,7 @@ export function scoreAdvisorAdherence(review: AdvisorReviewLike): AdvisorAdheren
       evidence_discipline: 0,
       board_level_relevance: 0,
       closure_contribution: 0,
-      missing_requirements: ['No rubric configured for this advisor.'],
+      missing_requirements: ['Nenhuma rubrica configurada para este advisor.'],
     }
   }
 
@@ -210,10 +210,10 @@ export function scoreAdvisorAdherence(review: AdvisorReviewLike): AdvisorAdheren
   const boardLevel = scoreKeywordCoverage(text, rubric.scoringKeywords.boardLevel)
   const closure = scoreKeywordCoverage(text, rubric.scoringKeywords.closure)
   const missing = [
-    scope < 35 ? 'Weak scope fidelity for advisor role.' : null,
-    evidence < 25 ? 'Missing or weak evidence requirements.' : null,
-    boardLevel < 25 ? 'Not enough board-level decision language.' : null,
-    closure < 25 ? 'No clear contribution to closure.' : null,
+    scope < 35 ? 'Baixa aderencia ao escopo do advisor.' : null,
+    evidence < 25 ? 'Evidencias obrigatorias ausentes ou fracas.' : null,
+    boardLevel < 25 ? 'Pouca linguagem de decisao em nivel de board.' : null,
+    closure < 25 ? 'Sem contribuicao clara para fechamento.' : null,
   ].filter(Boolean) as string[]
 
   const total = clampScore(scope * 0.3 + evidence * 0.25 + boardLevel * 0.25 + closure * 0.2)
@@ -234,17 +234,17 @@ export function advisorRubricsForPrompt() {
   return Object.values(ADVISOR_RUBRICS)
     .map((rubric) => [
       `${rubric.name} (${rubric.key})`,
-      `Role: ${rubric.roleDefinition}`,
-      `Board question: ${rubric.boardQuestion}`,
-      `Required evidence: ${rubric.requiredEvidence.join('; ')}`,
-      `Required outputs: ${rubric.requiredOutputs.join('; ')}`,
-      `Avoid: ${rubric.outOfScopeWarnings.join('; ')}`,
+      `Papel: ${rubric.roleDefinition}`,
+      `Pergunta de board: ${rubric.boardQuestion}`,
+      `Evidencias obrigatorias: ${rubric.requiredEvidence.join('; ')}`,
+      `Outputs obrigatorios: ${rubric.requiredOutputs.join('; ')}`,
+      `Evitar: ${rubric.outOfScopeWarnings.join('; ')}`,
     ].join('\n'))
     .join('\n\n')
 }
 
 export function caseLibraryForPrompt() {
   return BOARD_CASE_LIBRARY
-    .map((caseItem) => `${caseItem.title}: ${caseItem.boardProblem} Stress advisors: ${caseItem.advisorStress.join(', ')}.`)
+    .map((caseItem) => `${caseItem.title}: ${caseItem.boardProblem} Advisors sob estresse: ${caseItem.advisorStress.join(', ')}.`)
     .join('\n')
 }

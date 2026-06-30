@@ -3,6 +3,7 @@ import { isAuthError, requireAuth, requireCompanyAdmin, serviceClient } from '@/
 import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
 import { callJSONAI } from '@/lib/board/model-router'
 import { INJECTION_GUARD, wrapUserContent } from '@/lib/prompts'
+import { formatClosure } from '@/lib/shadow-board/display-labels'
 
 type AgentReview = {
   id: string
@@ -195,7 +196,7 @@ function buildConversationRow(pair: ChallengePair) {
   ]
 
   const agreements = [
-    fromRecommendation || `${pair.from.advisor_name} concorda que a decisao precisa de owner, KPI e cadencia.`,
+    fromRecommendation || `${pair.from.advisor_name} concorda que a decisao precisa de responsavel, KPI e cadencia.`,
     toRecommendation || `${pair.to.advisor_name} concorda que a recomendacao precisa virar plano revisavel.`,
   ]
 
@@ -261,6 +262,8 @@ function buildChallengePrompt({
 
 Guardrail: you are not a board replacement, not an AI board member, and not a virtual CEO. You organize governance challenge, conflict, consensus, questions, and closure for founder review.
 
+Language rule: write every user-facing string in pt-BR. Keep JSON keys, enum values, advisor keys, and product names exactly as specified.
+
 Board Pack:
 ${wrapUserContent(JSON.stringify(boardPack, null, 2))}
 
@@ -271,6 +274,7 @@ Deterministic fallback challenge map:
 ${wrapUserContent(JSON.stringify(deterministicConversations, null, 2))}
 
 Create advisor-to-advisor challenge rounds. Use only these advisor keys: finance, operator, growth, risk, customer, talent.
+Summaries, transcript content, conflicts, agreements, closure summary, and unresolved questions must be natural pt-BR.
 
 Return one JSON object only. No markdown. Match this shape:
 {
@@ -395,11 +399,11 @@ export async function POST() {
     const pairs = buildChallengePairs(advisors)
     const deterministicConversations = pairs.map((pair) => buildConversationRow(pair) as ChallengeConversation)
     const deterministicClosureRecommendation = closureFromReviews(reviews)
-    const deterministicClosureSummary = `Rodada de desafios concluida com ${deterministicConversations.length} conversas, ${deterministicConversations.reduce((sum, row) => sum + (Array.isArray(row.conflicts) ? row.conflicts.length : 0), 0)} conflitos mapeados e recomendacao de closure: ${deterministicClosureRecommendation}.`
+    const deterministicClosureSummary = `Rodada de desafios concluida com ${deterministicConversations.length} conversas, ${deterministicConversations.reduce((sum, row) => sum + (Array.isArray(row.conflicts) ? row.conflicts.length : 0), 0)} conflitos mapeados e recomendacao de fechamento: ${formatClosure(deterministicClosureRecommendation)}.`
 
     const aiResult = await callJSONAI<ChallengeAIOutput>({
       purpose: 'agent_challenge',
-      system: `You produce structured governance challenge rounds for founder-led companies. Return valid JSON only.${INJECTION_GUARD}`,
+      system: `Voce produz rodadas estruturadas de desafio de governanca para empresas lideradas por founders. Escreva todos os textos visiveis ao usuario em pt-BR. Preserve JSON keys e enum values. Retorne apenas JSON valido.${INJECTION_GUARD}`,
       prompt: buildChallengePrompt({
         companyName: company.name,
         boardPack: boardPack as Record<string, unknown>,
@@ -450,7 +454,7 @@ export async function POST() {
       : deterministicClosureRecommendation
     const conflictCount = challengeRows.reduce((sum, row) => sum + (Array.isArray(row.conflicts) ? row.conflicts.length : 0), 0)
     const closureSummary = aiResult.output.closure_summary?.trim()
-      || `Rodada de desafios concluida com ${challengeRows.length} conversas, ${conflictCount} conflitos mapeados e recomendacao de closure: ${closureRecommendation}.`
+      || `Rodada de desafios concluida com ${challengeRows.length} conversas, ${conflictCount} conflitos mapeados e recomendacao de fechamento: ${formatClosure(closureRecommendation)}.`
     const metadata = {
       ...asRecord(boardSession.metadata),
       last_challenge_run_at: new Date().toISOString(),

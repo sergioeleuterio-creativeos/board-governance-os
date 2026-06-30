@@ -84,11 +84,15 @@ Company: ${companyName}
 
 Guardrail: you are not a board member, not a board replacement, and not a virtual CEO. You provide governance challenge, questions, conditions, risks, and implementation discipline.
 
+Language rule: write every user-facing string in pt-BR. Keep JSON keys, enum values, advisor keys, and product names exactly as specified.
+
 Advisor review:
 ${wrapUserContent(JSON.stringify(review, null, 2))}
 
 Deterministic fallback:
 ${wrapUserContent(JSON.stringify(fallback, null, 2))}
+
+Summary, transcript content, conflicts, agreements, and implementation conditions must be natural pt-BR.
 
 Return one JSON object only. No markdown. Match this shape:
 {
@@ -223,7 +227,7 @@ export async function POST(request: NextRequest) {
 
     const aiResult = await callJSONAI<DeepDiveOutput>({
       purpose: 'advisor_review',
-      system: `You produce structured advisor deep dives for founder-led governance reviews. Return valid JSON only.${INJECTION_GUARD}`,
+      system: `Voce produz aprofundamentos estruturados de advisors para reviews de governanca de empresas lideradas por founders. Escreva todos os textos visiveis ao usuario em pt-BR. Preserve JSON keys e enum values. Retorne apenas JSON valido.${INJECTION_GUARD}`,
       prompt: buildDeepDivePrompt({
         companyName: company.name,
         review: advisorReview,

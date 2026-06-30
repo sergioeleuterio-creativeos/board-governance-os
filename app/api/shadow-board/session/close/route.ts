@@ -6,6 +6,7 @@ import { getPublicAppUrl } from '@/lib/shadow-board/site-url'
 import { renderSessionClosedEmail } from '@/lib/email/templates'
 import { sendProductEmail } from '@/lib/email/send'
 import { recordNotificationAudit } from '@/lib/email/audit'
+import { formatClosure, formatStatus } from '@/lib/shadow-board/display-labels'
 
 type ConversationRow = {
   id: string
@@ -65,17 +66,17 @@ function buildMinutes({
   decisions: DecisionRow[]
 }) {
   const conversationLines = conversations.map((conversation) => {
-    return `- ${conversation.relationship}: ${conversation.summary ?? 'conversa registrada sem resumo'}`
+    return `- ${formatStatus(conversation.relationship)}: ${conversation.summary ?? 'conversa registrada sem resumo'}`
   })
   const decisionLines = decisions.map((decision) => {
-    return `- ${decision.title}: ${decision.status}, ${decision.closure_recommendation ?? 'sem closure'}, confianca ${decision.confidence_score ?? 'n/a'}`
+    return `- ${decision.title}: ${formatStatus(decision.status)}, ${formatClosure(decision.closure_recommendation)}, confianca ${decision.confidence_score ?? 'n/a'}`
   })
 
   return [
     'Minuta gerada pelo Board Brain.',
     executiveSummary ? `Resumo executivo: ${executiveSummary}` : null,
-    closureSummary ? `Closure: ${closureSummary}` : null,
-    closureRecommendation ? `Recomendacao: ${closureRecommendation}` : null,
+    closureSummary ? `Fechamento: ${closureSummary}` : null,
+    closureRecommendation ? `Recomendacao: ${formatClosure(closureRecommendation)}` : null,
     conversations.length ? `Rodadas de desafio:\n${conversationLines.join('\n')}` : 'Rodadas de desafio: nenhuma conversa registrada.',
     decisions.length ? `Decisoes apresentadas:\n${decisionLines.join('\n')}` : 'Decisoes apresentadas: nenhuma decisao registrada para a sessao.',
   ].filter(Boolean).join('\n\n')

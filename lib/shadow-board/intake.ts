@@ -118,7 +118,7 @@ export function createEmptyIntakeDraft(locale: CompanyBrainIntakeDraft['locale']
     },
     team: {
       leadership: 'Operacao depende de alinhamento entre editorial, produto, tecnologia, dados, comercial, creators, CRM e juridico/compliance.',
-      keyRoles: 'Owners claros precisam existir para app/CRM, dados first-party, DRE gerencial, guardrails de betting/branded content e pacotes comerciais premium.',
+      keyRoles: 'Responsaveis claros precisam existir para app/CRM, dados first-party, DRE gerencial, guardrails de betting/branded content e pacotes comerciais premium.',
       operatingCadence: 'Recomendada uma war room semanal de 13 semanas para app, CRM, receita, dados, editorial e vendas.',
       talentRisks: 'Risco de pedir transformacao digital sem squad dedicado, capacidade analitica, governanca de dados e autoridade transversal.',
     },

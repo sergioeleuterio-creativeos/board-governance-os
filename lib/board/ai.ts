@@ -10,6 +10,8 @@ function buildPrompt(company: BoardCompany, input: GovernanceRunInput): string {
 
 Positioning guardrail: you are not a board member, not a board replacement, and not a virtual CEO. You create decision architecture: clearer risks, sharper priorities, better questions, and decision memory.
 
+Language rule: all user-facing string values must be written in pt-BR. Keep JSON keys, enum values, persona keys, and product names exactly as specified.
+
 Company:
 ${wrapUserContent(JSON.stringify(company, null, 2))}
 
@@ -29,8 +31,9 @@ Advisor output rules:
 - Each advisor must stay inside its role definition.
 - Each advisor must ask board-level questions, not generic management tips.
 - Each advisor must name missing evidence from its required evidence list.
-- Each advisor must contribute to closure: commit, commit with conditions, defer, reject, request more data, or escalate.
+- Each advisor must contribute to a clear closing path: aprovar, aprovar com condicoes, adiar, rejeitar, pedir mais dados, or escalar.
 - The Board Brain must preserve consensus and dissent instead of averaging them away.
+- All summaries, questions, risks, recommendations, rationales, tradeoffs, conditions, agenda items, and follow-ups must be natural pt-BR.
 
 Return one JSON object only. No markdown. Match this shape exactly:
 {
@@ -82,7 +85,7 @@ Return one JSON object only. No markdown. Match this shape exactly:
 
 export async function runGovernanceAI(company: BoardCompany, input: GovernanceRunInput) {
   const prompt = buildPrompt(company, input)
-  const system = `You produce structured governance analysis for founder-led companies. Return valid JSON only.${INJECTION_GUARD}`
+  const system = `Voce produz analise de governanca estruturada para empresas lideradas por founders. Escreva todos os textos visiveis ao usuario em pt-BR. Preserve JSON keys e enum values exatamente como solicitado. Retorne apenas JSON valido.${INJECTION_GUARD}`
   const result = await callJSONAI<GovernanceAIOutput>({
     purpose: 'governance_synthesis',
     system,
@@ -101,11 +104,11 @@ export async function runGovernanceAI(company: BoardCompany, input: GovernanceRu
 }
 
 function mockGovernanceOutput(company: BoardCompany, input: GovernanceRunInput): GovernanceAIOutput {
-  const challenge = company.main_challenge || input.risks || 'growing complexity'
+  const challenge = company.main_challenge || input.risks || 'complexidade crescente'
   return {
     run: {
-      title: `${company.name || 'Company'} governance review`,
-      summary: `The company needs sharper operating focus around ${challenge}. The next governance cycle should reduce priority spread, make cash and execution risks visible, and turn open decisions into accountable follow-ups.`,
+      title: `Revisao de governanca - ${company.name || 'Empresa'}`,
+      summary: `A empresa precisa transformar ${challenge} em uma decisao governavel. O proximo ciclo deve reduzir dispersao de prioridades, explicitar caixa e riscos de execucao, e converter decisoes abertas em follow-ups com responsaveis.`,
       risk_score: 58,
       confidence_score: 72,
     },
@@ -116,7 +119,7 @@ function mockGovernanceOutput(company: BoardCompany, input: GovernanceRunInput):
       execution_cadence: 66,
       risk_visibility: 60,
       decision_quality: 74,
-      explanation: 'The company has enough context to act, but the operating cadence and risk visibility need tightening.',
+      explanation: 'A empresa tem contexto suficiente para agir, mas precisa apertar a cadencia operacional e a visibilidade de riscos.',
     },
     persona_reviews: BOARD_PERSONAS.map(persona => ({
       persona_key: persona.key,
@@ -125,40 +128,40 @@ function mockGovernanceOutput(company: BoardCompany, input: GovernanceRunInput):
       stance: 'approve_with_conditions',
       risk_score: 55,
       confidence_score: 70,
-      summary: `${persona.name} sees momentum, but wants clearer evidence before expanding commitments.`,
-      questions: [`What would make this priority obviously wrong in 30 days?`, `Who owns the next measurable proof point?`],
-      risks: [{ title: 'Unowned execution risk', severity: 'medium', detail: 'The plan names priorities but not enough accountable checkpoints.' }],
-      recommendations: [{ title: 'Assign one owner per priority', detail: 'Convert the top three priorities into named owner/date/accountability loops.', priority: 'high' }],
+      summary: `${persona.name} ve tracao, mas pede evidencias mais claras antes de ampliar compromissos.`,
+      questions: ['O que tornaria esta prioridade claramente errada em 30 dias?', 'Quem responde pelo proximo ponto de prova mensuravel?'],
+      risks: [{ title: 'Risco de execucao sem responsavel', severity: 'medium', detail: 'O plano nomeia prioridades, mas ainda nao define checkpoints suficientes de responsabilizacao.' }],
+      recommendations: [{ title: 'Nomear um responsavel por prioridade', detail: 'Converter as tres prioridades principais em loops com responsavel, data e prestacao de contas.', priority: 'high' }],
     })),
     board_pack: {
-      executive_summary: `Board Governance OS recommends a focused operating cycle: protect cash visibility, rank the top three priorities, and review decisions against expected outcomes.`,
+      executive_summary: 'Board Governance OS recomenda um ciclo operacional focado: proteger visibilidade de caixa, ranquear as tres prioridades principais e revisar decisoes contra resultados esperados.',
       strategic_questions: [
-        'What is the single constraint that matters most this quarter?',
-        'Which priority should be stopped if capacity tightens?',
-        'What risk is currently visible but socially inconvenient to name?',
+        'Qual e a restricao unica que mais importa neste trimestre?',
+        'Qual prioridade deve ser interrompida se a capacidade apertar?',
+        'Qual risco ja esta visivel, mas ainda e desconfortavel nomear?',
       ],
       risk_map: [
-        { risk: 'Priority spread', severity: 'high', mitigation: 'Limit the cycle to three company-level priorities.' },
-        { risk: 'Decision drift', severity: 'medium', mitigation: 'Add review dates to every major decision.' },
+        { risk: 'Dispersao de prioridades', severity: 'high', mitigation: 'Limitar o ciclo a tres prioridades de nivel empresa.' },
+        { risk: 'Decisoes sem retorno', severity: 'medium', mitigation: 'Adicionar data de revisao a toda decisao relevante.' },
       ],
       priority_ranking: [
-        { priority: 'Clarify top operating constraint', rationale: 'Without this, every function can optimize locally.', owner_suggestion: 'Founder/CEO' },
-        { priority: 'Install follow-up cadence', rationale: 'Governance only matters if decisions return for review.', owner_suggestion: 'Operator' },
+        { priority: 'Clarificar a principal restricao operacional', rationale: 'Sem isso, cada funcao pode otimizar localmente sem resolver o problema da empresa.', owner_suggestion: 'Fundador/CEO' },
+        { priority: 'Instalar cadencia de follow-up', rationale: 'Governanca so importa se as decisoes voltarem para revisao.', owner_suggestion: 'Operacoes' },
       ],
-      meeting_agenda: ['Review KPI movement', 'Discuss top risks', 'Confirm priority ranking', 'Log decisions', 'Assign follow-ups'],
+      meeting_agenda: ['Revisar movimento dos KPIs', 'Discutir principais riscos', 'Confirmar ranking de prioridades', 'Registrar decisoes', 'Atribuir follow-ups'],
     },
     decision: {
-      title: 'Proceed with a narrowed governance cycle',
+      title: 'Avancar com um ciclo de governanca mais estreito',
       decision: 'proceed_with_conditions',
-      rationale: 'The company has enough context to move, but should narrow scope and define review points before adding new initiatives.',
+      rationale: 'A empresa tem contexto suficiente para avancar, mas deve reduzir escopo e definir pontos de revisao antes de adicionar novas iniciativas.',
       risk_level: 'medium',
       confidence_score: 72,
-      tradeoffs: [{ upside: 'Faster alignment and less founder decision fatigue.', downside: 'Some initiatives will need to wait.' }],
-      conditions: [{ title: 'Name owners', detail: 'Every top priority needs one owner and one review date.' }],
+      tradeoffs: [{ upside: 'Alinhamento mais rapido e menos fadiga decisoria do founder.', downside: 'Algumas iniciativas terao de esperar.' }],
+      conditions: [{ title: 'Nomear responsaveis', detail: 'Toda prioridade principal precisa de um responsavel e uma data de revisao.' }],
     },
     follow_ups: [
-      { title: 'Define top three priorities', description: 'Write one measurable outcome for each.', owner_label: 'Founder', priority: 'urgent', due_in_days: 7, source_persona_key: 'operator' },
-      { title: 'Add review dates to open decisions', description: 'Turn decisions into memory, not just notes.', owner_label: 'Founder', priority: 'high', due_in_days: 14, source_persona_key: 'risk' },
+      { title: 'Definir as tres prioridades principais', description: 'Escrever um resultado mensuravel para cada uma.', owner_label: 'Fundador', priority: 'urgent', due_in_days: 7, source_persona_key: 'operator' },
+      { title: 'Adicionar datas de revisao as decisoes abertas', description: 'Transformar decisoes em memoria, nao apenas em notas.', owner_label: 'Fundador', priority: 'high', due_in_days: 14, source_persona_key: 'risk' },
     ],
   }
 }

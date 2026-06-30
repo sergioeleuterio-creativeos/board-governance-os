@@ -42,19 +42,19 @@ function compactLines(values: Array<string | null | undefined>, fallback: string
 function financialReportFromInput(input: GovernanceRunInput) {
   return {
     board_relevance: [
-      { metric: 'Financial evidence quality', value: input.financial_snapshot ? 'Available' : 'Missing', note: 'Board should verify source files before approval.' },
-      { metric: 'Cash / runway discipline', value: 'Evidence gate', note: 'Require runway, burn, and OCF visibility before major commitments.' },
-      { metric: 'Revenue quality', value: 'Watch concentration', note: 'Review customer concentration, margin by cohort, and recurring/non-recurring mix.' },
+      { metric: 'Qualidade da evidencia financeira', value: input.financial_snapshot ? 'Disponivel' : 'Ausente', note: 'O board deve verificar os arquivos-fonte antes da aprovacao.' },
+      { metric: 'Disciplina de caixa / runway', value: 'Gate de evidencia', note: 'Exigir visibilidade de runway, burn e OCF antes de compromissos relevantes.' },
+      { metric: 'Qualidade da receita', value: 'Monitorar concentracao', note: 'Revisar concentracao de clientes, margem por coorte e mix recorrente/nao recorrente.' },
     ],
     dre_pnl: [
-      { line_item: 'Receita liquida / Net revenue', value: 'Pending source data', variance: 'n/a', board_note: input.financial_snapshot.slice(0, 220) || 'Upload DRE/P&L source.' },
-      { line_item: 'Margem bruta / Gross margin', value: 'Pending source data', variance: 'n/a', board_note: 'Needed for pricing, customer, and scale decisions.' },
-      { line_item: 'EBITDA / Operating result', value: 'Pending source data', variance: 'n/a', board_note: 'Needed to separate growth from sustainable performance.' },
+      { line_item: 'Receita liquida / DRE', value: 'Dados-fonte pendentes', variance: 'n/a', board_note: input.financial_snapshot.slice(0, 220) || 'Enviar fonte de DRE/P&L.' },
+      { line_item: 'Margem bruta', value: 'Dados-fonte pendentes', variance: 'n/a', board_note: 'Necessaria para decisoes de preco, cliente e escala.' },
+      { line_item: 'EBITDA / resultado operacional', value: 'Dados-fonte pendentes', variance: 'n/a', board_note: 'Necessario para separar crescimento de performance sustentavel.' },
     ],
     ocf_cash: [
-      { line_item: 'Operating Cash Flow / OCF', value: 'Pending source data', board_note: 'Track cash conversion and working capital pressure.' },
-      { line_item: 'Runway', value: 'Pending source data', board_note: 'Board comfort line should be explicit before commitments.' },
-      { line_item: 'Debt service / financing', value: 'Pending source data', board_note: 'Tie capital decisions to covenants and refinancing risk.' },
+      { line_item: 'Fluxo de caixa operacional / OCF', value: 'Dados-fonte pendentes', board_note: 'Acompanhar conversao de caixa e pressao de capital de giro.' },
+      { line_item: 'Runway', value: 'Dados-fonte pendentes', board_note: 'A linha de conforto do board deve ser explicita antes de compromissos.' },
+      { line_item: 'Servico da divida / financiamento', value: 'Dados-fonte pendentes', board_note: 'Amarrar decisoes de capital a covenants e risco de refinanciamento.' },
     ],
   }
 }
@@ -137,7 +137,7 @@ async function ensureGovernanceCycle(company: BoardCompany & { organization_id: 
     .select('id, organization_id, company_id')
     .single()
 
-  if (createError || !created) throw new Error(createError?.message || 'Failed to create governance cycle')
+  if (createError || !created) throw new Error(createError?.message || 'Nao foi possivel criar o ciclo de governanca')
   return created
 }
 
@@ -160,15 +160,15 @@ async function buildInputFromCompanyBrain(companyId: string, period: string): Pr
 
   return {
     period,
-    kpis: compactLines(byCategory(['financial']), 'No KPI package has been approved yet. Use available financial and operating context.'),
-    financial_snapshot: compactLines(byCategory(['financial']), 'No formal financial snapshot uploaded yet. Flag confidence limits.'),
-    priorities: compactLines(byCategory(['goal', 'plan']), 'Infer draft priorities from intake goals and current challenge.'),
-    risks: compactLines(byCategory(['risk', 'question']), 'Identify explicit and implicit risks from current memory.'),
-    opportunities: compactLines(byCategory(['customer', 'operations', 'fact']), 'Identify opportunities from customer, market, and operating context.'),
-    team_issues: compactLines(byCategory(['team', 'operations']), 'Identify execution and accountability risks from current memory.'),
+    kpis: compactLines(byCategory(['financial']), 'Nenhum pacote de KPIs foi aprovado ainda. Use o contexto financeiro e operacional disponivel.'),
+    financial_snapshot: compactLines(byCategory(['financial']), 'Nenhum snapshot financeiro formal foi enviado ainda. Explicite limites de confianca.'),
+    priorities: compactLines(byCategory(['goal', 'plan']), 'Inferir prioridades preliminares a partir dos objetivos do intake e do desafio atual.'),
+    risks: compactLines(byCategory(['risk', 'question']), 'Identificar riscos explicitos e implicitos a partir da memoria atual.'),
+    opportunities: compactLines(byCategory(['customer', 'operations', 'fact']), 'Identificar oportunidades a partir de cliente, mercado e contexto operacional.'),
+    team_issues: compactLines(byCategory(['team', 'operations']), 'Identificar riscos de execucao e responsabilizacao a partir da memoria atual.'),
     meeting_notes: compactLines(
       (entries ?? []).slice(0, 12).map(entry => `${entry.category.toUpperCase()} - ${entry.title}: ${entry.content}`),
-      'No meeting notes recorded yet.'
+      'Nenhuma ata ou nota de reuniao registrada ainda.'
     ),
   }
 }
@@ -202,8 +202,8 @@ async function saveCanonicalRun({
   }))
   const workstreams = priorities.map(priority => ({
     workstream: priority.priority,
-    owner_suggestion: priority.owner_suggestion ?? 'Founder',
-    cadence: 'Weekly review',
+    owner_suggestion: priority.owner_suggestion ?? 'Fundador',
+    cadence: 'Revisao semanal',
     proof_point: priority.rationale,
   }))
 
@@ -224,7 +224,7 @@ async function saveCanonicalRun({
       },
       workstreams,
       timeline: {
-        review_cycle: '30 days',
+        review_cycle: '30 dias',
         first_review_date: addDays(30),
       },
       risks: output.board_pack.risk_map,
@@ -238,7 +238,7 @@ async function saveCanonicalRun({
     .select('id')
     .single()
 
-  if (businessPlanError || !businessPlan) throw new Error(businessPlanError?.message || 'Failed to create business plan')
+  if (businessPlanError || !businessPlan) throw new Error(businessPlanError?.message || 'Nao foi possivel criar o plano de governanca')
 
   const { data: boardPack, error: boardPackError } = await service
     .from('board_packs')
@@ -269,7 +269,7 @@ async function saveCanonicalRun({
     .select('id')
     .single()
 
-  if (boardPackError || !boardPack) throw new Error(boardPackError?.message || 'Failed to create board pack')
+  if (boardPackError || !boardPack) throw new Error(boardPackError?.message || 'Nao foi possivel criar o Board Pack')
 
   const agentRows = output.persona_reviews.map(review => ({
     organization_id: company.organization_id,
@@ -319,7 +319,7 @@ async function saveCanonicalRun({
     .select('id')
     .single()
 
-  if (boardSessionError || !boardSession) throw new Error(boardSessionError?.message || 'Failed to create board session')
+  if (boardSessionError || !boardSession) throw new Error(boardSessionError?.message || 'Nao foi possivel criar a sessao de board')
 
   const { data: decision, error: decisionError } = await service
     .from('decisions')
@@ -341,8 +341,8 @@ async function saveCanonicalRun({
       risk_level: output.decision.risk_level,
       confidence_score: output.decision.confidence_score,
       conditions: output.decision.conditions,
-      owner_label: 'Founder',
-      owner: 'Founder',
+      owner_label: 'Fundador',
+      owner: 'Fundador',
       review_date: addDays(30),
       metadata: {
         source: 'governance-run-api',
@@ -353,7 +353,7 @@ async function saveCanonicalRun({
     .select('id')
     .single()
 
-  if (decisionError || !decision) throw new Error(decisionError?.message || 'Failed to create decision')
+  if (decisionError || !decision) throw new Error(decisionError?.message || 'Nao foi possivel criar a decisao')
 
   const followUpRows = output.follow_ups.map(item => ({
     organization_id: company.organization_id,
@@ -362,8 +362,8 @@ async function saveCanonicalRun({
     decision_id: decision.id,
     source_agent_key: advisorKeyFor(item.source_persona_key),
     user_id: userId,
-    owner_label: item.owner_label || 'Founder',
-    owner: item.owner_label || 'Founder',
+    owner_label: item.owner_label || 'Fundador',
+    owner: item.owner_label || 'Fundador',
     title: item.title,
     action: item.title,
     description: item.description || null,
@@ -468,7 +468,7 @@ export async function POST(req: NextRequest) {
     .maybeSingle()
 
   if (companyError || !company) {
-    return NextResponse.json({ error: companyError?.message || 'Company not found' }, { status: 404 })
+    return NextResponse.json({ error: companyError?.message || 'Empresa nao encontrada' }, { status: 404 })
   }
 
   const access = await requireCompanyAdmin(company.id)
@@ -542,7 +542,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Unknown governance run error' },
+      { error: error instanceof Error ? error.message : 'Erro desconhecido ao rodar governance run' },
       { status: 500 }
     )
   }
