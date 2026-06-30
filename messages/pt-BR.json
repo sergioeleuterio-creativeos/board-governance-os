@@ -56,6 +56,7 @@
       "adminReferrals": "Conexoes",
       "adminDocuments": "Documentos",
       "adminAgents": "Agentes",
+      "adminTrainingPacks": "Training Packs",
       "adminAI": "IA Ops",
       "adminPartners": "Parceiros",
       "adminAudit": "Auditoria"
@@ -80,7 +81,7 @@
     "intakeDescription": "Capture chat, notas de voz, arquivos, financeiros, riscos e contexto da empresa antes do ciclo de governanca."
   },
   "intake": {
-    "eyebrow": "Company Brain Intake",
+    "eyebrow": "Intake do Company Brain",
     "title": "Construir o contexto de conselho",
     "description": "Colete fatos, premissas, arquivos e perguntas abertas que o Board Brain precisa antes de um Governance Run.",
     "saveDraft": "Salvar rascunho",
@@ -142,13 +143,20 @@
       "talentRisks": "Riscos de talento"
     },
     "chat": {
-      "title": "Chat intake",
-      "description": "Use isto como a entrevista do founder. Depois pode virar chat ao vivo com Board Brain.",
+      "title": "Chat com o Board Brain",
+      "description": "Comece pela conversa. O Board Brain transforma contexto solto em perguntas, lacunas e memoria para o board.",
       "prompt": "O que o conselho precisa entender antes de revisar esta empresa?",
       "add": "Adicionar nota",
+      "open": "Abrir chat de intake",
       "send": "Enviar ao Board Brain",
       "thinking": "Board Brain pensando...",
-      "placeholder": "Digite uma nota do founder, pergunta de conselho ou fragmento de contexto..."
+      "placeholder": "Digite uma nota do founder, pergunta de conselho ou fragmento de contexto...",
+      "emptyTitle": "Comece com uma conversa. Os campos estruturados podem vir depois.",
+      "starters": {
+        "decision": "Qual decisao precisa ser tomada e por que agora?",
+        "blocker": "O que voce ja tentou e onde travou?",
+        "financials": "Quais numeros financeiros o board precisa ver antes de recomendar?"
+      }
     },
     "voice": {
       "title": "Intake pronto para voz",
@@ -170,7 +178,7 @@
     },
     "review": {
       "title": "Revisar antes do governance run",
-      "description": "Este e o payload local que depois sera persistido no Company Brain.",
+      "description": "Revise o resumo que sera salvo na memoria da empresa.",
       "missing": "Contexto faltante",
       "ready": "Pronto para o primeiro Governance Run",
       "notReady": "Precisa de mais contexto antes do run"

@@ -42,6 +42,7 @@ const navGroups = [
       { href: '/admin/referrals', code: 'RF', key: 'adminReferrals' },
       { href: '/admin/documents', code: 'DO', key: 'adminDocuments' },
       { href: '/admin/agents', code: 'AG', key: 'adminAgents' },
+      { href: '/admin/training-packs', code: 'TP', key: 'adminTrainingPacks' },
       { href: '/admin/ai', code: 'AI', key: 'adminAI' },
       { href: '/admin/partners', code: 'PT', key: 'adminPartners' },
       { href: '/admin/audit', code: 'AU', key: 'adminAudit' },
@@ -78,7 +79,7 @@ export default function Navigation() {
   const tShell = useTranslations('shell')
   const { user, profile, isAdmin, loading } = useAuth()
   const { workspace } = useWorkspace()
-  if (pathname === '/' || pathname === '/login' || pathname === '/reset-password') return null
+  if (pathname === '/' || pathname === '/login' || pathname === '/reset-password' || pathname === '/board-pack/presentation') return null
 
   const companyName = workspace?.company?.name ?? workspace?.organization?.name ?? 'Board Governance OS'
   const companyInitials = initialsFor(companyName)

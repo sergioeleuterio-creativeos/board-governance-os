@@ -90,10 +90,10 @@ export function AdminAgentsClient() {
     const weak = reviews.filter((review) => review.adherence.total < 55).length
     const withMissing = reviews.filter((review) => review.adherence.missing_requirements.length).length
     return [
-      ['Adherence media', String(readout?.overall_average ?? 0), 'score rubricado'],
-      ['Reviews avaliados', String(reviews.length), 'ultimos agent reviews'],
-      ['Abaixo de 55', String(weak), 'precisam retreino'],
-      ['Com lacunas', String(withMissing), 'evidencia ou closure'],
+      ['Aderencia media', String(readout?.overall_average ?? 0), 'score rubricado'],
+      ['Analises avaliadas', String(reviews.length), 'ultimas revisoes'],
+      ['Abaixo de 55', String(weak), 'precisam reforco'],
+      ['Com lacunas', String(withMissing), 'evidencia ou recomendacao'],
     ] as const
   }, [readout])
 
@@ -123,8 +123,8 @@ export function AdminAgentsClient() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Operacoes"
-        title="Agent adherence"
-        description="Score dos advisors contra rubricas de governanca, evidencias e closure."
+        title="Aderencia dos advisors"
+        description="Qualidade das analises contra rubricas de governanca, evidencias e recomendacao final."
         action={<button className="btn-secondary" type="button" onClick={() => void loadAgents()}>Atualizar</button>}
       />
 

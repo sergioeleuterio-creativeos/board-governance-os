@@ -11,7 +11,7 @@ import {
 } from '@/lib/shadow-board/intake'
 import { Meter, PageHeader, Panel, SectionTitle, StatusPill } from './ui'
 
-const tabs: IntakeSectionKey[] = ['company', 'strategy', 'finance', 'team', 'chat', 'files', 'review']
+const tabs: IntakeSectionKey[] = ['chat', 'files', 'company', 'strategy', 'finance', 'team', 'review']
 const acceptedFileTypes = [
   '.pdf',
   '.pptx',
@@ -66,7 +66,7 @@ function id(prefix: string) {
 export function CompanyBrainIntakeScreen() {
   const t = useTranslations('intake')
   const [draft, setDraft] = useState<CompanyBrainIntakeDraft>(() => createEmptyIntakeDraft())
-  const [activeTab, setActiveTab] = useState<IntakeSectionKey>('company')
+  const [activeTab, setActiveTab] = useState<IntakeSectionKey>('chat')
   const [chatNote, setChatNote] = useState('')
   const [assistantTurns, setAssistantTurns] = useState<IntakeChatTurn[]>([])
   const [chatSending, setChatSending] = useState(false)
@@ -76,6 +76,11 @@ export function CompanyBrainIntakeScreen() {
 
   const quality = useMemo(() => scoreCompanyBrainIntake(draft), [draft])
   const result = useMemo(() => buildIntakeResult(draft), [draft])
+  const chatStarterPrompts = useMemo(() => [
+    t('chat.starters.decision'),
+    t('chat.starters.blocker'),
+    t('chat.starters.financials'),
+  ], [t])
   const chatTimeline = useMemo(() => ([
     ...draft.notes.map((note): IntakeChatTurn => ({
       id: note.id,
@@ -366,9 +371,26 @@ export function CompanyBrainIntakeScreen() {
 
           {activeTab === 'chat' && (
             <FieldGroup title={t('chat.title')} description={t('chat.description')}>
-              <div className="sb-intake-chat">
+              <div className="sb-intake-chat md:col-span-2">
+                {chatTimeline.length === 0 && (
+                  <div className="space-y-3">
+                    <p className="sb-serif-callout">{t('chat.emptyTitle')}</p>
+                    <div className="grid gap-2 md:grid-cols-3">
+                      {chatStarterPrompts.map((prompt) => (
+                        <button
+                          key={prompt}
+                          type="button"
+                          className="btn-secondary text-left"
+                          onClick={() => setChatNote(prompt)}
+                        >
+                          {prompt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
                 {chatTimeline.map(turn => (
-                  <article key={turn.id}>
+                  <article key={turn.id} className={turn.role === 'board_brain' ? 'is-brain' : ''}>
                     <p className="sb-code">{turn.role === 'board_brain' ? 'BOARD BRAIN' : 'FOUNDER'}</p>
                     <p className="whitespace-pre-line">{turn.content}</p>
                   </article>
@@ -428,6 +450,9 @@ export function CompanyBrainIntakeScreen() {
               : quality.missing.map(item => <StatusPill key={item} tone="caution">{t(`tabs.${item}`)}</StatusPill>)}
           </div>
           <div className="mt-6 grid gap-2">
+            <button type="button" className="btn-secondary" onClick={() => setActiveTab('chat')}>
+              {t('chat.open')}
+            </button>
             <button type="button" className="btn-secondary" onClick={saveDraft}>
               {saveState === 'saving' ? '...' : t('saveDraft')}
             </button>

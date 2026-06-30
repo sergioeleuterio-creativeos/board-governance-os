@@ -180,6 +180,9 @@ export function BoardPackLiveScreen() {
     <div className="grid gap-6 xl:grid-cols-[240px_1fr_300px]">
       <Panel className="h-fit">
         <SectionTitle label="Indice" />
+        <Link href="/board-pack/presentation" className="btn-primary mb-4">
+          Modo apresentacao
+        </Link>
         {[
           'Sumario executivo',
           'Perguntas estrategicas',

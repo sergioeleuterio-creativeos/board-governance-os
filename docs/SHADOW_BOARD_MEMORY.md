@@ -1456,3 +1456,78 @@ Still pending:
 - Add "create demo company from pack".
 - Add batch advisor evaluation runs across all packs.
 - Add an evaluation-results table for pack/advisor/model comparisons.
+
+### 2026-06-30 - Training packs, intake chat prominence, presentation mode, and hardening QA
+
+User direction:
+- Keep Stripe billing enforcement parked.
+- Guide OpenAI API billing setup separately from the ChatGPT Pro account.
+- Create the company training packs in the live product.
+- Run export visual QA and UX/UI review.
+- Make chat intake more visible and central; voice can wait for WhatsApp/auth decisions.
+- Add LANCE polished demo narrative.
+- Add admin/training packs.
+- Add Board Pack preview presentation mode.
+- Prepare privacy and terms pages with placeholder docs.
+
+Implemented:
+- Added shared training-pack seed helper in `lib/board/training-pack-seed.ts`.
+- Added Admin Training Packs UI at `/admin/training-packs`.
+- Added Admin Training Packs API at `/api/admin/training-packs`.
+- Added repeatable CLI seed script `npm run seed:training-packs`.
+- Seeded ten live training/demo companies into the Board Governance OS Supabase project:
+  - LANCE!
+  - The New York Times Company
+  - Netflix
+  - Boeing
+  - WeWork / The We Company
+  - Uber
+  - Meta / Facebook
+  - Natura &Co
+  - Magazine Luiza / Magalu
+  - Petrobras
+- Each seeded company includes Company Brain entries, governance input, business plan, board pack, board session, advisor reviews, decisions, follow-ups, and audit events.
+- Fixed current-company resolution so training-pack companies do not displace Sergio's normal active company by accident; non-training companies are preferred before training packs.
+- Made Company Brain intake open on the chat tab by default.
+- Added clearer Board Brain chat empty state, starter prompts, and a visible "open intake chat" action.
+- Expanded chat intake i18n copy across pt-BR, en, and es.
+- Added Board Pack presentation mode at `/board-pack/presentation`.
+- Presentation mode is protected, hides the app chrome, provides print support, and shows executive summary, questions, financial tables, risk map, advisor reports, and decision candidates.
+- Added LANCE polished demo route at `/demo/lance` with a guided narrative for showcasing the product around the LANCE source pack.
+- Added placeholder legal docs:
+  - `docs/LEGAL_PRIVACY_PLACEHOLDER.md`
+  - `docs/LEGAL_TERMS_PLACEHOLDER.md`
+- Added local security QA script `npm run qa:security`.
+- Added export artifact downloader `npm run qa:exports:download`.
+- Added `docs/SECURITY_OPERATIONS_REVIEW.md`.
+- Updated mobile smoke QA route list to include the new presentation, demo, and training-pack routes.
+- UX copy polish:
+  - renamed internal-looking admin labels such as "fallback" to friendlier contingency language where user-facing.
+  - renamed agent adherence admin copy to advisor-facing language.
+  - removed more code-like language from intake review copy.
+
+Export QA findings:
+- Downloaded current live export artifacts from Supabase storage into `/tmp/board-os-export-qa`.
+- Rendered the latest PDF pages locally for visual inspection.
+- Existing live PDF/HTML artifacts render, but they are legacy artifacts from before the latest formatting pass and are too plain for a polished client demo.
+- A legacy PDF page showed JSON-shaped financial rows; the current export route was patched so section object content now passes through readable `valueText()` formatting instead of `JSON.stringify`.
+- Current live artifacts only include PDF/HTML from previous export runs; fresh PPTX/DOCX/XLSX artifacts still need to be generated and visually opened after deployment before a high-stakes demo.
+
+Verification:
+- `npm run typecheck` passed.
+- `npm run build` passed with 70 app routes.
+- `npm run qa:security` passed.
+- `npm run qa:exports` passed with warnings only for older artifacts created before signed URL TTL metadata existed.
+- `node --check` passed for:
+  - `scripts/qa-mobile-public.mjs`
+  - `scripts/seed-training-packs.mjs`
+  - `scripts/qa-security-local.mjs`
+  - `scripts/download-latest-exports.mjs`
+- Local mobile route smoke QA passed against `http://localhost:3011`.
+
+Open items after this batch:
+- Push/deploy the batch and run production smoke after Vercel finishes.
+- Generate fresh Board Pack exports from production after deployment and visually QA PDF/PPTX/DOCX/XLSX.
+- Add evaluation-results persistence for advisor/model runs across the training packs.
+- Complete OpenAI Platform billing so `Rodar Board Brain` can use live model calls instead of the deterministic fallback.
+- Keep Stripe enforcement disabled until Stripe products, prices, and webhooks are ready.

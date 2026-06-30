@@ -23,6 +23,11 @@ type CompanyRow = {
   revenue_range: string | null
   default_locale: string
   created_at: string
+  metadata?: Record<string, unknown> | null
+}
+
+function preferOperationalCompany(companies: CompanyRow[]) {
+  return companies.find((company) => company.metadata?.training_pack !== true) ?? companies[0] ?? null
 }
 
 export async function GET() {
@@ -79,35 +84,36 @@ export async function GET() {
     return NextResponse.json({ error: companyMembershipError.message }, { status: 500 })
   }
 
-  const directCompanyId = ((companyMemberships ?? []) as CompanyMembershipRow[])[0]?.company_id
-  const directCompany = directCompanyId
+  const directCompanyIds = ((companyMemberships ?? []) as CompanyMembershipRow[]).map((membership) => membership.company_id)
+  const directCompanies = directCompanyIds.length
     ? await service
       .from('companies')
-      .select('id, organization_id, name, slug, status, industry, stage, revenue_range, default_locale, created_at')
-      .eq('id', directCompanyId)
-      .maybeSingle()
-    : { data: null, error: null }
+      .select('id, organization_id, name, slug, status, industry, stage, revenue_range, default_locale, created_at, metadata')
+      .in('id', directCompanyIds)
+    : { data: [], error: null }
 
-  if (directCompany.error) {
-    return NextResponse.json({ error: directCompany.error.message }, { status: 500 })
+  if (directCompanies.error) {
+    return NextResponse.json({ error: directCompanies.error.message }, { status: 500 })
   }
 
-  const fallbackCompany = !directCompany.data && primaryOrganizationId
+  const companiesById = new Map(((directCompanies.data ?? []) as CompanyRow[]).map((company) => [company.id, company]))
+  const directCompany = preferOperationalCompany(directCompanyIds.map((id) => companiesById.get(id)).filter(Boolean) as CompanyRow[])
+
+  const fallbackCompany = !directCompany && primaryOrganizationId
     ? await service
       .from('companies')
-      .select('id, organization_id, name, slug, status, industry, stage, revenue_range, default_locale, created_at')
+      .select('id, organization_id, name, slug, status, industry, stage, revenue_range, default_locale, created_at, metadata')
       .eq('organization_id', primaryOrganizationId)
       .eq('status', 'active')
       .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    : { data: null, error: null }
+      .limit(50)
+    : { data: [], error: null }
 
   if (fallbackCompany.error) {
     return NextResponse.json({ error: fallbackCompany.error.message }, { status: 500 })
   }
 
-  const company = (directCompany.data ?? fallbackCompany.data ?? null) as CompanyRow | null
+  const company = (directCompany ?? preferOperationalCompany((fallbackCompany.data ?? []) as CompanyRow[])) as CompanyRow | null
   const latestSession = company
     ? await service
       .from('board_sessions')

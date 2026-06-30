@@ -16,6 +16,11 @@ export type CurrentCompany = {
   slug: string
   status: string
   stage?: string | null
+  metadata?: Record<string, unknown> | null
+}
+
+function preferOperationalCompany(companies: CurrentCompany[]) {
+  return companies.find((company) => company.metadata?.training_pack !== true) ?? companies[0] ?? null
 }
 
 export async function getCurrentCompanyForUser(user: User): Promise<CurrentCompany | null> {
@@ -31,16 +36,17 @@ export async function getCurrentCompanyForUser(user: User): Promise<CurrentCompa
 
   if (companyMembershipError) throw new Error(companyMembershipError.message)
 
-  const companyId = ((companyMemberships ?? []) as CompanyMembershipRow[])[0]?.company_id
-  if (companyId) {
-    const { data: company, error } = await service
+  const companyIds = ((companyMemberships ?? []) as CompanyMembershipRow[]).map((membership) => membership.company_id)
+  if (companyIds.length) {
+    const { data: companies, error } = await service
       .from('companies')
-      .select('id, organization_id, name, slug, status, stage')
-      .eq('id', companyId)
-      .maybeSingle()
+      .select('id, organization_id, name, slug, status, stage, metadata')
+      .in('id', companyIds)
 
     if (error) throw new Error(error.message)
-    if (company) return company as CurrentCompany
+    const companiesById = new Map(((companies ?? []) as CurrentCompany[]).map((company) => [company.id, company]))
+    const preferred = preferOperationalCompany(companyIds.map((id) => companiesById.get(id)).filter(Boolean) as CurrentCompany[])
+    if (preferred) return preferred
   }
 
   const { data: organizationMembership, error: organizationMembershipError } = await service
@@ -55,15 +61,14 @@ export async function getCurrentCompanyForUser(user: User): Promise<CurrentCompa
   if (organizationMembershipError) throw new Error(organizationMembershipError.message)
   if (!organizationMembership?.organization_id) return null
 
-  const { data: company, error } = await service
+  const { data: companies, error } = await service
     .from('companies')
-    .select('id, organization_id, name, slug, status, stage')
+    .select('id, organization_id, name, slug, status, stage, metadata')
     .eq('organization_id', organizationMembership.organization_id)
     .eq('status', 'active')
     .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle()
+    .limit(50)
 
   if (error) throw new Error(error.message)
-  return company as CurrentCompany | null
+  return preferOperationalCompany((companies ?? []) as CurrentCompany[])
 }

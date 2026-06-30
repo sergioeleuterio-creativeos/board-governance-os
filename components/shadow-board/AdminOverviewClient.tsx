@@ -202,12 +202,12 @@ export function AdminOverviewClient() {
           {[
             ['Supabase', 'Projeto separado e buckets privados'],
             ['Auth', 'Login com senha, Turnstile e rotas protegidas'],
-            ['AI', 'Router por finalidade com fallback deterministico'],
+            ['IA', 'Modelos por finalidade com contingencia deterministica'],
             ['Billing', 'Checkout/portal/webhook prontos para price IDs'],
             ['Reminders', 'Agendamento + cron Resend protegido por secret'],
             ['Exports', 'HTML, PDF, PPTX, DOCX, XLSX e CSV + QA estrutural'],
             ['Agent QA', 'Rubricas e scores em /admin/agents'],
-            ['AI Ops', 'Fallbacks, erros e notificacoes em /admin/ai'],
+            ['IA Ops', 'Contingencias, erros e notificacoes em /admin/ai'],
             ['Dominio', 'www.board-os.ai em producao'],
             ['Admin', 'Usuarios, sessoes, referrals e filas operacionais'],
           ].map(([label, detail]) => (

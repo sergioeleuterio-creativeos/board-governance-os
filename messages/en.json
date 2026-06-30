@@ -56,6 +56,7 @@
       "adminReferrals": "Referrals",
       "adminDocuments": "Documents",
       "adminAgents": "Agents",
+      "adminTrainingPacks": "Training Packs",
       "adminAI": "AI Ops",
       "adminPartners": "Partners",
       "adminAudit": "Audit"
@@ -80,7 +81,7 @@
     "intakeDescription": "Capture chat, voice-ready notes, files, financials, risks, and company context before the governance cycle starts."
   },
   "intake": {
-    "eyebrow": "Company Brain Intake",
+    "eyebrow": "Company Brain intake",
     "title": "Build the board-level context",
     "description": "Collect the facts, assumptions, files, and open questions that the Board Brain needs before a Governance Run.",
     "saveDraft": "Save draft",
@@ -142,13 +143,20 @@
       "talentRisks": "Talent risks"
     },
     "chat": {
-      "title": "Chat intake",
-      "description": "Use this as the founder interview transcript. It can later become a live chat with Board Brain.",
-      "prompt": "What should the board understand before reviewing this company?",
+      "title": "Board Brain chat",
+      "description": "Start with the conversation. Board Brain turns loose context into questions, gaps, and board memory.",
+      "prompt": "What does the board need to understand before reviewing this company?",
       "add": "Add note",
+      "open": "Open intake chat",
       "send": "Send to Board Brain",
       "thinking": "Board Brain thinking...",
-      "placeholder": "Type a founder note, board question, or context fragment..."
+      "placeholder": "Type a founder note, board question, or context fragment...",
+      "emptyTitle": "Start with a conversation. Structured fields can come later.",
+      "starters": {
+        "decision": "What decision needs to be made, and why now?",
+        "blocker": "What have you already tried, and where did it get stuck?",
+        "financials": "Which financial numbers must the board see before recommending?"
+      }
     },
     "voice": {
       "title": "Voice-ready intake",
@@ -170,7 +178,7 @@
     },
     "review": {
       "title": "Review before governance run",
-      "description": "This is the local payload that will later be persisted to Company Brain.",
+      "description": "Review the summary that will be saved to company memory.",
       "missing": "Missing context",
       "ready": "Ready for first Governance Run",
       "notReady": "Needs more context before the run"

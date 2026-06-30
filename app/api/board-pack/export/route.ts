@@ -208,8 +208,8 @@ function textLines(boardPack: BoardPackRow, companyName: string): string[] {
 }
 
 function sectionRows(label: string, value: unknown): string[] {
-  if (!Array.isArray(value)) return [[label, JSON.stringify(value ?? '')].map(csvCell).join(',')]
-  return value.map((item, index) => [label, index + 1, typeof item === 'string' ? item : JSON.stringify(item)].map(csvCell).join(','))
+  if (!Array.isArray(value)) return [[label, valueText(value)].map(csvCell).join(',')]
+  return value.map((item, index) => [label, index + 1, valueText(item)].map(csvCell).join(','))
 }
 
 function renderHtml(boardPack: BoardPackRow, companyName: string): string {

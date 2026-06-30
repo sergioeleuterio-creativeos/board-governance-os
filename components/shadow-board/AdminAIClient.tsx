@@ -99,7 +99,7 @@ export function AdminAIClient() {
     const totals = readout?.totals
     return [
       ['Chamadas observadas', String(totals?.ai_events ?? 0), 'rodadas, desafios e deep dives'],
-      ['Fallbacks', String(totals?.ai_fallbacks ?? 0), 'motor de contingencia usado'],
+      ['Contingencias', String(totals?.ai_fallbacks ?? 0), 'resposta deterministica usada'],
       ['Erros de IA', String(totals?.ai_errors ?? 0), 'exigem inspecao'],
       ['Falhas de email', String(totals?.notification_failures ?? 0), 'notificacoes nao entregues'],
     ] as const
@@ -132,7 +132,7 @@ export function AdminAIClient() {
       <PageHeader
         eyebrow="Operacoes"
         title="IA e notificacoes"
-        description="Fallbacks, erros de modelo e emails operacionais em um so painel."
+        description="Contingencias, erros de modelo e emails operacionais em um so painel."
         action={<button className="btn-secondary" type="button" onClick={() => void loadAIOps()}>Atualizar</button>}
       />
 
@@ -162,7 +162,7 @@ export function AdminAIClient() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <StatusPill tone={event.signal.used_fallback ? 'caution' : 'positive'}>
-                    {event.signal.used_fallback ? 'fallback' : 'modelo ativo'}
+                    {event.signal.used_fallback ? 'contingencia' : 'modelo ativo'}
                   </StatusPill>
                   {event.entity_type && <StatusPill>{event.entity_type}</StatusPill>}
                 </div>

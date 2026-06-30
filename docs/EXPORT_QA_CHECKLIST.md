@@ -31,4 +31,8 @@ For the latest Board Pack, export and open:
 
 ## Current Caveat
 
-The export route now avoids raw JSON in client-facing artifacts and records signed URL TTL metadata. Full visual QA still needs a manual open-through pass on generated files before a high-stakes demo.
+The export route now avoids raw JSON in client-facing artifacts and records signed URL TTL metadata.
+
+Latest checked live artifacts were legacy PDF/HTML exports generated before the newest formatting pass. They render, but the PDF is still too plain for a polished client demo and one legacy financial section showed object-like rows. The route has been patched so fresh exports should format those rows as readable labels.
+
+Before a high-stakes demo, generate fresh PDF, PPTX, DOCX, XLSX, HTML, and CSV artifacts from production and open each file visually. The current automated QA confirms artifact health; it does not replace visual review of Office/PDF layout quality.

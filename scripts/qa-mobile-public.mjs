@@ -6,7 +6,19 @@ const mobileHeaders = {
 }
 
 const publicRoutes = ['/', '/login', '/reset-password', '/privacy', '/terms']
-const protectedRoutes = ['/dashboard', '/company', '/governance-run', '/board-pack', '/shadow-board', '/decisions', '/follow-ups', '/admin']
+const protectedRoutes = [
+  '/dashboard',
+  '/company',
+  '/governance-run',
+  '/board-pack',
+  '/board-pack/presentation',
+  '/shadow-board',
+  '/decisions',
+  '/follow-ups',
+  '/admin',
+  '/admin/training-packs',
+  '/demo/lance',
+]
 
 async function checkPublic(route) {
   const response = await fetch(`${baseUrl}${route}`, { headers: mobileHeaders, redirect: 'manual' })
