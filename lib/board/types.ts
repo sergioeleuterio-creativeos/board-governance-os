@@ -62,7 +62,15 @@ export interface GovernanceAIOutput {
     executive_summary: string
     strategic_questions: string[]
     risk_map: Array<{ risk: string; severity: RiskLevel; mitigation: string }>
-    priority_ranking: Array<{ priority: string; rationale: string; owner_suggestion?: string }>
+    priority_ranking: Array<{
+      priority: string
+      rationale: string
+      owner_suggestion?: string
+      why_now?: string
+      evidence?: string
+      evidence_gap?: string
+      decision_question?: string
+    }>
     meeting_agenda: string[]
   }
   decision: {

@@ -1645,6 +1645,54 @@ Live data verification:
 Verification:
 - `npm run typecheck` passed.
 - `npm run build` passed with 72 app routes.
+
+### 2026-06-30 - Governance Run clarity and LANCE demo framing
+
+User feedback:
+- Governance Run diagnosis was too long.
+- Workstreams/priorities/evidence felt like a broad initiative list without a clear reason for selection.
+- First-time users need to understand where to start, what the Brain understood, and what should be taken to the board.
+- Clarify whether all decisions should go straight into the Board Pack.
+
+Product clarification:
+- Governance Run is the filter and framing layer between Company Brain and Board Pack.
+- Company Brain answers: "What does the Brain understand about the business problem?"
+- Governance Run answers: "What is the decision architecture, which priorities matter, what evidence supports them, what is missing, and what should the board decide?"
+- Board Pack answers: "What is the meeting-ready package, advisor analysis, decision candidates, risks, agenda, and follow-up memory?"
+- Not every initiative should become a decision. Governance Run should filter initiatives into a small number of board-level priorities and decision questions.
+
+Implemented:
+- Rebuilt `/governance-run` as a clearer page:
+  - "Comece aqui" panel with Brain understanding, approach, and what to take to the board.
+  - Short executive diagnosis instead of long paragraph-first reading.
+  - Explicit "Decisao que precisa sair".
+  - Priority cards with `Por que entrou`, `Evidencia`, `Falta fechar`, owner, and board decision question.
+  - Workstreams separated from priorities and shown as operational support for the selected decisions.
+  - Evidence gaps separated into their own panel.
+- Extended governance AI output schema and prompt:
+  - `run.summary` capped to 35 words.
+  - `priority_ranking` must return 3-5 selected priorities, not a broad initiative list.
+  - Each priority now asks for `why_now`, `evidence`, `evidence_gap`, and `decision_question`.
+- Updated governance persistence so generated workstreams carry reasoning/evidence fields.
+- Updated LANCE seed:
+  - Stored diagnosis shortened to three concise sentences.
+  - LANCE priorities now include why-now, evidence, evidence gap, and decision question.
+  - LANCE workstreams now explain why selected and what evidence closes each front.
+- Updated training-pack seed so future training/demo companies follow the same reasoning structure.
+- Reseeded live LANCE data in Supabase with the improved diagnosis and priority structure.
+
+Live data verification:
+- Only one LANCE company exists: `LANCE!` / slug `lance`.
+- Latest LANCE business plan diagnosis is concise.
+- Latest LANCE first priority includes `why_now`, `evidence`, `evidence_gap`, and `decision_question`.
+- Latest LANCE first workstream includes `why_selected`, `evidence`, `evidence_gap`, and `decision_question`.
+
+Verification:
+- `npm run typecheck` passed.
+- `npm run build` passed with 72 app routes.
+- `node --check scripts/seed-lance.mjs` passed.
+- `node --check scripts/seed-training-packs.mjs` passed.
+- Local dev route redirected to `/login?next=/governance-run` as expected without a localhost session; no authenticated visual QA was completed locally.
 - `npm run ai:health` passed against OpenAI `gpt-4.1`.
 - `npm run qa:security` passed.
 - `npm run qa:exports` passed with only legacy artifact warnings for older signed URL metadata.

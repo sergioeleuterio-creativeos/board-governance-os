@@ -204,7 +204,11 @@ async function saveCanonicalRun({
     workstream: priority.priority,
     owner_suggestion: priority.owner_suggestion ?? 'Fundador',
     cadence: 'Revisao semanal',
-    proof_point: priority.rationale,
+    why_selected: priority.rationale,
+    evidence: priority.evidence ?? 'Evidencia sintetizada pelo Board Brain a partir da Company Brain.',
+    evidence_gap: priority.evidence_gap ?? 'Validar fonte, indicador e responsavel antes da aprovacao.',
+    decision_question: priority.decision_question ?? `O board deve aprovar esta prioridade agora: ${priority.priority}?`,
+    proof_point: priority.evidence ?? priority.rationale,
   }))
 
   const { data: businessPlan, error: businessPlanError } = await service
@@ -578,14 +582,14 @@ export async function GET() {
         .maybeSingle(),
       service
         .from('business_plans')
-        .select('id, diagnosis, completeness_score, quality_score, workstreams, priorities, status, updated_at')
+        .select('id, diagnosis, completeness_score, quality_score, workstreams, priorities, assumptions, risks, kpis, status, updated_at')
         .eq('company_id', company.id)
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle(),
       service
         .from('board_packs')
-        .select('id, version, status, executive_summary, strategic_questions, priority_ranking, created_at')
+        .select('id, version, status, executive_summary, strategic_questions, priority_ranking, decision_candidates, created_at')
         .eq('company_id', company.id)
         .order('created_at', { ascending: false })
         .limit(1)

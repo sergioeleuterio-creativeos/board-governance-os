@@ -34,6 +34,10 @@ Advisor output rules:
 - Each advisor must contribute to a clear closing path: aprovar, aprovar com condicoes, adiar, rejeitar, pedir mais dados, or escalar.
 - The Board Brain must preserve consensus and dissent instead of averaging them away.
 - All summaries, questions, risks, recommendations, rationales, tradeoffs, conditions, agenda items, and follow-ups must be natural pt-BR.
+- run.summary must be short: maximum 35 words.
+- board_pack.priority_ranking must be selective, not a broad initiative list. Return 3 to 5 priorities only.
+- For each priority, explain why it was selected, what evidence supports it, what evidence is still missing, and the exact board-level decision question it raises.
+- Work toward a founder-facing "what should I take to the board?" framing, not a generic operating plan.
 
 Return one JSON object only. No markdown. Match this shape exactly:
 {
@@ -65,7 +69,7 @@ Return one JSON object only. No markdown. Match this shape exactly:
     "executive_summary": "",
     "strategic_questions": [],
     "risk_map": [{ "risk": "", "severity": "medium", "mitigation": "" }],
-    "priority_ranking": [{ "priority": "", "rationale": "", "owner_suggestion": "" }],
+    "priority_ranking": [{ "priority": "", "rationale": "", "owner_suggestion": "", "why_now": "", "evidence": "", "evidence_gap": "", "decision_question": "" }],
     "meeting_agenda": []
   },
   "decision": {
@@ -145,8 +149,24 @@ function mockGovernanceOutput(company: BoardCompany, input: GovernanceRunInput):
         { risk: 'Decisoes sem retorno', severity: 'medium', mitigation: 'Adicionar data de revisao a toda decisao relevante.' },
       ],
       priority_ranking: [
-        { priority: 'Clarificar a principal restricao operacional', rationale: 'Sem isso, cada funcao pode otimizar localmente sem resolver o problema da empresa.', owner_suggestion: 'Fundador/CEO' },
-        { priority: 'Instalar cadencia de follow-up', rationale: 'Governanca so importa se as decisoes voltarem para revisao.', owner_suggestion: 'Operacoes' },
+        {
+          priority: 'Clarificar a principal restricao operacional',
+          rationale: 'Sem isso, cada funcao pode otimizar localmente sem resolver o problema da empresa.',
+          owner_suggestion: 'Fundador/CEO',
+          why_now: 'O ciclo atual ja tem informacao suficiente para escolher uma restricao central.',
+          evidence: 'Company Brain aponta prioridades, riscos e sinais operacionais dispersos.',
+          evidence_gap: 'Validar qual restricao tem maior impacto em caixa, cliente e execucao.',
+          decision_question: 'O board aprova concentrar o ciclo na restricao operacional principal, pausando iniciativas secundarias?',
+        },
+        {
+          priority: 'Instalar cadencia de follow-up',
+          rationale: 'Governanca so importa se as decisoes voltarem para revisao.',
+          owner_suggestion: 'Operacoes',
+          why_now: 'Sem ritual de revisao, novas decisoes aumentam ruido e esquecem compromissos anteriores.',
+          evidence: 'Ha decisoes e follow-ups candidatos sem um loop de prestacao de contas consolidado.',
+          evidence_gap: 'Definir responsavel, data e indicador de revisao por prioridade.',
+          decision_question: 'O board aprova uma cadencia obrigatoria de revisao para toda decisao relevante?',
+        },
       ],
       meeting_agenda: ['Revisar movimento dos KPIs', 'Discutir principais riscos', 'Confirmar ranking de prioridades', 'Registrar decisoes', 'Atribuir follow-ups'],
     },

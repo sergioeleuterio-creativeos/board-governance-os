@@ -24,6 +24,9 @@ type LatestBusinessPlan = {
   quality_score: number | null
   workstreams: unknown
   priorities: unknown
+  assumptions: unknown
+  risks: unknown
+  kpis: unknown
   status: string
   updated_at: string
 }
@@ -35,6 +38,7 @@ type LatestBoardPack = {
   executive_summary: string | null
   strategic_questions: unknown
   priority_ranking: unknown
+  decision_candidates: unknown
   created_at: string
 }
 
@@ -106,9 +110,90 @@ function asArray(value: unknown): Array<Record<string, unknown> | string> {
   return Array.isArray(value) ? value : []
 }
 
-function textFromItem(item: Record<string, unknown> | string) {
+function stringValue(value: unknown) {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function valueFrom(item: Record<string, unknown> | string, keys: string[], fallback = '') {
   if (typeof item === 'string') return item
-  return [item.priority, item.workstream, item.title, item.rationale, item.proof_point].filter(Boolean).join(' - ')
+
+  for (const key of keys) {
+    const value = stringValue(item[key])
+    if (value) return value
+  }
+
+  return fallback
+}
+
+function firstSentence(value: string) {
+  const trimmed = value.replace(/\s+/g, ' ').trim()
+  if (!trimmed) return ''
+  const sentence = trimmed.match(/^[^.!?]+[.!?]/)?.[0]
+  return sentence ?? trimmed
+}
+
+function limitText(value: string, maxWords = 28) {
+  const words = value.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean)
+  if (words.length <= maxWords) return words.join(' ')
+  return `${words.slice(0, maxWords).join(' ')}...`
+}
+
+function diagnosisSummary(readout: GovernanceRunReadout | null, lastRun: RunResponse | null) {
+  const raw = lastRun?.output.run.summary
+    ?? readout?.latest_business_plan?.diagnosis
+    ?? readout?.latest_run?.executive_summary
+    ?? ''
+
+  return limitText(firstSentence(raw), 34)
+}
+
+function decisionQuestionFrom(readout: GovernanceRunReadout | null) {
+  const priorities = asArray(readout?.latest_board_pack?.priority_ranking ?? readout?.latest_business_plan?.priorities)
+  const firstPriority = priorities[0]
+  const question = firstPriority ? valueFrom(firstPriority, ['decision_question']) : ''
+  if (question) return question
+
+  const decisions = asArray(readout?.latest_board_pack?.decision_candidates)
+  const firstDecision = decisions[0]
+  const title = firstDecision ? valueFrom(firstDecision, ['title']) : ''
+  if (title) return `Decidir: ${title}`
+
+  const strategicQuestions = asArray(readout?.latest_board_pack?.strategic_questions)
+  const firstQuestion = strategicQuestions[0]
+  return firstQuestion ? valueFrom(firstQuestion, []) : 'Definir qual decisao deve sair da proxima reuniao de board.'
+}
+
+function priorityCards(readout: GovernanceRunReadout | null) {
+  const source = asArray(readout?.latest_board_pack?.priority_ranking ?? readout?.latest_business_plan?.priorities)
+
+  return source.slice(0, 5).map((item, index) => ({
+    rank: valueFrom(item, ['rank'], String(index + 1)),
+    title: valueFrom(item, ['priority', 'title', 'workstream'], `Prioridade ${index + 1}`),
+    reason: valueFrom(item, ['why_now', 'rationale'], 'Selecionada por impacto esperado na decisao do ciclo.'),
+    evidence: valueFrom(item, ['evidence', 'proof_point'], 'Evidencia ainda precisa ser explicitada com fonte e indicador.'),
+    gap: valueFrom(item, ['evidence_gap'], 'Fechar fonte, indicador, responsavel e data de revisao.'),
+    owner: valueFrom(item, ['owner_suggestion', 'owner_label'], 'Fundador/CEO'),
+    question: valueFrom(item, ['decision_question'], ''),
+  }))
+}
+
+function workstreamRows(readout: GovernanceRunReadout | null) {
+  return asArray(readout?.latest_business_plan?.workstreams).slice(0, 5).map((item, index) => ({
+    title: valueFrom(item, ['workstream', 'priority', 'title'], `Frente ${index + 1}`),
+    owner: valueFrom(item, ['owner_suggestion', 'owner_label'], 'Fundador/CEO'),
+    cadence: valueFrom(item, ['cadence'], 'Revisao semanal'),
+    proof: valueFrom(item, ['proof_point', 'evidence'], 'Prova de avanco a definir'),
+  }))
+}
+
+function evidenceGaps(readout: GovernanceRunReadout | null) {
+  const assumptions = asArray(readout?.latest_business_plan?.assumptions)
+  const gapsFromPriorities = priorityCards(readout).map(priority => priority.gap)
+  const gapsFromAssumptions = assumptions.map(item => valueFrom(item, ['detail', 'title']))
+
+  return [...gapsFromAssumptions, ...gapsFromPriorities]
+    .filter(Boolean)
+    .slice(0, 4)
 }
 
 export function GovernanceRunLiveScreen() {
@@ -199,14 +284,18 @@ export function GovernanceRunLiveScreen() {
   }, [])
 
   const workstreams = asArray(readout?.latest_business_plan?.workstreams)
-  const priorities = asArray(readout?.latest_business_plan?.priorities)
+  const priorities = priorityCards(readout)
+  const conciseDiagnosis = diagnosisSummary(readout, lastRun)
+  const decisionQuestion = decisionQuestionFrom(readout)
+  const workstreamPlan = workstreamRows(readout)
+  const gaps = evidenceGaps(readout)
 
   return (
     <div className="space-y-6">
       <PageHeader
         eyebrow="03 - Governance Run"
-        title="Governance run ao vivo"
-        description="Gere diagnostico, plano, Board Pack, analises dos advisors, candidatos de decisao e follow-ups a partir da Company Brain."
+        title="Governance Run"
+        description="Transforme a Company Brain em uma tese curta de decisao, prioridades justificadas e pauta para o board."
         action={workspace?.company?.id ? (
           <button className="btn-primary" type="button" onClick={() => void runGovernance()} disabled={running || workspaceLoading}>
             {running ? 'Rodando...' : 'Rodar Board Brain'}
@@ -228,46 +317,116 @@ export function GovernanceRunLiveScreen() {
       </section>
 
       <Panel>
-        <div className="grid gap-5 lg:grid-cols-[0.75fr_1.4fr]">
-          <div>
-            <SectionTitle label="Diagnostico" />
-            <p className="sb-serif-callout">
-              {lastRun?.output.run.summary
-                ?? readout?.latest_business_plan?.diagnosis
-                ?? readout?.latest_run?.executive_summary
-                ?? (loading ? 'Carregando diagnostico...' : 'Nenhuma governance run gerada ainda.')}
+        <SectionTitle label="Comece aqui" />
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="rounded-md border border-[#E4DED2] bg-[#FBFAF7] p-4">
+            <p className="sb-code">1 - O Brain entendeu</p>
+            <p className="mt-3 text-lg font-semibold text-[#1F1B16]">{conciseDiagnosis || (loading ? 'Carregando diagnostico...' : 'Ainda sem diagnostico.')}</p>
+          </div>
+          <div className="rounded-md border border-[#E4DED2] bg-[#FBFAF7] p-4">
+            <p className="sb-code">2 - A abordagem</p>
+            <p className="mt-3 text-lg font-semibold text-[#1F1B16]">
+              Filtrar o problema em poucas prioridades, testar evidencia minima e separar o que vira decisao do que fica como follow-up.
             </p>
+          </div>
+          <div className="rounded-md border border-[#E4DED2] bg-[#FBFAF7] p-4">
+            <p className="sb-code">3 - Levar ao board</p>
+            <p className="mt-3 text-lg font-semibold text-[#1F1B16]">{limitText(decisionQuestion, 30)}</p>
+          </div>
+        </div>
+      </Panel>
+
+      <Panel>
+        <div className="grid gap-5 lg:grid-cols-[0.78fr_1.22fr]">
+          <div>
+            <SectionTitle label="Diagnostico executivo" />
+            <p className="sb-serif-callout">{conciseDiagnosis || (loading ? 'Carregando diagnostico...' : 'Nenhuma governance run gerada ainda.')}</p>
+            <div className="mt-5 rounded-md border border-[#E4DED2] bg-white p-4">
+              <p className="sb-code">Decisao que precisa sair</p>
+              <p className="mt-2 font-semibold text-[#1F1B16]">{decisionQuestion}</p>
+            </div>
             <div className="mt-5 flex flex-wrap gap-2">
               {readout?.latest_session?.status && <StatusPill>{formatStatus(readout.latest_session.status)}</StatusPill>}
               {readout?.latest_session?.closure_recommendation && <StatusPill>{formatClosure(readout.latest_session.closure_recommendation)}</StatusPill>}
             </div>
           </div>
           <div>
-            <SectionTitle label="Workstreams, prioridades e evidencias" />
-            <div className="sb-table">
-              <div className="sb-table-head">
-                <span>Item</span><span>Fonte</span><span>Status</span><span>Proximo</span>
-              </div>
-              {[...workstreams, ...priorities].slice(0, 8).map((item, index) => (
-                <div className="sb-table-row" key={`${textFromItem(item)}-${index}`}>
-                  <span>{textFromItem(item) || `Item ${index + 1}`}</span>
-                  <span>Board Brain</span>
-                  <span>{readout?.latest_business_plan?.status ?? '-'}</span>
-                  <span>Revisar</span>
+            <SectionTitle label="Prioridades escolhidas" />
+            <div className="grid gap-3">
+              {priorities.map((priority) => (
+                <div className="rounded-md border border-[#E4DED2] bg-white p-4" key={`${priority.rank}-${priority.title}`}>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="sb-code">P{priority.rank}</p>
+                      <h2 className="sb-row-title mt-1">{priority.title}</h2>
+                    </div>
+                    <StatusPill>{limitText(priority.owner, 4)}</StatusPill>
+                  </div>
+                  <div className="mt-4 grid gap-3 md:grid-cols-3">
+                    <div>
+                      <p className="sb-code">Por que entrou</p>
+                      <p className="sb-muted mt-1">{limitText(priority.reason, 22)}</p>
+                    </div>
+                    <div>
+                      <p className="sb-code">Evidencia</p>
+                      <p className="sb-muted mt-1">{limitText(priority.evidence, 22)}</p>
+                    </div>
+                    <div>
+                      <p className="sb-code">Falta fechar</p>
+                      <p className="sb-muted mt-1">{limitText(priority.gap, 22)}</p>
+                    </div>
+                  </div>
+                  {priority.question && (
+                    <p className="mt-3 border-t border-[#E4DED2] pt-3 font-semibold text-[#1F1B16]">{priority.question}</p>
+                  )}
                 </div>
               ))}
-              {!loading && !workstreams.length && !priorities.length && (
-                <div className="sb-table-row">
-                  <span>Nenhum plano gerado ainda.</span>
-                  <span>-</span>
-                  <span>-</span>
-                  <span>-</span>
-                </div>
+              {!loading && !priorities.length && (
+                <p className="sb-muted">Nenhuma prioridade gerada ainda.</p>
               )}
             </div>
           </div>
         </div>
       </Panel>
+
+      <section className="grid gap-4 lg:grid-cols-[1.25fr_0.75fr]">
+        <Panel>
+          <SectionTitle label="Workstreams derivados" />
+          <div className="sb-table">
+            <div className="sb-table-head">
+              <span>Frente</span><span>Dono</span><span>Cadencia</span><span>Prova</span>
+            </div>
+            {workstreamPlan.map((item) => (
+              <div className="sb-table-row" key={item.title}>
+                <span>{item.title}</span>
+                <span>{item.owner}</span>
+                <span>{item.cadence}</span>
+                <span>{limitText(item.proof, 12)}</span>
+              </div>
+            ))}
+            {!loading && !workstreams.length && (
+              <div className="sb-table-row">
+                <span>Nenhum workstream gerado ainda.</span>
+                <span>-</span>
+                <span>-</span>
+                <span>-</span>
+              </div>
+            )}
+          </div>
+        </Panel>
+        <Panel>
+          <SectionTitle label="Evidencias antes de aprovar" />
+          <div className="space-y-3">
+            {gaps.map((gap, index) => (
+              <div className="rounded-md border border-[#E4DED2] bg-white p-3" key={`${gap}-${index}`}>
+                <p className="sb-code">E{index + 1}</p>
+                <p className="sb-muted mt-1">{limitText(gap, 20)}</p>
+              </div>
+            ))}
+            {!loading && !gaps.length && <p className="sb-muted">Nenhuma lacuna de evidencia registrada.</p>}
+          </div>
+        </Panel>
+      </section>
 
       {lastRun && (
         <section className="grid gap-4 md:grid-cols-3">
