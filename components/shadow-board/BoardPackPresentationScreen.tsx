@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { StatusPill } from './ui'
+import { AdvisorMark, StatusPill } from './ui'
+import { formatClosure } from '@/lib/shadow-board/display-labels'
 
 type BoardPack = {
   id: string
@@ -21,9 +22,11 @@ type AgentReview = {
   id: string
   advisor_key: string
   advisor_name: string
+  stance?: string | null
   risk_score: number | null
   confidence_score: number | null
   perspective: string | null
+  strategic_questions?: unknown
   recommendations: unknown
   closure_recommendation: string | null
 }
@@ -61,12 +64,52 @@ function textFrom(value: unknown): string {
   return String(value)
 }
 
+const advisorColors: Record<string, string> = {
+  board_brain: '#C4922F',
+  finance: '#3E6B4F',
+  operator: '#4A5A6A',
+  growth: '#2F6E6A',
+  risk: '#A23B2D',
+  customer: '#7A4E63',
+  talent: '#85702F',
+}
+
+const advisorCodes: Record<string, string> = {
+  board_brain: 'BB',
+  finance: 'FN',
+  operator: 'OP',
+  growth: 'GR',
+  risk: 'RK',
+  customer: 'CU',
+  talent: 'TL',
+}
+
+function fieldText(item: Record<string, unknown> | string, keys: string[], fallback = '') {
+  if (typeof item === 'string') return item
+
+  for (const key of keys) {
+    const value = item[key]
+    if (typeof value === 'string' && value.trim()) return value.trim()
+    if (typeof value === 'number') return String(value)
+  }
+
+  return fallback
+}
+
+function shortText(value: string, maxWords = 34) {
+  const words = value.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean)
+  if (words.length <= maxWords) return words.join(' ')
+  return `${words.slice(0, maxWords).join(' ')}...`
+}
+
 function PresentationSection({ number, title, children }: { number: string; title: string; children: React.ReactNode }) {
   return (
     <section className="sb-presentation-section">
-      <p className="sb-code">{number}</p>
-      <h2>{title}</h2>
-      {children}
+      <aside>
+        <p className="sb-code">{number}</p>
+        <h2>{title}</h2>
+      </aside>
+      <div>{children}</div>
     </section>
   )
 }
@@ -116,13 +159,20 @@ export function BoardPackPresentationScreen() {
 
       {boardPack && (
         <div className="sb-presentation-pages">
-          <PresentationSection number="01" title="Perguntas de conselho">
+          <PresentationSection number="01" title="Sumario executivo">
+            <p className="sb-presentation-lead">{boardPack.executive_summary}</p>
+          </PresentationSection>
+
+          <PresentationSection number="02" title="Perguntas estrategicas">
             {asArray(boardPack.strategic_questions).map((question, index) => (
-              <p key={`${textFrom(question)}-${index}`}><strong>Q{index + 1}</strong> {textFrom(question)}</p>
+              <article className="sb-presentation-line" key={`${textFrom(question)}-${index}`}>
+                <span>Q{index + 1}</span>
+                <p>{textFrom(question)}</p>
+              </article>
             ))}
           </PresentationSection>
 
-          <PresentationSection number="02" title="Financeiro">
+          <PresentationSection number="03" title="Relatorios financeiros">
             {Object.entries(financialReport).map(([section, rows]) => (
               <div key={section} className="sb-presentation-table">
                 <h3>{section}</h3>
@@ -140,23 +190,59 @@ export function BoardPackPresentationScreen() {
             ))}
           </PresentationSection>
 
-          <PresentationSection number="03" title="Mapa de riscos">
-            {asArray(boardPack.risk_map).map((risk, index) => <p key={`${textFrom(risk)}-${index}`}>{textFrom(risk)}</p>)}
-          </PresentationSection>
-
-          <PresentationSection number="04" title="Advisor reports">
-            {readout.agent_reviews.map((review) => (
-              <article key={review.id} className="sb-presentation-advisor">
-                <h3>{review.advisor_name}</h3>
-                <p>{review.perspective}</p>
-                <p className="sb-muted">Risco {review.risk_score ?? '-'} / Confianca {review.confidence_score ?? '-'}</p>
+          <PresentationSection number="04" title="Mapa de riscos">
+            {asArray(boardPack.risk_map).map((risk, index) => (
+              <article className="sb-presentation-line" key={`${textFrom(risk)}-${index}`}>
+                <span>R{index + 1}</span>
+                <p>{textFrom(risk)}</p>
               </article>
             ))}
           </PresentationSection>
 
-          <PresentationSection number="05" title="Decisoes candidatas">
+          <PresentationSection number="05" title="Relatorios dos advisors">
+            <div className="sb-presentation-advisor-grid">
+              {readout.agent_reviews.map((review) => (
+              <article key={review.id} className="sb-presentation-advisor">
+                <div className="flex items-center gap-3">
+                  <AdvisorMark
+                    code={advisorCodes[review.advisor_key] ?? 'AD'}
+                    color={advisorColors[review.advisor_key] ?? '#8A8478'}
+                    size="sm"
+                  />
+                  <div>
+                    <h3>{review.advisor_name}</h3>
+                    <p className="sb-muted">Risco {review.risk_score ?? '-'} / Confianca {review.confidence_score ?? '-'}</p>
+                  </div>
+                </div>
+                <p>{shortText(review.perspective ?? 'Analise em processamento.', 30)}</p>
+                <div>
+                  <p className="sb-code">Recomendacao-chave</p>
+                  <p>{shortText(fieldText(asArray(review.recommendations)[0] ?? '', ['title', 'detail', 'description'], textFrom(asArray(review.recommendations)[0])), 22)}</p>
+                </div>
+                {review.closure_recommendation && <StatusPill>{formatClosure(review.closure_recommendation)}</StatusPill>}
+              </article>
+              ))}
+            </div>
+          </PresentationSection>
+
+          <PresentationSection number="06" title="Agenda da reuniao">
+            <div className="sb-presentation-agenda">
+              {asArray(boardPack.meeting_agenda).map((agendaItem, index) => (
+                <article key={`${textFrom(agendaItem)}-${index}`}>
+                  <span>{String(index + 1).padStart(2, '0')}</span>
+                  <p>{fieldText(agendaItem, ['title', 'topic', 'detail', 'description'], textFrom(agendaItem))}</p>
+                </article>
+              ))}
+              {!asArray(boardPack.meeting_agenda).length && <p className="sb-muted">Nenhuma agenda registrada.</p>}
+            </div>
+          </PresentationSection>
+
+          <PresentationSection number="07" title="Candidatos de decisao">
             {asArray(boardPack.decision_candidates).map((decision, index) => (
-              <p key={`${textFrom(decision)}-${index}`}><strong>D{index + 1}</strong> {textFrom(decision)}</p>
+              <article className="sb-presentation-line" key={`${textFrom(decision)}-${index}`}>
+                <span>D{index + 1}</span>
+                <p>{textFrom(decision)}</p>
+              </article>
             ))}
           </PresentationSection>
         </div>

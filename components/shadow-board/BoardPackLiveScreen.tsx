@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { AdvisorMark, DossierSection, Panel, SectionTitle, StatusPill } from './ui'
+import { formatClosure, formatStance, formatStatus } from '@/lib/shadow-board/display-labels'
 
 type BoardPack = {
   id: string
@@ -101,6 +102,18 @@ function itemText(item: Record<string, unknown> | string) {
   return [item.title, item.priority, item.risk, item.mitigation, item.rationale, item.detail, item.decision]
     .filter(Boolean)
     .join(' - ')
+}
+
+function fieldText(item: Record<string, unknown> | string, keys: string[], fallback = '') {
+  if (typeof item === 'string') return item
+
+  for (const key of keys) {
+    const value = item[key]
+    if (typeof value === 'string' && value.trim()) return value.trim()
+    if (typeof value === 'number') return String(value)
+  }
+
+  return fallback
 }
 
 export function BoardPackLiveScreen() {
@@ -244,7 +257,60 @@ export function BoardPackLiveScreen() {
           </div>
         </DossierSection>
 
-        <DossierSection number="5" title="Candidatos de decisao">
+        <DossierSection number="5" title="Relatorios estruturados dos advisors">
+          <div className="grid gap-4">
+            {(readout?.agent_reviews ?? []).map((review) => (
+              <article key={review.id} className="sb-dossier-advisor">
+                <div className="flex flex-wrap items-center gap-3">
+                  <AdvisorMark
+                    code={advisorCodes[review.advisor_key] ?? 'AD'}
+                    color={advisorColors[review.advisor_key] ?? '#8A8478'}
+                    size="sm"
+                  />
+                  <div>
+                    <h3 className="sb-row-title">{review.advisor_name}</h3>
+                    <p className="sb-muted">
+                      {review.stance ? formatStance(review.stance) : formatStatus(review.status)}
+                      {' - '}
+                      risco {review.risk_score ?? '-'} / confianca {review.confidence_score ?? '-'}
+                    </p>
+                  </div>
+                  {review.closure_recommendation && <StatusPill>{formatClosure(review.closure_recommendation)}</StatusPill>}
+                </div>
+                <p className="mt-3">{review.perspective ?? 'Relatorio em processamento.'}</p>
+                <div className="mt-3 grid gap-4 md:grid-cols-2">
+                  <div>
+                    <p className="sb-code">Perguntas para o board</p>
+                    {asArray(review.strategic_questions).slice(0, 3).map((question, index) => (
+                      <p key={`${review.id}-q-${index}`}>{fieldText(question, ['title', 'question', 'detail'])}</p>
+                    ))}
+                  </div>
+                  <div>
+                    <p className="sb-code">Recomendacoes</p>
+                    {asArray(review.recommendations).slice(0, 3).map((recommendation, index) => (
+                      <p key={`${review.id}-r-${index}`}>{fieldText(recommendation, ['title', 'detail', 'description', 'recommendation'])}</p>
+                    ))}
+                  </div>
+                </div>
+              </article>
+            ))}
+            {!readout?.agent_reviews?.length && <p className="sb-muted">Nenhum relatorio de advisor registrado ainda.</p>}
+          </div>
+        </DossierSection>
+
+        <DossierSection number="6" title="Agenda da reuniao">
+          <div className="sb-dossier-agenda">
+            {asArray(boardPack?.meeting_agenda).map((agendaItem, index) => (
+              <article key={`${itemText(agendaItem)}-${index}`}>
+                <span>{String(index + 1).padStart(2, '0')}</span>
+                <p>{fieldText(agendaItem, ['title', 'topic', 'detail', 'description'], itemText(agendaItem))}</p>
+              </article>
+            ))}
+            {!asArray(boardPack?.meeting_agenda).length && <p className="sb-muted">Nenhuma agenda registrada ainda.</p>}
+          </div>
+        </DossierSection>
+
+        <DossierSection number="7" title="Candidatos de decisao">
           <div className="space-y-3">
             {asArray(boardPack?.decision_candidates).map((decision, index) => <p key={`${itemText(decision)}-${index}`}>{itemText(decision)}</p>)}
           </div>
