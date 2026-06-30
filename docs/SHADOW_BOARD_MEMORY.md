@@ -1660,3 +1660,36 @@ Open items after this batch:
 - Generate fresh PDF/PPTX/DOCX/XLSX exports from production and visually QA them.
 - Keep Stripe billing enforcement parked until Stripe setup is complete.
 - Replace placeholder privacy/terms with final legal copy before external launch.
+
+### 2026-06-30 - Company access simplification and LANCE duplicate cleanup
+
+User reported:
+- Two LANCE! companies were visible.
+- Nuveo Logistica should be removed.
+- "Organizacao" versus "Empresa" was confusing and should not be part of the normal client access model.
+
+Implemented:
+- Cleaned live Supabase company data:
+  - Kept the complete LANCE! company with slug `lance`.
+  - Deleted the duplicate training-pack LANCE company with slug `training-lance-owned-audience`.
+  - Deleted `Nuveo Logistica` and related stored demo artifacts.
+- Removed LANCE from `TRAINING_COMPANY_PACKS` so future training-pack refreshes do not recreate a second LANCE company.
+- Updated source/adherence docs to position LANCE as the single live showcase case, separate from the public training-pack library.
+- Reworked `/admin/users` so the admin surface is company-first:
+  - Create account and invite flows now ask for one or more "Empresas liberadas".
+  - Organization selection is hidden from the normal UI.
+  - Company roles are rendered as user-facing labels, defaulting to `Visitante`.
+  - Existing users can be re-scoped through an `Acessos` editor.
+- Updated admin create/invite/update APIs:
+  - Accept `company_ids` arrays while keeping legacy `company_id` compatibility.
+  - Infer required internal organization memberships from selected companies.
+  - Require at least one company for the company-first admin flows.
+  - Preserve existing organization membership roles when editing company access.
+
+Product rule:
+- "Empresa" is the client-visible company/brand/case a user can access.
+- "Organizacao" remains internal tenancy/billing/admin infrastructure and should not be exposed as a normal product decision unless we later build partner/white-label management.
+
+Verification:
+- `npm run typecheck` passed.
+- `npm run build` passed with 72 app routes.

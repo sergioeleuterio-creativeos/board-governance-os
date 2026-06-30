@@ -30,11 +30,31 @@ type NamedRow = {
   organization_id?: string | null
 }
 
+type CompanySelectionRow = {
+  id: string
+  organization_id: string
+}
+
 const organizationRoles: OrganizationRole[] = ['owner', 'admin', 'member', 'advisor_operator', 'partner_admin', 'super_admin']
 const companyRoles: CompanyRole[] = ['founder', 'admin', 'member', 'viewer', 'advisor_operator']
 
 function makeTemporaryPassword() {
   return `Bgo-${randomBytes(12).toString('base64url')}-${new Date().getFullYear()}!`
+}
+
+function uniqueStrings(values: unknown[]) {
+  return [...new Set(values.filter((value): value is string => typeof value === 'string' && Boolean(value.trim())))]
+}
+
+function selectedCompanyIds(body: unknown) {
+  const payload = body as { company_ids?: unknown; company_id?: unknown } | null
+  const ids = Array.isArray(payload?.company_ids)
+    ? payload.company_ids
+    : typeof payload?.company_id === 'string'
+      ? [payload.company_id]
+      : []
+
+  return uniqueStrings(ids)
 }
 
 function groupByUser<T extends { user_id: string }>(rows: T[] | null) {
@@ -176,16 +196,20 @@ export async function POST(request: NextRequest) {
   const email = typeof body?.email === 'string' ? body.email.trim().toLowerCase() : ''
   const fullName = typeof body?.full_name === 'string' ? body.full_name.trim() : ''
   const organizationId = typeof body?.organization_id === 'string' ? body.organization_id : ''
-  const companyId = typeof body?.company_id === 'string' ? body.company_id : ''
+  const companyIds = selectedCompanyIds(body)
   const organizationRole = organizationRoles.includes(body?.organization_role)
     ? body.organization_role as OrganizationRole
     : 'member'
   const companyRole = companyRoles.includes(body?.company_role)
     ? body.company_role as CompanyRole
-    : 'member'
+    : 'viewer'
 
   if (!email || !email.includes('@')) {
     return NextResponse.json({ error: 'Valid email is required' }, { status: 400 })
+  }
+
+  if (!companyIds.length) {
+    return NextResponse.json({ error: 'At least one company is required' }, { status: 400 })
   }
 
   const service = serviceClient()
@@ -207,21 +231,28 @@ export async function POST(request: NextRequest) {
     if (!organization) return NextResponse.json({ error: 'Organization not found' }, { status: 404 })
   }
 
-  let companyOrganizationId: string | null = null
-  if (companyId) {
-    const { data: company, error } = await service
+  const { data: selectedCompanies, error: companiesError } = await service
       .from('companies')
       .select('id, organization_id')
-      .eq('id', companyId)
-      .maybeSingle()
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
-    if (!company) return NextResponse.json({ error: 'Company not found' }, { status: 404 })
-    companyOrganizationId = company.organization_id
+      .in('id', companyIds)
 
-    if (organizationId && company.organization_id !== organizationId) {
+  if (companiesError) return NextResponse.json({ error: companiesError.message }, { status: 500 })
+
+  const typedCompanies = (selectedCompanies ?? []) as CompanySelectionRow[]
+  if (typedCompanies.length !== companyIds.length) {
+    return NextResponse.json({ error: 'Company not found' }, { status: 404 })
+  }
+
+  if (organizationId) {
+    const outsideOrganization = typedCompanies.some((company) => company.organization_id !== organizationId)
+    if (outsideOrganization) {
       return NextResponse.json({ error: 'Company does not belong to selected organization' }, { status: 400 })
     }
   }
+
+  const organizationIds = organizationId
+    ? [organizationId]
+    : uniqueStrings(typedCompanies.map((company) => company.organization_id))
 
   const temporaryPassword = makeTemporaryPassword()
   const { data: created, error: createError } = await service.auth.admin.createUser({
@@ -251,11 +282,10 @@ export async function POST(request: NextRequest) {
     .upsert(profilePayload, { onConflict: 'id' })
   if (profileError) return NextResponse.json({ error: profileError.message }, { status: 500 })
 
-  const membershipOrganizationId = organizationId || companyOrganizationId
-  if (membershipOrganizationId) {
+  if (organizationIds.length) {
     const { error: membershipError } = await service
       .from('organization_memberships')
-      .upsert({
+      .upsert(organizationIds.map((membershipOrganizationId) => ({
         organization_id: membershipOrganizationId,
         user_id: userId,
         role: organizationRole,
@@ -263,35 +293,35 @@ export async function POST(request: NextRequest) {
         invited_by: admin.id,
         invited_at: new Date().toISOString(),
         accepted_at: new Date().toISOString(),
-      }, { onConflict: 'organization_id,user_id' })
+      })), { onConflict: 'organization_id,user_id' })
     if (membershipError) return NextResponse.json({ error: membershipError.message }, { status: 500 })
   }
 
-  if (companyId) {
+  if (companyIds.length) {
     const { error: companyMembershipError } = await service
       .from('company_memberships')
-      .upsert({
+      .upsert(companyIds.map((companyId) => ({
         company_id: companyId,
         user_id: userId,
         role: companyRole,
         status: 'active',
-      }, { onConflict: 'company_id,user_id' })
+      })), { onConflict: 'company_id,user_id' })
     if (companyMembershipError) return NextResponse.json({ error: companyMembershipError.message }, { status: 500 })
   }
 
   await service.from('audit_events').insert({
-    organization_id: membershipOrganizationId,
-    company_id: companyId || null,
+    organization_id: organizationIds[0] ?? null,
+    company_id: companyIds[0] ?? null,
     actor_user_id: admin.id,
     event_type: 'admin.user_created',
     entity_type: 'user_profile',
     entity_id: userId,
     metadata: {
       email,
-      organization_id: membershipOrganizationId,
+      organization_ids: organizationIds,
       organization_role: organizationRole,
-      company_id: companyId || null,
-      company_role: companyId ? companyRole : null,
+      company_ids: companyIds,
+      company_role: companyRole,
     },
   })
 
@@ -299,10 +329,10 @@ export async function POST(request: NextRequest) {
     user_id: userId,
     email,
     full_name: fullName || null,
-    organization_id: membershipOrganizationId,
-    organization_role: membershipOrganizationId ? organizationRole : null,
-    company_id: companyId || null,
-    company_role: companyId ? companyRole : null,
+    organization_ids: organizationIds,
+    organization_role: organizationIds.length ? organizationRole : null,
+    company_ids: companyIds,
+    company_role: companyRole,
     temporary_password: temporaryPassword,
     expires_note: 'Share this once through a secure channel. User should change it after first login.',
   }, { status: 201 })

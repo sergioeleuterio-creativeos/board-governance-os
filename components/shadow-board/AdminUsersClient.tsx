@@ -51,8 +51,22 @@ type ErrorResponse = {
 }
 
 const statusOptions = ['active', 'inactive', 'archived'] as const
-const roleOptions = ['owner', 'admin', 'member', 'advisor_operator', 'partner_admin', 'super_admin'] as const
 const companyRoleOptions = ['founder', 'admin', 'member', 'viewer', 'advisor_operator'] as const
+type CompanyRoleOption = (typeof companyRoleOptions)[number]
+
+const companyRoleLabels: Record<CompanyRoleOption, string> = {
+  founder: 'Fundador(a)',
+  admin: 'Admin',
+  member: 'Membro',
+  viewer: 'Visitante',
+  advisor_operator: 'Operador advisory',
+}
+
+const statusLabels: Record<(typeof statusOptions)[number], string> = {
+  active: 'Ativo',
+  inactive: 'Inativo',
+  archived: 'Arquivado',
+}
 
 function statusTone(status: string): StatusTone {
   if (status === 'active') return 'positive'
@@ -74,17 +88,72 @@ function membershipSummary(memberships: UserMembership[], emptyLabel: string) {
   if (!memberships.length) return emptyLabel
   return memberships
     .slice(0, 2)
-    .map((membership) => `${membership.organization_name ?? membership.company_name ?? 'Sem escopo'} / ${membership.role}`)
+    .map((membership) => {
+      const role = companyRoleOptions.includes(membership.role as CompanyRoleOption)
+        ? companyRoleLabels[membership.role as CompanyRoleOption]
+        : membership.role
+      return `${membership.company_name ?? 'Empresa sem nome'} / ${role}`
+    })
     .join(', ')
+}
+
+function membershipOverflowLabel(memberships: UserMembership[]) {
+  if (memberships.length <= 2) return null
+  return `+${memberships.length - 2} empresas`
+}
+
+function membershipIds(memberships: UserMembership[]) {
+  return memberships
+    .map((membership) => membership.company_id)
+    .filter((companyId): companyId is string => Boolean(companyId))
+}
+
+function toggleSelection(current: string[], id: string) {
+  return current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
 }
 
 function isUsersResponse(payload: UsersResponse | ErrorResponse | null): payload is UsersResponse {
   return !!payload && 'users' in payload && 'organizations' in payload
 }
 
+function CompanyAccessChecklist({
+  companies,
+  selectedIds,
+  onToggle,
+}: {
+  companies: CompanyOption[]
+  selectedIds: string[]
+  onToggle: (companyId: string) => void
+}) {
+  if (!companies.length) {
+    return <p className="sb-muted">Nenhuma empresa disponivel para liberar acesso.</p>
+  }
+
+  return (
+    <div className="grid max-h-64 gap-2 overflow-y-auto rounded-md border border-[#E4DED2] bg-white/60 p-3 md:grid-cols-2 xl:grid-cols-3">
+      {companies.map((company) => (
+        <label
+          className="flex cursor-pointer items-start gap-3 rounded-md border border-[#E4DED2] bg-[#FBFAF7] p-3 text-sm"
+          key={company.id}
+        >
+          <input
+            checked={selectedIds.includes(company.id)}
+            className="mt-1"
+            onChange={() => onToggle(company.id)}
+            type="checkbox"
+          />
+          <span>
+            <strong className="block">{company.name}</strong>
+            {company.slug && <small className="sb-muted">{company.slug}</small>}
+          </span>
+        </label>
+      ))}
+    </div>
+  )
+}
+
 export function AdminUsersClient() {
   const [users, setUsers] = useState<AdminUser[]>([])
-  const [organizations, setOrganizations] = useState<OrganizationOption[]>([])
   const [companies, setCompanies] = useState<CompanyOption[]>([])
   const [loading, setLoading] = useState(true)
   const [savingUserId, setSavingUserId] = useState<string | null>(null)
@@ -92,18 +161,18 @@ export function AdminUsersClient() {
   const [notice, setNotice] = useState('')
   const [temporaryPassword, setTemporaryPassword] = useState<{ email: string; password: string } | null>(null)
   const [inviteEmail, setInviteEmail] = useState('')
-  const [inviteOrganizationId, setInviteOrganizationId] = useState('')
-  const [inviteRole, setInviteRole] = useState<(typeof roleOptions)[number]>('member')
-  const [inviteCompanyId, setInviteCompanyId] = useState('')
-  const [inviteCompanyRole, setInviteCompanyRole] = useState<(typeof companyRoleOptions)[number]>('member')
+  const [inviteCompanyIds, setInviteCompanyIds] = useState<string[]>([])
+  const [inviteCompanyRole, setInviteCompanyRole] = useState<CompanyRoleOption>('viewer')
   const [inviting, setInviting] = useState(false)
   const [createEmail, setCreateEmail] = useState('')
   const [createFullName, setCreateFullName] = useState('')
-  const [createOrganizationId, setCreateOrganizationId] = useState('')
-  const [createOrganizationRole, setCreateOrganizationRole] = useState<(typeof roleOptions)[number]>('member')
-  const [createCompanyId, setCreateCompanyId] = useState('')
-  const [createCompanyRole, setCreateCompanyRole] = useState<(typeof companyRoleOptions)[number]>('member')
+  const [createCompanyIds, setCreateCompanyIds] = useState<string[]>([])
+  const [createCompanyRole, setCreateCompanyRole] = useState<CompanyRoleOption>('viewer')
   const [creating, setCreating] = useState(false)
+  const [accessUser, setAccessUser] = useState<AdminUser | null>(null)
+  const [accessCompanyIds, setAccessCompanyIds] = useState<string[]>([])
+  const [accessCompanyRole, setAccessCompanyRole] = useState<CompanyRoleOption>('viewer')
+  const [savingAccess, setSavingAccess] = useState(false)
 
   const metrics = useMemo(() => {
     const activeUsers = users.filter((user) => user.status === 'active').length
@@ -132,7 +201,6 @@ export function AdminUsersClient() {
     }
 
     setUsers(payload.users)
-    setOrganizations(payload.organizations)
     setCompanies(payload.companies)
     setLoading(false)
   }
@@ -196,15 +264,19 @@ export function AdminUsersClient() {
     setError('')
     setNotice('')
 
+    if (!inviteCompanyIds.length) {
+      setError('Selecione ao menos uma empresa para liberar acesso.')
+      setInviting(false)
+      return
+    }
+
     const response = await fetch('/api/admin/invites', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: inviteEmail,
-        organization_id: inviteOrganizationId || undefined,
-        role: inviteOrganizationId || inviteCompanyId ? inviteRole : undefined,
-        company_id: inviteCompanyId || undefined,
-        company_role: inviteCompanyId ? inviteCompanyRole : undefined,
+        company_ids: inviteCompanyIds,
+        company_role: inviteCompanyRole,
       }),
     })
     const payload = await response.json().catch(() => null) as { error?: string } | null
@@ -217,6 +289,8 @@ export function AdminUsersClient() {
 
     setNotice('Convite enviado e perfil registrado.')
     setInviteEmail('')
+    setInviteCompanyIds([])
+    setInviteCompanyRole('viewer')
     setInviting(false)
     await loadUsers()
   }
@@ -228,16 +302,20 @@ export function AdminUsersClient() {
     setNotice('')
     setTemporaryPassword(null)
 
+    if (!createCompanyIds.length) {
+      setError('Selecione ao menos uma empresa para liberar acesso.')
+      setCreating(false)
+      return
+    }
+
     const response = await fetch('/api/admin/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: createEmail,
         full_name: createFullName,
-        organization_id: createOrganizationId || undefined,
-        organization_role: createOrganizationId || createCompanyId ? createOrganizationRole : undefined,
-        company_id: createCompanyId || undefined,
-        company_role: createCompanyId ? createCompanyRole : undefined,
+        company_ids: createCompanyIds,
+        company_role: createCompanyRole,
       }),
     })
     const payload = await response.json().catch(() => null) as {
@@ -259,7 +337,59 @@ export function AdminUsersClient() {
     setNotice('Conta criada com senha temporaria. Ela aparece somente nesta tela.')
     setCreateEmail('')
     setCreateFullName('')
+    setCreateCompanyIds([])
+    setCreateCompanyRole('viewer')
     setCreating(false)
+    await loadUsers()
+  }
+
+  function openAccessEditor(user: AdminUser) {
+    const companyIds = membershipIds(user.company_memberships)
+    setAccessUser(user)
+    setAccessCompanyIds(companyIds)
+    setAccessCompanyRole(
+      companyRoleOptions.includes(user.company_memberships[0]?.role as CompanyRoleOption)
+        ? user.company_memberships[0].role as CompanyRoleOption
+        : 'viewer'
+    )
+    setError('')
+    setNotice('')
+  }
+
+  async function saveAccess() {
+    if (!accessUser) return
+
+    if (!accessCompanyIds.length) {
+      setError('Selecione ao menos uma empresa para manter o acesso deste usuario.')
+      return
+    }
+
+    setSavingAccess(true)
+    setSavingUserId(accessUser.id)
+    setError('')
+    setNotice('')
+
+    const response = await fetch(`/api/admin/users/${accessUser.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        company_ids: accessCompanyIds,
+        company_role: accessCompanyRole,
+      }),
+    })
+    const payload = await response.json().catch(() => null) as { error?: string } | null
+
+    if (!response.ok) {
+      setError(payload?.error ?? 'Nao foi possivel atualizar os acessos.')
+      setSavingAccess(false)
+      setSavingUserId(null)
+      return
+    }
+
+    setNotice('Acessos atualizados.')
+    setSavingAccess(false)
+    setSavingUserId(null)
+    setAccessUser(null)
     await loadUsers()
   }
 
@@ -306,173 +436,139 @@ export function AdminUsersClient() {
 
       <Panel>
         <SectionTitle label="Criar conta com senha" />
-        <form className="grid gap-4 lg:grid-cols-[1fr_1fr_0.9fr_0.7fr] xl:grid-cols-[1fr_1fr_0.9fr_0.7fr_0.9fr_0.7fr_auto]" onSubmit={(event) => void createUser(event)}>
-          <label>
-            <span className="field-label">Nome</span>
-            <input
-              className="field-input"
-              value={createFullName}
-              onChange={(event) => setCreateFullName(event.target.value)}
-              placeholder="Nome Sobrenome"
+        <form className="space-y-4" onSubmit={(event) => void createUser(event)}>
+          <div className="grid gap-4 lg:grid-cols-[1fr_1fr_0.7fr_auto]">
+            <label>
+              <span className="field-label">Nome</span>
+              <input
+                className="field-input"
+                value={createFullName}
+                onChange={(event) => setCreateFullName(event.target.value)}
+                placeholder="Nome Sobrenome"
+              />
+            </label>
+            <label>
+              <span className="field-label">Email</span>
+              <input
+                className="field-input"
+                type="email"
+                value={createEmail}
+                onChange={(event) => setCreateEmail(event.target.value)}
+                placeholder="nome@empresa.com"
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Perfil nas empresas</span>
+              <select
+                className="field-input"
+                value={createCompanyRole}
+                onChange={(event) => setCreateCompanyRole(event.target.value as CompanyRoleOption)}
+              >
+                {companyRoleOptions.map((role) => (
+                  <option key={role} value={role}>{companyRoleLabels[role]}</option>
+                ))}
+              </select>
+            </label>
+            <button className="btn-primary self-end" type="submit" disabled={creating}>
+              {creating ? 'Criando' : 'Criar conta'}
+            </button>
+          </div>
+          <div>
+            <span className="field-label">Empresas liberadas</span>
+            <CompanyAccessChecklist
+              companies={companies}
+              selectedIds={createCompanyIds}
+              onToggle={(companyId) => setCreateCompanyIds((current) => toggleSelection(current, companyId))}
             />
-          </label>
-          <label>
-            <span className="field-label">Email</span>
-            <input
-              className="field-input"
-              type="email"
-              value={createEmail}
-              onChange={(event) => setCreateEmail(event.target.value)}
-              placeholder="nome@empresa.com"
-              required
-            />
-          </label>
-          <label>
-            <span className="field-label">Organizacao</span>
-            <select
-              className="field-input"
-              value={createOrganizationId}
-              onChange={(event) => setCreateOrganizationId(event.target.value)}
-            >
-              <option value="">Sem organizacao</option>
-              {organizations.map((organization) => (
-                <option key={organization.id} value={organization.id}>{organization.name}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className="field-label">Role org</span>
-            <select
-              className="field-input"
-              value={createOrganizationRole}
-              onChange={(event) => setCreateOrganizationRole(event.target.value as (typeof roleOptions)[number])}
-              disabled={!createOrganizationId && !createCompanyId}
-            >
-              {roleOptions.map((role) => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className="field-label">Empresa</span>
-            <select
-              className="field-input"
-              value={createCompanyId}
-              onChange={(event) => {
-                const companyId = event.target.value
-                setCreateCompanyId(companyId)
-                const company = companies.find((item) => item.id === companyId)
-                if (company?.organization_id && !createOrganizationId) setCreateOrganizationId(company.organization_id)
-              }}
-            >
-              <option value="">Sem empresa</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>{company.name}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className="field-label">Role empresa</span>
-            <select
-              className="field-input"
-              value={createCompanyRole}
-              onChange={(event) => setCreateCompanyRole(event.target.value as (typeof companyRoleOptions)[number])}
-              disabled={!createCompanyId}
-            >
-              {companyRoleOptions.map((role) => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
-          </label>
-          <button className="btn-primary self-end" type="submit" disabled={creating}>
-            {creating ? 'Criando' : 'Criar conta'}
-          </button>
+          </div>
         </form>
       </Panel>
 
       <Panel>
         <SectionTitle label="Convidar usuario" />
-        <form className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr_0.7fr] xl:grid-cols-[1.1fr_0.9fr_0.7fr_0.9fr_0.7fr_auto]" onSubmit={(event) => void inviteUser(event)}>
-          <label>
-            <span className="field-label">Email</span>
-            <input
-              className="field-input"
-              type="email"
-              value={inviteEmail}
-              onChange={(event) => setInviteEmail(event.target.value)}
-              placeholder="nome@empresa.com"
-              required
+        <form className="space-y-4" onSubmit={(event) => void inviteUser(event)}>
+          <div className="grid gap-4 lg:grid-cols-[1fr_0.7fr_auto]">
+            <label>
+              <span className="field-label">Email</span>
+              <input
+                className="field-input"
+                type="email"
+                value={inviteEmail}
+                onChange={(event) => setInviteEmail(event.target.value)}
+                placeholder="nome@empresa.com"
+                required
+              />
+            </label>
+            <label>
+              <span className="field-label">Perfil nas empresas</span>
+              <select
+                className="field-input"
+                value={inviteCompanyRole}
+                onChange={(event) => setInviteCompanyRole(event.target.value as CompanyRoleOption)}
+              >
+                {companyRoleOptions.map((role) => (
+                  <option key={role} value={role}>{companyRoleLabels[role]}</option>
+                ))}
+              </select>
+            </label>
+            <button className="btn-primary self-end" type="submit" disabled={inviting}>
+              {inviting ? 'Enviando' : 'Convidar'}
+            </button>
+          </div>
+          <div>
+            <span className="field-label">Empresas liberadas</span>
+            <CompanyAccessChecklist
+              companies={companies}
+              selectedIds={inviteCompanyIds}
+              onToggle={(companyId) => setInviteCompanyIds((current) => toggleSelection(current, companyId))}
             />
-          </label>
-          <label>
-            <span className="field-label">Organizacao</span>
-            <select
-              className="field-input"
-              value={inviteOrganizationId}
-              onChange={(event) => setInviteOrganizationId(event.target.value)}
-            >
-              <option value="">Plataforma / sem organizacao</option>
-              {organizations.map((organization) => (
-                <option key={organization.id} value={organization.id}>{organization.name}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className="field-label">Role</span>
-            <select
-              className="field-input"
-              value={inviteRole}
-              onChange={(event) => setInviteRole(event.target.value as (typeof roleOptions)[number])}
-              disabled={!inviteOrganizationId}
-            >
-              {roleOptions.map((role) => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className="field-label">Empresa</span>
-            <select
-              className="field-input"
-              value={inviteCompanyId}
-              onChange={(event) => {
-                const companyId = event.target.value
-                setInviteCompanyId(companyId)
-                const company = companies.find((item) => item.id === companyId)
-                if (company?.organization_id && !inviteOrganizationId) setInviteOrganizationId(company.organization_id)
-              }}
-            >
-              <option value="">Sem empresa</option>
-              {companies.map((company) => (
-                <option key={company.id} value={company.id}>{company.name}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            <span className="field-label">Role empresa</span>
-            <select
-              className="field-input"
-              value={inviteCompanyRole}
-              onChange={(event) => setInviteCompanyRole(event.target.value as (typeof companyRoleOptions)[number])}
-              disabled={!inviteCompanyId}
-            >
-              {companyRoleOptions.map((role) => (
-                <option key={role} value={role}>{role}</option>
-              ))}
-            </select>
-          </label>
-          <button className="btn-primary self-end" type="submit" disabled={inviting}>
-            {inviting ? 'Enviando' : 'Convidar'}
-          </button>
+          </div>
         </form>
       </Panel>
+
+      {accessUser && (
+        <Panel>
+          <SectionTitle label={`Acessos de ${accessUser.full_name || accessUser.email || 'usuario'}`} />
+          <div className="space-y-4">
+            <label className="block max-w-xs">
+              <span className="field-label">Perfil nas empresas</span>
+              <select
+                className="field-input"
+                value={accessCompanyRole}
+                onChange={(event) => setAccessCompanyRole(event.target.value as CompanyRoleOption)}
+              >
+                {companyRoleOptions.map((role) => (
+                  <option key={role} value={role}>{companyRoleLabels[role]}</option>
+                ))}
+              </select>
+            </label>
+            <div>
+              <span className="field-label">Empresas liberadas</span>
+              <CompanyAccessChecklist
+                companies={companies}
+                selectedIds={accessCompanyIds}
+                onToggle={(companyId) => setAccessCompanyIds((current) => toggleSelection(current, companyId))}
+              />
+            </div>
+            <div className="sb-row-actions">
+              <button className="btn-primary" type="button" onClick={() => void saveAccess()} disabled={savingAccess}>
+                {savingAccess ? 'Salvando' : 'Salvar acessos'}
+              </button>
+              <button className="btn-secondary" type="button" onClick={() => setAccessUser(null)} disabled={savingAccess}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </Panel>
+      )}
 
       <Panel>
         <SectionTitle label="Usuarios" />
         <div className="sb-table sb-admin-users-table">
           <div className="sb-table-head">
             <span>Usuario</span>
-            <span>Escopo</span>
+            <span>Empresas liberadas</span>
             <span>Status</span>
             <span>Ultimo acesso</span>
             <span>Acoes</span>
@@ -503,8 +599,10 @@ export function AdminUsersClient() {
                 {user.is_super_admin && <StatusPill tone="neutral">super_admin</StatusPill>}
               </span>
               <span>
-                {membershipSummary(user.organization_memberships, 'Sem organizacao')}
-                <small>{membershipSummary(user.company_memberships, 'Sem empresa')}</small>
+                {membershipSummary(user.company_memberships, 'Sem empresa liberada')}
+                {membershipOverflowLabel(user.company_memberships) && (
+                  <small>{membershipOverflowLabel(user.company_memberships)}</small>
+                )}
               </span>
               <span>
                 <select
@@ -514,16 +612,24 @@ export function AdminUsersClient() {
                   disabled={savingUserId === user.id}
                 >
                   {statusOptions.map((status) => (
-                    <option key={status} value={status}>{status}</option>
+                    <option key={status} value={status}>{statusLabels[status]}</option>
                   ))}
                 </select>
-                <StatusPill tone={statusTone(user.status)}>{user.status}</StatusPill>
+                <StatusPill tone={statusTone(user.status)}>{statusLabels[user.status as (typeof statusOptions)[number]] ?? user.status}</StatusPill>
               </span>
               <span>
                 {dateLabel(user.last_sign_in_at)}
                 <small>Criado em {dateLabel(user.created_at)}</small>
               </span>
               <span className="sb-row-actions">
+                <button
+                  className="btn-secondary"
+                  type="button"
+                  onClick={() => openAccessEditor(user)}
+                  disabled={savingUserId === user.id}
+                >
+                  Acessos
+                </button>
                 <button
                   className="btn-secondary"
                   type="button"

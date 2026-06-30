@@ -45,18 +45,19 @@ Advisor coverage:
 
 ## Company Packs
 
-The first ten packs:
+LANCE is maintained as the single live showcase company through `scripts/seed-lance.mjs`, not as a duplicate training-pack company.
 
-1. LANCE! - sports media reach to owned audience and paid relationship.
-2. The New York Times Company - digital subscription and newsroom/product transformation.
-3. Netflix - content investment, cash discipline, culture, and global scale.
-4. Boeing - 737 MAX safety, incentives, controls, and board oversight.
-5. WeWork / The We Company - founder control, unit economics, governance rights, and IPO readiness.
-6. Uber - culture, leadership, platform risk, and control reset.
-7. Meta / Facebook - data trust, platform governance, and stakeholder risk.
-8. Natura &Co - sustainable growth, stakeholder model, portfolio complexity, and cash discipline.
-9. Magazine Luiza / Magalu - retail digital transformation, marketplace expansion, and profitability discipline.
-10. Petrobras - Pasadena capital allocation, information quality, controls, and accountability.
+The current training packs:
+
+1. The New York Times Company - digital subscription and newsroom/product transformation.
+2. Netflix - content investment, cash discipline, culture, and global scale.
+3. Boeing - 737 MAX safety, incentives, controls, and board oversight.
+4. WeWork / The We Company - founder control, unit economics, governance rights, and IPO readiness.
+5. Uber - culture, leadership, platform risk, and control reset.
+6. Meta / Facebook - data trust, platform governance, and stakeholder risk.
+7. Natura &Co - sustainable growth, stakeholder model, portfolio complexity, and cash discipline.
+8. Magazine Luiza / Magalu - retail digital transformation, marketplace expansion, and profitability discipline.
+9. Petrobras - Pasadena capital allocation, information quality, controls, and accountability.
 
 Each pack contains:
 - Public source URLs.
@@ -83,7 +84,7 @@ Harvard, Kellogg, Stanford, MIT Sloan, FGV, USP and similar institutions are use
 
 Short term:
 - Use LANCE as the live showcase company.
-- Use the other nine packs to test whether the six advisors stay in their lanes.
+- Use the nine training packs to test whether the six advisors stay in their lanes.
 - Run one board question per pack and inspect `/admin/agents` for adherence by advisor.
 
 Next build step:

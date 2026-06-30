@@ -82,35 +82,6 @@ export const ADVISOR_SOURCE_REFERENCES: AdvisorSourceReference[] = [
 
 export const TRAINING_COMPANY_PACKS: CompanyTrainingPack[] = [
   {
-    id: 'lance-owned-audience',
-    companyName: 'LANCE!',
-    caseTitle: 'Alcance de midia esportiva para audiencia proprietaria e relacao paga',
-    geography: 'Brazil',
-    sector: 'Midia esportiva digital',
-    companyArchetype: 'Marca historica de midia reconstruindo monetizacao e audiencia direta proprietaria',
-    sourceInstitutions: ['Pacote de fontes Creative OS', 'Paginas publicas do LANCE', 'Sintese Board Governance OS'],
-    sourceUrls: [
-      'https://www.lance.com.br/',
-      'https://lp.lance.com.br/socio-lance-v5',
-      'https://lncimg.lance.com.br/uploads/2026/02/Lance-Midia-Kit-2026-.pdf',
-    ],
-    boardProblem: 'Uma grande marca de midia esportiva precisa transformar alcance anonimo em audiencia identificavel, habito de produto, CRM, receita recorrente e economia publicitaria de maior qualidade.',
-    companySeed: {
-      businessModel: 'Midia esportiva liderada por publicidade, com oportunidades emergentes de socios, assinatura e dados de audiencia.',
-      governanceStage: 'Transformacao liderada por fundadores/socios com disciplina formal de conselho ainda limitada.',
-      strategicContext: 'Alta relevancia cultural, mas pressao para provar economia de audiencia proprietaria e habito de assinatura.',
-      decisionPressure: 'Priorizar CRM, Socio LANCE!, cadencia de conteudo/produto, pacotes comerciais e infraestrutura de dados sem criar complexidade excessiva.',
-      knownUnknowns: ['Economia de assinantes', 'Qualidade do CRM', 'Margem de midia por produto', 'Impacto no OCF', 'Capacidade do time', 'Concentracao de anunciantes'],
-    },
-    advisorStress: ['finance', 'growth', 'risk', 'customer', 'operator'],
-    boardQuestions: [
-      'Qual relacao de audiencia deve ser proprietaria primeiro: cadastro, newsletter, comunidade ou Socio LANCE! pago?',
-      'Qual gate financeiro prova que isto nao e apenas engajamento, mas um motor repetivel de receita?',
-      'Que cadencia operacional mantem editorial, produto, CRM e comercial alinhados?',
-    ],
-    trainingUse: ['semente de demonstracao', 'transformacao de midia', 'economia de cliente', 'demo de Board Pack'],
-  },
-  {
     id: 'nyt-subscription-transformation',
     companyName: 'The New York Times Company',
     caseTitle: 'Assinatura digital e transformacao de redacao/produto',

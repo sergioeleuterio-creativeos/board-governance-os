@@ -57,7 +57,6 @@ The detailed source/case operating map is in `docs/GOVERNANCE_SOURCE_AND_CASE_PA
 The first open case library lives in `lib/board/training-sources.ts` and is exposed through `/admin/agents`.
 
 Cases:
-- LANCE! - sports media reach to owned audience
 - The New York Times - digital subscription transformation
 - Netflix - content investment, cash discipline, culture, and global scale
 - Boeing 737 MAX - safety, incentives, and board oversight
@@ -69,6 +68,8 @@ Cases:
 - Petrobras Pasadena - capital allocation and governance controls
 
 These are not copied business-school cases. They are public-source governance scenarios used to stress-test advisor behavior.
+
+LANCE remains the live showcase case and is seeded separately through `scripts/seed-lance.mjs`, so the product does not create duplicate LANCE companies during training-pack refreshes.
 
 ## Operating Rule
 
