@@ -7,11 +7,19 @@ import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-ser
 import { getPublicAppUrl } from '@/lib/shadow-board/site-url'
 import { renderBoardPackReadyEmail } from '@/lib/email/templates'
 import { sendProductEmail } from '@/lib/email/send'
+import { recordNotificationAudit } from '@/lib/email/audit'
 import { checkRateLimit, rateLimitKey, rateLimitResponse } from '@/lib/rate-limit'
 
 export const maxDuration = 60
 
 const advisorKeys = new Set<AdvisorKey>(['board_brain', 'finance', 'operator', 'growth', 'risk', 'customer', 'talent'])
+
+type AIDiagnostics = {
+  used_fallback: boolean
+  fallback_reason: string | null
+  attempted_provider: string
+  attempted_model: string
+}
 
 function addDays(days = 14): string {
   const date = new Date()
@@ -173,6 +181,7 @@ async function saveCanonicalRun({
   output,
   provider,
   model,
+  aiDiagnostics,
 }: {
   company: BoardCompany & { id: string; organization_id: string }
   governanceCycleId: string
@@ -181,6 +190,7 @@ async function saveCanonicalRun({
   output: GovernanceAIOutput
   provider: string
   model: string
+  aiDiagnostics: AIDiagnostics
 }) {
   const service = serviceClient()
   const closureRecommendation = closureRecommendationFor(output.decision.decision)
@@ -248,6 +258,7 @@ async function saveCanonicalRun({
       export_payload: {
         provider,
         model,
+        ai_diagnostics: aiDiagnostics,
         run: output.run,
         governance_score: output.governance_score,
         financial_report: financialReport,
@@ -302,6 +313,7 @@ async function saveCanonicalRun({
         source: 'governance-run-api',
         provider,
         model,
+        ai_diagnostics: aiDiagnostics,
       },
     })
     .select('id')
@@ -378,6 +390,7 @@ async function saveCanonicalRun({
         latest_board_session_id: boardSession.id,
         provider,
         model,
+        ai_diagnostics: aiDiagnostics,
       },
     })
     .eq('id', governanceCycleId)
@@ -420,6 +433,7 @@ async function saveCanonicalRun({
       agent_reviews_created: agentRows.length,
       provider,
       model,
+      ai_diagnostics: aiDiagnostics,
     },
   })
 
@@ -467,6 +481,12 @@ export async function POST(req: NextRequest) {
     const aiResult = await runGovernanceAI(company as BoardCompany, input)
     const provider = aiResult.usedFallback ? 'mock' : aiResult.provider
     const model = aiResult.usedFallback ? 'mock-governance_synthesis-v1' : aiResult.model
+    const aiDiagnostics = {
+      used_fallback: aiResult.usedFallback,
+      fallback_reason: aiResult.fallbackReason,
+      attempted_provider: aiResult.provider,
+      attempted_model: aiResult.model,
+    }
     const persistence = await saveCanonicalRun({
       company: company as BoardCompany & { id: string; organization_id: string },
       governanceCycleId: cycle.id,
@@ -475,6 +495,7 @@ export async function POST(req: NextRequest) {
       output: aiResult.output,
       provider,
       model,
+      aiDiagnostics,
     })
 
     let notification: { sent?: boolean; skipped?: boolean; error?: string } = { skipped: true }
@@ -492,15 +513,26 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    await recordNotificationAudit({
+      service,
+      organizationId: company.organization_id,
+      companyId: company.id,
+      actorUserId: user.id,
+      eventType: 'notification.board_pack_ready',
+      entityType: 'board_pack',
+      entityId: persistence.boardPackId,
+      status: notification.sent ? 'sent' : notification.error ? 'failed' : 'skipped',
+      recipientCount: notification.sent ? 1 : 0,
+      error: notification.error ?? null,
+      metadata: { cycle_label: period },
+    })
+
     return NextResponse.json({
       mode: 'live-supabase',
       provider,
       model,
       ai: {
-        used_fallback: aiResult.usedFallback,
-        fallback_reason: aiResult.fallbackReason,
-        attempted_provider: aiResult.provider,
-        attempted_model: aiResult.model,
+        ...aiDiagnostics,
       },
       governance_cycle_id: cycle.id,
       persistence,

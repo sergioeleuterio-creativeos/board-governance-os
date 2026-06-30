@@ -10,7 +10,9 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "verify:production": "node scripts/verify-production.mjs"
+    "verify:production": "node scripts/verify-production.mjs",
+    "qa:mobile": "node scripts/qa-mobile-public.mjs",
+    "qa:exports": "node scripts/qa-export-artifacts.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.10.3",

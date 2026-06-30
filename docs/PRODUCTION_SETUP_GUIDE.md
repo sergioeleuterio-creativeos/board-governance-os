@@ -220,12 +220,17 @@ Official reference:
 ## Backup And Export
 
 The operating policy lives in `docs/BACKUP_EXPORT_POLICY.md`.
+Export QA lives in `docs/EXPORT_QA_CHECKLIST.md`.
 
 Production stance:
 - Supabase database backups are the source of truth for structured recovery.
 - Supabase Storage buckets stay private; app routes or signed URLs should mediate access.
-- Generated board exports should expire by default and be regenerated when needed.
+- Generated board export links expire by default and are bounded by `EXPORT_SIGNED_URL_TTL_SECONDS`, capped at 24 hours.
 - Restore rehearsals should happen in a separate staging Supabase project, never inside Creative OS.
+
+Repeatable checks:
+- `npm run qa:exports` checks recent export artifacts, content metadata, sizes, and signed URL policy.
+- `npm run qa:mobile` checks public mobile routes and protected-route redirects with a mobile user agent.
 
 ## Stripe
 
@@ -275,6 +280,9 @@ Hardening now in place:
 - Governance Run creation is rate-limited
 - referral creation is rate-limited
 - file uploads enforce `MAX_FILES_PER_REQUEST` and `MAX_FILE_BYTES` / `MAX_UPLOAD_MB`
+- export signed URLs have a bounded TTL
+- `/privacy` and `/terms` are public legal posture pages
+- `/admin/ai` shows AI fallbacks, model errors, and operational email delivery events
 
 Production check:
 - Keep `BOARD_GOVERNANCE_ADMIN_EMAILS` current so admin triage emails reach the right people.

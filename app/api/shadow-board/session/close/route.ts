@@ -5,6 +5,7 @@ import { consumeUsagePackageUnit } from '@/lib/billing-usage'
 import { getPublicAppUrl } from '@/lib/shadow-board/site-url'
 import { renderSessionClosedEmail } from '@/lib/email/templates'
 import { sendProductEmail } from '@/lib/email/send'
+import { recordNotificationAudit } from '@/lib/email/audit'
 
 type ConversationRow = {
   id: string
@@ -313,6 +314,23 @@ export async function POST() {
         notification = { error: emailError instanceof Error ? emailError.message : 'notification_failed' }
       }
     }
+
+    await recordNotificationAudit({
+      service,
+      organizationId: session.organization_id,
+      companyId: session.company_id,
+      actorUserId: user.id,
+      eventType: 'notification.session_closed',
+      entityType: 'board_session',
+      entityId: session.id,
+      status: notification.sent ? 'sent' : notification.error ? 'failed' : 'skipped',
+      recipientCount: notification.sent ? 1 : 0,
+      error: notification.error ?? null,
+      metadata: {
+        decision_count: decisionsPresented.length,
+        follow_up_count: followUpCount ?? 0,
+      },
+    })
 
     return NextResponse.json({
       board_session_id: session.id,

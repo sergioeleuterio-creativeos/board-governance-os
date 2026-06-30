@@ -60,6 +60,8 @@ Exports must include:
 
 ## Recovery Runbook
 
+Detailed rehearsal instructions live in `docs/RESTORE_REHEARSAL_RUNBOOK.md`.
+
 1. Identify the affected organization/company and incident window.
 2. Freeze related writes if corruption or accidental deletion is ongoing.
 3. Export current affected records for forensic comparison.
@@ -73,5 +75,5 @@ Exports must include:
 
 - Add admin export endpoints for audit, decisions, follow-ups, and company brain snapshots beyond the current board-pack export surface.
 - Add retention cleanup job for expired generated exports.
-- Add storage signed URL policy review before paid launch.
+- Run the staging restore rehearsal once a staging Supabase project and backup snapshot exist.
 - Add staging restore rehearsal notes after the first real dry run.

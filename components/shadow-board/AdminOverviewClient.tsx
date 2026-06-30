@@ -205,8 +205,9 @@ export function AdminOverviewClient() {
             ['AI', 'Router por finalidade com fallback deterministico'],
             ['Billing', 'Checkout/portal/webhook prontos para price IDs'],
             ['Reminders', 'Agendamento + cron Resend protegido por secret'],
-            ['Exports', 'HTML, PDF, PPTX, DOCX, XLSX e CSV'],
+            ['Exports', 'HTML, PDF, PPTX, DOCX, XLSX e CSV + QA estrutural'],
             ['Agent QA', 'Rubricas e scores em /admin/agents'],
+            ['AI Ops', 'Fallbacks, erros e notificacoes em /admin/ai'],
             ['Dominio', 'www.board-os.ai em producao'],
             ['Admin', 'Usuarios, sessoes, referrals e filas operacionais'],
           ].map(([label, detail]) => (

@@ -66,6 +66,11 @@ const checks = [
     return 'reset password page'
   },
   async () => {
+    await assertOk('/privacy', 'text/html')
+    await assertOk('/terms', 'text/html')
+    return 'legal pages'
+  },
+  async () => {
     await assertRedirect('/dashboard', '/login?next=%2Fdashboard')
     await assertRedirect('/company/intake', '/login?next=%2Fcompany%2Fintake')
     return 'protected app redirects'
@@ -95,6 +100,8 @@ const checks = [
     const { response } = await assertOk('/sitemap.xml', 'application/xml')
     const sitemap = await response.text()
     requireText(sitemap, `<loc>${baseUrl}</loc>`, 'sitemap.xml')
+    requireText(sitemap, `<loc>${baseUrl}/privacy</loc>`, 'sitemap.xml')
+    requireText(sitemap, `<loc>${baseUrl}/terms</loc>`, 'sitemap.xml')
     if (sitemap.includes('/dashboard')) {
       throw new Error('sitemap.xml should not include protected app routes')
     }

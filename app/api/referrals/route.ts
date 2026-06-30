@@ -3,6 +3,7 @@ import { isAuthError, requireAuth, requireCompanyAdmin, serviceClient } from '@/
 import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
 import { getPublicAppUrl } from '@/lib/shadow-board/site-url'
 import { configuredAdminEmailRecipients, sendProductEmail } from '@/lib/email/send'
+import { recordNotificationAudit } from '@/lib/email/audit'
 import { renderReferralRequestEmail } from '@/lib/email/templates'
 import { checkRateLimit, rateLimitKey, rateLimitResponse } from '@/lib/rate-limit'
 
@@ -134,6 +135,23 @@ export async function POST(request: NextRequest) {
         notification = { error: emailError instanceof Error ? emailError.message : 'notification_failed' }
       }
     }
+
+    await recordNotificationAudit({
+      service,
+      organizationId: company.organization_id,
+      companyId: company.id,
+      actorUserId: user.id,
+      eventType: 'notification.referral_triage',
+      entityType: 'referral_request',
+      entityId: data.id,
+      status: notification.sent ? 'sent' : notification.error ? 'failed' : 'skipped',
+      recipientCount: notification.sent ? recipients.length : 0,
+      error: notification.error ?? null,
+      metadata: {
+        requested_category: requestedCategory || null,
+        recommended_by_agent_key: recommendedByAgentKey ?? followUp?.source_agent_key ?? null,
+      },
+    })
 
     return NextResponse.json({ referral_request: data, notification })
   } catch (error) {

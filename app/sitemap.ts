@@ -3,7 +3,7 @@ import { getPublicAppUrl } from '@/lib/shadow-board/site-url'
 
 const appUrl = getPublicAppUrl()
 
-const publicRoutes = ['']
+const publicRoutes = ['', '/privacy', '/terms']
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date()

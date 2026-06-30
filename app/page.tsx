@@ -17,7 +17,11 @@ export default function HomePage() {
           <Image src="/brand/mark.png" alt="" width={40} height={40} priority />
           <span>{PRODUCT.name}</span>
         </Link>
-        <Link href="/login" className="btn-gold">Entrar</Link>
+        <div className="flex items-center gap-4">
+          <Link href="/privacy" className="sb-text-link">Privacidade</Link>
+          <Link href="/terms" className="sb-text-link">Termos</Link>
+          <Link href="/login" className="btn-gold">Entrar</Link>
+        </div>
       </header>
 
       <main className="sb-public-hero">

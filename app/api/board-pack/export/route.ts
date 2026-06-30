@@ -23,6 +23,14 @@ interface BoardPackRow {
 }
 
 const SUPPORTED_EXPORT_TYPES: SupportedExportType[] = ['html', 'csv', 'pdf', 'docx', 'pptx', 'xlsx']
+const DEFAULT_SIGNED_URL_TTL_SECONDS = 60 * 60
+const MAX_SIGNED_URL_TTL_SECONDS = 24 * 60 * 60
+
+function signedUrlTtlSeconds() {
+  const configured = Number.parseInt(process.env.EXPORT_SIGNED_URL_TTL_SECONDS || '', 10)
+  if (!Number.isFinite(configured) || configured <= 0) return DEFAULT_SIGNED_URL_TTL_SECONDS
+  return Math.min(configured, MAX_SIGNED_URL_TTL_SECONDS)
+}
 
 const contentTypes: Record<SupportedExportType, string> = {
   html: 'text/html',
@@ -78,7 +86,64 @@ type ExportRow = {
 function valueText(value: unknown): string {
   if (typeof value === 'string') return value
   if (value == null) return ''
-  return JSON.stringify(value)
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value)
+  if (Array.isArray(value)) return value.map(valueText).filter(Boolean).join('; ')
+  if (typeof value === 'object') {
+    return Object.entries(value as Record<string, unknown>)
+      .map(([key, item]) => {
+        const text = valueText(item)
+        return text ? `${friendlyLabel(key)}: ${text}` : null
+      })
+      .filter(Boolean)
+      .join(' | ')
+  }
+  return String(value)
+}
+
+function friendlyLabel(value: string): string {
+  const labels: Record<string, string> = {
+    advisor_key: 'Advisor',
+    advisor_name: 'Advisor',
+    board_note: 'Nota do board',
+    c_level_questions: 'Perguntas de conselho',
+    closure_recommendation: 'Recomendacao final',
+    confidence_score: 'Confianca',
+    decision: 'Decisao',
+    detail: 'Detalhe',
+    due_in_days: 'Prazo',
+    focus_area: 'Foco',
+    line_item: 'Linha',
+    owner_label: 'Responsavel',
+    owner_suggestion: 'Responsavel sugerido',
+    priority: 'Prioridade',
+    risk_level: 'Risco',
+    risk_score: 'Indice de risco',
+    source_persona_key: 'Fonte',
+    title: 'Titulo',
+  }
+  return labels[value] ?? value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
+}
+
+function renderHtmlList(items: unknown[], empty: string) {
+  if (!items.length) return `<p>${escapeHtml(empty)}</p>`
+  return `<ol>${items.map(item => `<li>${escapeHtml(valueText(item))}</li>`).join('')}</ol>`
+}
+
+function renderHtmlCards(items: unknown[], empty: string) {
+  if (!items.length) return `<p>${escapeHtml(empty)}</p>`
+  return items.map((item) => `<div class="card">${escapeHtml(valueText(item))}</div>`).join('')
+}
+
+function renderHtmlTable(rows: unknown[], empty: string) {
+  if (!rows.length) return `<p>${escapeHtml(empty)}</p>`
+  const normalized = rows.map(asRecord).filter(row => Object.keys(row).length)
+  if (!normalized.length) return renderHtmlList(rows, empty)
+  const keys = [...new Set(normalized.flatMap(row => Object.keys(row)))].slice(0, 5)
+  return `
+    <table>
+      <thead><tr>${keys.map(key => `<th>${escapeHtml(friendlyLabel(key))}</th>`).join('')}</tr></thead>
+      <tbody>${normalized.map(row => `<tr>${keys.map(key => `<td>${escapeHtml(valueText(row[key]))}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table>`
 }
 
 function exportRows(boardPack: BoardPackRow, companyName: string): ExportRow[] {
@@ -165,21 +230,24 @@ function renderHtml(boardPack: BoardPackRow, companyName: string): string {
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Board Pack - ${escapeHtml(companyName)}</title>
   <style>
-    body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 48px; color: #1f2933; line-height: 1.55; }
+    body { font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; background: #eee9df; color: #1f2933; line-height: 1.55; }
+    main { max-width: 980px; margin: 0 auto; background: #fbfaf7; min-height: 100vh; padding: 52px; }
     h1, h2 { font-family: Georgia, "Times New Roman", serif; color: #111827; }
     h1 { font-size: 34px; margin-bottom: 4px; }
     h2 { font-size: 22px; margin-top: 34px; border-top: 1px solid #d8c7a1; padding-top: 18px; }
     .meta { color: #6b7280; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; }
     .summary { font-size: 18px; max-width: 860px; }
     .disclaimer { background: #f7f2e8; border-left: 4px solid #d0a84e; padding: 14px 16px; margin: 22px 0; }
+    .card { border: 1px solid #e5ddce; border-radius: 6px; padding: 12px 14px; margin: 10px 0; background: #fffdf9; }
     li { margin: 8px 0; }
-    pre { white-space: pre-wrap; background: #f7f2e8; padding: 14px; border-radius: 6px; overflow-wrap: anywhere; }
     table { width: 100%; border-collapse: collapse; margin: 12px 0 22px; }
     th, td { border-bottom: 1px solid #e5ddce; text-align: left; padding: 9px; vertical-align: top; }
     th { color: #6b7280; font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+    @media print { body { background: #fff; } main { padding: 32px; } }
   </style>
 </head>
 <body>
+<main>
   <p class="meta">Board Governance OS · Board Pack v${boardPack.version}</p>
   <h1>${escapeHtml(companyName)}</h1>
   <div class="disclaimer">
@@ -189,34 +257,33 @@ function renderHtml(boardPack: BoardPackRow, companyName: string): string {
 
   <h2>Fontes consideradas</h2>
   ${sourceReferences.length
-    ? sourceReferences.map(item => `<pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>`).join('')
+    ? renderHtmlCards(sourceReferences, 'Nenhuma fonte registrada.')
     : '<p>Company Brain, documentos enviados e memoria de decisoes disponiveis no momento da geracao.</p>'}
 
   <h2>Perguntas estrategicas</h2>
-  <ol>${questions.map(item => `<li>${escapeHtml(typeof item === 'string' ? item : JSON.stringify(item))}</li>`).join('')}</ol>
+  ${renderHtmlList(questions, 'Nenhuma pergunta estrategica registrada.')}
 
   <h2>Mapa de riscos</h2>
-  ${risks.map(item => `<pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>`).join('')}
+  ${renderHtmlCards(risks, 'Nenhum risco registrado.')}
 
   <h2>Relatorios financeiros</h2>
   ${Object.entries(financialReport).map(([section, rows]) => `
     <h3>${escapeHtml(section)}</h3>
-    <table>
-      <tbody>${asArray(rows).map(row => `<tr>${Object.values(asRecord(row)).map(cell => `<td>${escapeHtml(cell)}</td>`).join('')}</tr>`).join('')}</tbody>
-    </table>
+    ${renderHtmlTable(asArray(rows), 'Sem linhas financeiras para esta secao.')}
   `).join('') || '<p>Nenhum relatorio financeiro estruturado disponivel ainda.</p>'}
 
   <h2>Relatorios estruturados dos advisors</h2>
-  ${advisorReports.map(item => `<pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>`).join('') || '<p>Nenhum relatorio de advisor disponivel ainda.</p>'}
+  ${renderHtmlCards(advisorReports, 'Nenhum relatorio de advisor disponivel ainda.')}
 
   <h2>Ranking de prioridades</h2>
-  ${priorities.map(item => `<pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>`).join('')}
+  ${renderHtmlCards(priorities, 'Nenhuma prioridade registrada.')}
 
   <h2>Agenda da reuniao</h2>
-  <ol>${agenda.map(item => `<li>${escapeHtml(typeof item === 'string' ? item : JSON.stringify(item))}</li>`).join('')}</ol>
+  ${renderHtmlList(agenda, 'Nenhuma agenda registrada.')}
 
   <h2>Candidatos de decisao</h2>
-  ${decisions.map(item => `<pre>${escapeHtml(JSON.stringify(item, null, 2))}</pre>`).join('')}
+  ${renderHtmlCards(decisions, 'Nenhum candidato de decisao registrado.')}
+</main>
 </body>
 </html>`
 }
@@ -455,6 +522,7 @@ export async function POST(request: NextRequest) {
 
   const companyName = company?.name ?? 'Empresa'
   const content = await renderExport(boardPack as BoardPackRow, companyName, exportType)
+  const signedUrlTtl = signedUrlTtlSeconds()
   const storagePath = [
     boardPack.organization_id,
     boardPack.company_id,
@@ -486,6 +554,7 @@ export async function POST(request: NextRequest) {
         source: 'board-pack-export-api',
         content_type: contentTypes[exportType],
         bytes: content.byteLength,
+        signed_url_ttl_seconds: signedUrlTtl,
       },
     })
     .select('id')
@@ -508,12 +577,13 @@ export async function POST(request: NextRequest) {
       export_type: exportType,
       storage_bucket: 'board-exports',
       storage_path: storagePath,
+      signed_url_ttl_seconds: signedUrlTtl,
     },
   })
 
   const { data: signedUrl } = await service.storage
     .from('board-exports')
-    .createSignedUrl(storagePath, 60 * 60)
+    .createSignedUrl(storagePath, signedUrlTtl)
 
   return NextResponse.json({
     mode: 'live-supabase',
@@ -522,6 +592,7 @@ export async function POST(request: NextRequest) {
     storage_path: storagePath,
     export_type: exportType,
     content_type: contentTypes[exportType],
+    signed_url_ttl_seconds: signedUrlTtl,
     signed_url: signedUrl?.signedUrl ?? null,
   })
 }

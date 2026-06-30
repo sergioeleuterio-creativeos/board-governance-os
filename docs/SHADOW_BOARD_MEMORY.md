@@ -1383,3 +1383,44 @@ Implemented:
 
 External action still needed:
 - Add/confirm OpenAI billing and API credits for the Board Governance OS OpenAI project.
+
+### 2026-06-30 - Export, notification, admin observability, and hardening follow-on
+
+User reminded the production backlog:
+- Export polish and QA.
+- Notification depth.
+- Admin observability for AI runs/failures.
+- Production hardening: rate limits, source inclusion/exclusion, signed URL review, restore rehearsal, privacy/legal pages, mobile QA.
+
+Confirmed already wired before this batch:
+- Board pack ready email is sent after Governance Run.
+- Session closed email is sent after closing Shadow Board Review.
+- Referral/admin triage email is sent after referral request creation.
+- Reminder cron is live.
+- Rate limits exist for password reset, Governance Run, referrals, and middleware API buckets.
+- Document source inclusion/exclusion exists in Company Brain/Admin Documents.
+
+Implemented in this batch:
+- Added notification audit events for board pack ready, session closed, and referral triage emails.
+- Governance Run now persists AI diagnostics into board pack/session/cycle/audit metadata.
+- Added `/api/admin/ai` and `/admin/ai` to inspect AI fallbacks, model errors, and notification delivery events.
+- Added Operations navigation item for AI Ops.
+- Improved Board Pack export text formatting so object content becomes readable labels instead of raw JSON.
+- Improved HTML export styling for dossier-style readability.
+- Added bounded export signed URL TTL via `EXPORT_SIGNED_URL_TTL_SECONDS`, capped at 24 hours.
+- Added `npm run qa:exports` for recent export artifact QA.
+- Added `npm run qa:mobile` for public/protected mobile route smoke QA.
+- Added `/privacy` and `/terms` public pages.
+- Added `docs/EXPORT_QA_CHECKLIST.md`.
+- Added `docs/RESTORE_REHEARSAL_RUNBOOK.md`.
+
+Still not fully complete:
+- Manual visual QA of generated PDF/PPTX/DOCX must be run by opening fresh generated artifacts before a polished demo.
+- Restore rehearsal still requires a staging Supabase project and a backup snapshot.
+
+Verification this batch:
+- `npm run typecheck` passed.
+- `npm run build` passed with 67 app routes.
+- `npm run qa:exports` passed against live Supabase; latest checked artifacts include `pdf` and `html`. Warnings are limited to legacy artifacts created before signed URL TTL metadata existed.
+- `npm run qa:mobile -- http://localhost:3011` passed for public mobile routes and protected app redirects.
+- `npm run qa:mobile -- https://www.board-os.ai` is expected to fail on `/privacy` and `/terms` until this batch deploys, because those routes are new.
