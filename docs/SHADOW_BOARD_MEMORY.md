@@ -1648,13 +1648,14 @@ Verification:
 - `npm run ai:health` passed against OpenAI `gpt-4.1`.
 - `npm run qa:security` passed.
 - `npm run qa:exports` passed with only legacy artifact warnings for older signed URL metadata.
+- Production smoke passed on `https://www.board-os.ai`.
+- Production mobile/public route QA passed on `https://www.board-os.ai`.
 - `node --check` passed for:
   - `scripts/seed-lance.mjs`
   - `scripts/seed-training-packs.mjs`
   - `scripts/evaluate-advisors.mjs`
 
 Open items after this batch:
-- Push/deploy and run production smoke after Vercel finishes.
 - Run one real Board Brain governance run against LANCE with OpenAI active, then inspect `/admin/agents` and `/admin/ai`.
 - Generate fresh PDF/PPTX/DOCX/XLSX exports from production and visually QA them.
 - Keep Stripe billing enforcement parked until Stripe setup is complete.
