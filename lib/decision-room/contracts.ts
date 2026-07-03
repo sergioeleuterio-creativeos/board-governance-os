@@ -10,10 +10,11 @@ import type {
   StrategyDiagnosis,
   TurnRequest,
 } from './types'
+import type { CurrentCompany } from '@/lib/shadow-board/current-company-server'
 
-export async function getDecisionRoomReadout(): Promise<DecisionRoomReadout> {
+export async function getDecisionRoomReadout(context?: { company?: CurrentCompany | null }): Promise<DecisionRoomReadout> {
   const readout = await getDecisionRoomAdapter().readout()
-  return enrichDecisionRoomReadout(readout)
+  return enrichDecisionRoomReadout(readout, context)
 }
 
 export async function runStrategyDiagnosis(): Promise<StrategyDiagnosis> {
@@ -36,12 +37,12 @@ export async function captureRoomDecision(input: DecisionCaptureRequest) {
   return getDecisionRoomAdapter().captureDecision(input)
 }
 
-export async function createExecutionOutputs(input?: { queue?: string[] }): Promise<ExecutionOutput[]> {
+export async function createExecutionOutputs(input?: { queue?: string[]; company?: CurrentCompany | null }): Promise<ExecutionOutput[]> {
   const adapter = getDecisionRoomAdapter()
   const [readout, outputs] = await Promise.all([
     adapter.readout(),
     adapter.createOutputs(input),
   ])
-  const enriched = await enrichDecisionRoomReadout({ ...readout, outputs })
+  const enriched = await enrichDecisionRoomReadout({ ...readout, outputs }, { company: input?.company })
   return enriched.outputs
 }

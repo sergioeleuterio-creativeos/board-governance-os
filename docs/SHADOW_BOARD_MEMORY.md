@@ -1646,6 +1646,56 @@ Verification:
 - `npm run typecheck` passed.
 - `npm run build` passed with 72 app routes.
 
+### 2026-07-03 - Creative OS connector brief for Claude
+
+User direction:
+- Prepare a Claude-facing brief for the Creative OS side of the Board OS connector.
+- Rationale: companies created in Board OS should also be able to exist in Creative OS, so Creative OS can be pitched later as an add-on to Board OS clients.
+- Reverse path must also be possible: companies created in Creative OS should later be able to activate Board OS.
+
+Documented:
+- Added `docs/CREATIVE_OS_BOARD_OS_CONNECTOR_BRIEF_FOR_CLAUDE.md`.
+- The brief defines the product boundary:
+  - Board OS owns decision rooms, board memory, decisions, follow-ups, and governance context.
+  - Creative OS owns brand strategy, campaign planning, creative briefs, messaging, and creative execution artifacts.
+- The brief asks Creative OS to implement:
+  - `POST /api/board-os/capabilities`
+  - `POST /api/board-os/companies/upsert`
+  - shared bearer auth
+  - company identity mapping between Board OS and Creative OS
+  - idempotent company linking to avoid duplicates
+  - partial structured capability responses with safe fallback
+- Event sync remains parked until later. `CREATIVE_OS_SYNC_ENABLED` should stay false until the company-link and capability-call path is proven.
+
+### 2026-07-03 - Creative OS connector integration smoke
+
+Creative OS side:
+- Claude implemented the Creative OS connector routes and company hierarchy model.
+- Important hierarchy decision: Board OS `companies.id` maps to a Creative OS company-level id, not a brand id.
+- Creative OS can return `brands` as child records under the linked company; Board OS should store these as connector metadata until a brand picker exists.
+- Creative OS production initially returned `401` because middleware required a browser Supabase session for all `/api/*` routes before the Board OS bearer-auth route could run.
+- Patched Creative OS `middleware.ts` to exempt `/api/board-os/*` so route-level `BOARD_OS_INTEGRATION_API_KEY` auth can run.
+- Creative OS capability generation initially timed out on Sonnet with a 25s connector timeout.
+- Patched Creative OS connector capability runtime to default to Haiku and a 35s timeout, with env overrides:
+  - `BOARD_OS_CAPABILITY_MODEL`
+  - `BOARD_OS_CAPABILITY_TIMEOUT_MS`
+- Creative OS production smoke passed after deploy:
+  - unauthenticated capability route returns `401`
+  - `POST /api/board-os/companies/upsert` returns `200`
+  - test company linked to Creative OS company id with `brands=[]`
+  - `runStrategyDiagnosis` returns structured JSON with `company` and `diagnosis`
+
+Board OS side:
+- Added company-level Creative OS context to the connector payload.
+- Added idempotent Board OS -> Creative OS company upsert when `CREATIVE_OS_MODE=http` and `CREATIVE_OS_SYNC_ENABLED=true`.
+- Store Creative OS company linkage and returned child brands in `companies.metadata.creative_os`.
+- Decision Room readout and outputs routes now pass the current Board OS company into Creative OS enrichment.
+- Added `scripts/check-creative-os-connector.mjs` and `npm run qa:creative-os-connector`.
+- Board OS Vercel env:
+  - Production has `CREATIVE_OS_URL` and `CREATIVE_OS_API_KEY`, but remains `CREATIVE_OS_MODE=mock` and `CREATIVE_OS_SYNC_ENABLED=false`.
+  - Preview is configured for `CREATIVE_OS_MODE=http` and `CREATIVE_OS_SYNC_ENABLED=true`.
+- A local Board OS preview deploy was intentionally not run because local `lance_review_work/` is untracked/private and root deploy could upload it. Use git-based deploys or add a safe `.vercelignore` before local deploys.
+
 ### 2026-07-02 - Production Decision Room QA and connector sprint handoff
 
 Context:

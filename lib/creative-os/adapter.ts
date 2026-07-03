@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { serviceClient } from '@/lib/auth-server'
 import type {
   BoardBrief,
   DecisionRoomReadout,
@@ -7,6 +8,7 @@ import type {
   RoleBrief,
   StrategyDiagnosis,
 } from '@/lib/decision-room/types'
+import type { CurrentCompany } from '@/lib/shadow-board/current-company-server'
 
 export type CreativeOSMode = 'mock' | 'http' | 'worker'
 
@@ -18,29 +20,66 @@ type CapabilityName =
   | 'compressRoomOutcome'
 
 type CapabilityFallbacks = {
+  company?: CreativeOSCompanyContext
   diagnosis: StrategyDiagnosis
   boardBrief: BoardBrief
   outputs: ExecutionOutput[]
 }
 
 type CapabilityResponse = Partial<{
+  company: Partial<CreativeOSCompanyLink>
   diagnosis: Partial<StrategyDiagnosis>
   boardBrief: Partial<BoardBrief>
   roleBriefs: Array<Partial<RoleBrief>>
   outputs: Array<Partial<ExecutionOutput>>
+  brands: CreativeOSBrandLink[]
 }>
 
 type CreativeOSPayload = {
   capability: CapabilityName
-  company?: {
-    name?: string
-  }
+  company?: CreativeOSCompanyContext
   diagnosis: StrategyDiagnosis
   boardBrief: BoardBrief
   outputs: ExecutionOutput[]
 }
 
 const DEFAULT_TIMEOUT_MS = 45_000
+
+export type CreativeOSBrandLink = {
+  creativeOsBrandId: string
+  name: string
+}
+
+export type CreativeOSCompanyLink = {
+  boardOsCompanyId: string
+  creativeOsCompanyId: string
+  canonicalCompanyKey: string
+  linkStatus?: string
+}
+
+export type CreativeOSCompanyContext = {
+  boardOsCompanyId: string
+  creativeOsCompanyId?: string
+  canonicalCompanyKey: string
+  name: string
+  website?: string
+  industry?: string
+  market?: string
+  stage?: string
+  businessModel?: string
+  revenueRange?: string
+  description?: string
+  brands?: CreativeOSBrandLink[]
+}
+
+type CompanyUpsertResponse = Partial<{
+  ok: boolean
+  link: Partial<CreativeOSCompanyLink>
+  created: {
+    creativeOsCompany?: boolean
+  }
+  brands: CreativeOSBrandLink[]
+}>
 
 function creativeOSMode(): CreativeOSMode {
   const mode = (process.env.CREATIVE_OS_MODE ?? 'mock').toLowerCase()
@@ -51,6 +90,17 @@ function creativeOSMode(): CreativeOSMode {
 function timeoutMs() {
   const parsed = Number.parseInt(process.env.CREATIVE_OS_TIMEOUT_MS ?? '', 10)
   return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_TIMEOUT_MS
+}
+
+function creativeOSSyncEnabled() {
+  return (process.env.CREATIVE_OS_SYNC_ENABLED ?? 'false').toLowerCase() === 'true'
+}
+
+function creativeOSConfig() {
+  return {
+    baseUrl: process.env.CREATIVE_OS_URL?.replace(/\/+$/, ''),
+    apiKey: process.env.CREATIVE_OS_API_KEY,
+  }
 }
 
 function text(value: unknown, fallback: string) {
@@ -67,6 +117,172 @@ function stringArray(value: unknown, fallback: string[]) {
   if (!Array.isArray(value)) return fallback
   const cleaned = value.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
   return cleaned.length ? cleaned.slice(0, 12) : fallback
+}
+
+function asRecord(value: unknown): Record<string, unknown> {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {}
+}
+
+function optionalText(value: unknown) {
+  return typeof value === 'string' && value.trim() ? value.trim() : undefined
+}
+
+function normalizeCanonicalKey(input: string) {
+  return input
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    || 'company'
+}
+
+function normalizeWebsite(value: unknown) {
+  const raw = optionalText(value)
+  if (!raw) return undefined
+  try {
+    const url = raw.startsWith('http://') || raw.startsWith('https://')
+      ? new URL(raw)
+      : new URL(`https://${raw}`)
+    return url.origin
+  } catch {
+    return raw
+  }
+}
+
+function normalizeBrands(value: unknown): CreativeOSBrandLink[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  const brands = value.flatMap((item) => {
+    const record = asRecord(item)
+    const creativeOsBrandId = optionalText(record.creativeOsBrandId ?? record.creative_os_brand_id ?? record.id)
+    const name = optionalText(record.name)
+    return creativeOsBrandId && name ? [{ creativeOsBrandId, name }] : []
+  })
+  return brands.length ? brands.slice(0, 20) : undefined
+}
+
+function creativeOSMetadata(metadata: Record<string, unknown>) {
+  return asRecord(metadata.creative_os ?? metadata.creativeOs)
+}
+
+export function creativeOSCompanyContext(company: CurrentCompany): CreativeOSCompanyContext {
+  const metadata = asRecord(company.metadata)
+  const integration = creativeOSMetadata(metadata)
+  const website = normalizeWebsite(
+    integration.website
+    ?? metadata.website
+    ?? metadata.primary_domain
+    ?? metadata.source_url
+    ?? (Array.isArray(metadata.source_urls) ? metadata.source_urls[0] : undefined)
+  )
+
+  return {
+    boardOsCompanyId: company.id,
+    creativeOsCompanyId: optionalText(
+      integration.creativeOsCompanyId
+      ?? integration.creative_os_company_id
+      ?? metadata.creativeOsCompanyId
+      ?? metadata.creative_os_company_id
+    ),
+    canonicalCompanyKey: optionalText(integration.canonicalCompanyKey ?? integration.canonical_company_key)
+      ?? normalizeCanonicalKey(company.slug || company.name),
+    name: company.name,
+    website,
+    industry: optionalText(company.industry),
+    market: optionalText(company.jurisdiction),
+    stage: optionalText(company.stage),
+    businessModel: optionalText(company.business_model),
+    revenueRange: optionalText(company.revenue_range),
+    description: optionalText(metadata.description ?? metadata.summary ?? metadata.company_description),
+    brands: normalizeBrands(integration.brands),
+  }
+}
+
+function mergeCreativeOSMetadata(company: CreativeOSCompanyContext, response: CompanyUpsertResponse) {
+  const link = response.link ?? {}
+  const creativeOsCompanyId = optionalText(link.creativeOsCompanyId) ?? company.creativeOsCompanyId
+  const canonicalCompanyKey = optionalText(link.canonicalCompanyKey) ?? company.canonicalCompanyKey
+  return {
+    creativeOsCompanyId,
+    creative_os_company_id: creativeOsCompanyId,
+    canonicalCompanyKey,
+    canonical_company_key: canonicalCompanyKey,
+    linkStatus: optionalText(link.linkStatus) ?? 'linked',
+    brands: normalizeBrands(response.brands) ?? company.brands ?? [],
+    lastSyncedAt: new Date().toISOString(),
+  }
+}
+
+async function persistCreativeOSCompanyLink(company: CreativeOSCompanyContext, response: CompanyUpsertResponse) {
+  const service = serviceClient()
+  const { data: existing, error: loadError } = await service
+    .from('companies')
+    .select('metadata')
+    .eq('id', company.boardOsCompanyId)
+    .maybeSingle()
+
+  if (loadError) return
+
+  const metadata = asRecord(existing?.metadata)
+  const nextMetadata = {
+    ...metadata,
+    creative_os: {
+      ...creativeOSMetadata(metadata),
+      ...mergeCreativeOSMetadata(company, response),
+    },
+  }
+
+  await service
+    .from('companies')
+    .update({ metadata: nextMetadata })
+    .eq('id', company.boardOsCompanyId)
+}
+
+async function upsertCreativeOSCompany(company: CreativeOSCompanyContext): Promise<CreativeOSCompanyContext> {
+  if (creativeOSMode() !== 'http' || !creativeOSSyncEnabled()) return company
+
+  const { baseUrl, apiKey } = creativeOSConfig()
+  if (!baseUrl || !apiKey) return company
+
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs())
+
+  try {
+    const response = await fetch(`${baseUrl}/api/board-os/companies/upsert`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        sourceSystem: 'board_os',
+        idempotencyKey: `board-os-company-upsert:${company.boardOsCompanyId}`,
+        company,
+        context: {
+          boardOsReason: 'Company selected in Board OS Decision Room.',
+          availableEvidence: ['Board OS company profile', 'Board OS Company Brain summary'],
+          missingEvidence: [],
+        },
+      }),
+    })
+
+    if (!response.ok) return company
+    const body = await response.json() as CompanyUpsertResponse
+    await persistCreativeOSCompanyLink(company, body)
+
+    const link = body.link ?? {}
+    return {
+      ...company,
+      creativeOsCompanyId: optionalText(link.creativeOsCompanyId) ?? company.creativeOsCompanyId,
+      canonicalCompanyKey: optionalText(link.canonicalCompanyKey) ?? company.canonicalCompanyKey,
+      brands: normalizeBrands(body.brands) ?? company.brands,
+    }
+  } catch {
+    return company
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 function sanitizeDiagnosis(input: Partial<StrategyDiagnosis> | undefined, fallback: StrategyDiagnosis): StrategyDiagnosis {
@@ -135,8 +351,7 @@ function sanitizeOutputs(input: Array<Partial<ExecutionOutput>> | undefined, fal
 }
 
 async function httpCapability(capability: CapabilityName, payload: CreativeOSPayload): Promise<CapabilityResponse | null> {
-  const baseUrl = process.env.CREATIVE_OS_URL?.replace(/\/+$/, '')
-  const apiKey = process.env.CREATIVE_OS_API_KEY
+  const { baseUrl, apiKey } = creativeOSConfig()
   if (!baseUrl || !apiKey) return null
 
   const controller = new AbortController()
@@ -178,6 +393,7 @@ async function runCapability(capability: CapabilityName, payload: CreativeOSPayl
 export async function runStrategyDiagnosis(input: CapabilityFallbacks): Promise<StrategyDiagnosis> {
   const response = await runCapability('runStrategyDiagnosis', {
     capability: 'runStrategyDiagnosis',
+    company: input.company,
     diagnosis: input.diagnosis,
     boardBrief: input.boardBrief,
     outputs: input.outputs,
@@ -188,6 +404,7 @@ export async function runStrategyDiagnosis(input: CapabilityFallbacks): Promise<
 export async function createBoardBrief(input: CapabilityFallbacks): Promise<BoardBrief> {
   const response = await runCapability('createBoardBrief', {
     capability: 'createBoardBrief',
+    company: input.company,
     diagnosis: input.diagnosis,
     boardBrief: input.boardBrief,
     outputs: input.outputs,
@@ -201,6 +418,7 @@ export async function createBoardBrief(input: CapabilityFallbacks): Promise<Boar
 export async function createRoleBriefs(input: CapabilityFallbacks): Promise<RoleBrief[]> {
   const response = await runCapability('createRoleBriefs', {
     capability: 'createRoleBriefs',
+    company: input.company,
     diagnosis: input.diagnosis,
     boardBrief: input.boardBrief,
     outputs: input.outputs,
@@ -211,6 +429,7 @@ export async function createRoleBriefs(input: CapabilityFallbacks): Promise<Role
 export async function createCampaignPlan(input: CapabilityFallbacks): Promise<ExecutionOutput[]> {
   const response = await runCapability('createCampaignPlan', {
     capability: 'createCampaignPlan',
+    company: input.company,
     diagnosis: input.diagnosis,
     boardBrief: input.boardBrief,
     outputs: input.outputs,
@@ -221,6 +440,7 @@ export async function createCampaignPlan(input: CapabilityFallbacks): Promise<Ex
 export async function compressRoomOutcome(input: CapabilityFallbacks): Promise<ExecutionOutput[]> {
   const response = await runCapability('compressRoomOutcome', {
     capability: 'compressRoomOutcome',
+    company: input.company,
     diagnosis: input.diagnosis,
     boardBrief: input.boardBrief,
     outputs: input.outputs,
@@ -228,8 +448,10 @@ export async function compressRoomOutcome(input: CapabilityFallbacks): Promise<E
   return sanitizeOutputs(response?.outputs, input.outputs)
 }
 
-export async function enrichDecisionRoomReadout(readout: DecisionRoomReadout): Promise<DecisionRoomReadout> {
+export async function enrichDecisionRoomReadout(readout: DecisionRoomReadout, context?: { company?: CurrentCompany | null }): Promise<DecisionRoomReadout> {
+  const company = context?.company ? await upsertCreativeOSCompany(creativeOSCompanyContext(context.company)) : undefined
   const fallback = {
+    company,
     diagnosis: readout.diagnosis,
     boardBrief: readout.boardBrief,
     outputs: readout.outputs,
