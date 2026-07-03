@@ -1646,6 +1646,69 @@ Verification:
 - `npm run typecheck` passed.
 - `npm run build` passed with 72 app routes.
 
+### 2026-07-02 - Production Decision Room QA and connector sprint handoff
+
+Context:
+- User asked to create a production test user, navigate the production site as a potential real client, run all sessions/rooms, and verify advisor/board support.
+- User then asked to prepare and register a tomorrow-morning sprint plan to set connectors and review the findings.
+
+Production QA client created:
+- User email: `qa.client.202607030110@board-os.ai`
+- Organization: `Board OS QA Client 202607030110`
+- Company: `Norte Foods QA 202607030110`
+- QA password and magic-link token are intentionally not recorded in git.
+- QA company was seeded as a generic new-client case, not LANCE.
+
+Production QA verified:
+- Login via production auth callback worked.
+- `/rooms` loaded as the QA client with `Norte Foods QA 202607030110` and 76% confidence.
+- Hot Seat completed end to end:
+  - advisor support appeared
+  - evidence request appeared
+  - synthesis counters updated
+  - session autosave appeared
+  - decision was approved
+  - deliverable queue included brief, memo, decision memo, and 30-day validation plan
+- Downstream pages verified:
+  - `/decisions` showed the approved QA decision.
+  - `/follow-ups` showed 3 generated follow-ups.
+  - `/outputs` showed memo, strategy brief, sales narrative, validation plan, and minutes.
+- All room modes opened with QA client context:
+  - Problem Build
+  - Hot Seat
+  - Board Prep
+  - Strategy Reset
+  - Teste de campanha
+  - Revisao de decisao
+- Production database verification for the QA company found:
+  - 7 `company_brain_entries`
+  - 2 `board_sessions`
+  - 1 approved `decisions` row
+  - 3 `follow_ups`
+
+Issue found and fixed:
+- Non-admin founder users could see the Admin/Ops navigation shell even though admin APIs returned forbidden.
+- Fixed `components/Navigation.tsx` to hide the Operations nav group unless `useAuth().isAdmin` is true.
+- Commit pushed to production: `3cc247f` (`Hide admin navigation for client users`).
+- Production verifier passed after push.
+- Authenticated HTTP check confirmed visible client nav no longer contains the Operations group; the raw page bundle can still contain admin translation strings, so future checks should inspect visible text or DOM rather than simple HTML substring matches.
+
+Connector state:
+- Production Decision Room remains deterministic (`mock`) unless Vercel sets `DECISION_ROOM_ADAPTER=live`.
+- Local AI health passed with OpenAI for all current model purposes.
+- Creative OS is not yet connected as a real external service. Board OS currently exposes Creative OS-style capabilities through internal contracts and mockable outputs.
+
+Registered handoff:
+- Added `docs/BOARD_OS_CONNECTORS_AND_QA_SPRINT_2026-07-03.md`.
+- Tomorrow-morning sprint should review:
+  - OpenAI live Decision Room connector
+  - Creative OS connector boundary
+  - Vercel env setup
+  - Supabase QA data lifecycle
+  - client UX/security boundaries
+  - pt-BR language/advisor quality
+  - whether `/admin` should redirect non-admin users instead of rendering a forbidden shell
+
 ### 2026-06-30 - Governance Run clarity and LANCE demo framing
 
 User feedback:
