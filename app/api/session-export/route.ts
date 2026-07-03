@@ -98,6 +98,7 @@ function friendlyLabel(value: string) {
     bypassed_data: 'Lacunas aceitas',
     closure_recommendation: 'Recomendação',
     closure_summary: 'Síntese',
+    closed: 'Encerrada',
     confidence_score: 'Confiança',
     conflicts: 'Conflitos',
     decision_room_active_question: 'Pergunta ativa',
@@ -105,6 +106,8 @@ function friendlyLabel(value: string) {
     decision_room_requested_data: 'Dados pedidos',
     decision_room_session_type: 'Tipo de sala',
     from_advisor_key: 'De',
+    live_facilitated: 'Hot Seat',
+    open: 'Aberta',
     relationship: 'Relação',
     requested_data: 'Dados pedidos',
     risk_score: 'Risco',
@@ -119,6 +122,15 @@ function friendlyLabel(value: string) {
 
 function topTexts(value: unknown, limit = 6): string[] {
   return asArray(value).map(valueText).filter(Boolean).slice(0, limit)
+}
+
+function turnText(value: unknown): string {
+  const record = asRecord(value)
+  const text = valueText(record.text ?? record.summary ?? record.content ?? value)
+  const speaker = valueText(record.heading ?? record.advisor_name ?? record.code ?? '').trim()
+  const tag = valueText(record.tag ?? '').trim()
+  const prefix = [speaker, tag].filter(Boolean).join(' - ')
+  return prefix && text ? `${prefix}: ${text}` : text
 }
 
 function wrapText(value: string, width = 92): string[] {
@@ -153,7 +165,7 @@ type SessionExportData = {
 }
 
 function roomLog(session: SessionRow) {
-  return topTexts(asRecord(session.metadata).decision_room_log, 12)
+  return asArray(asRecord(session.metadata).decision_room_log).map(turnText).filter(Boolean).slice(0, 12)
 }
 
 function requestedData(session: SessionRow) {
@@ -240,11 +252,6 @@ function renderCsv(data: SessionExportData) {
 function renderPdf(data: SessionExportData): Buffer {
   const title = data.session.metadata?.source === 'decision-room' ? 'Hot Seat Readout' : 'Board Session Readout'
   const rows = exportRows(data)
-  const pageRows: typeof rows[] = []
-  const rowsPerPage = 7
-  for (let index = 0; index < rows.length; index += rowsPerPage) {
-    pageRows.push(rows.slice(index, index + rowsPerPage))
-  }
 
   const textAt = (x: number, y: number, text: string, font = 'F1', size = 10, leading = 13) => [
     'BT',
@@ -264,47 +271,77 @@ function renderPdf(data: SessionExportData): Buffer {
     'ET',
   ].join('\n')
 
+  const paint = (stream: string, rgb: string) => stream.replace('BT', `${rgb} rg\nBT`)
+  const cappedLines = (text: string, width: number, limit: number) => {
+    const lines = wrapText(text, width)
+    if (lines.length <= limit) return lines
+    const capped = lines.slice(0, limit)
+    capped[limit - 1] = `${capped[limit - 1].replace(/\.+$/, '')}...`
+    return capped
+  }
+
   const coverStream = [
     '0.086 0.078 0.059 rg',
     '0 0 612 792 re f',
     '0.768 0.573 0.184 RG',
     '2 w',
     '48 720 m 564 720 l S',
-    textAt(230, 520, `BOARD OS - ${title.toUpperCase()}`, 'F1', 10, 12).replace('BT', '0.768 0.573 0.184 rg\nBT'),
-    linesAt(78, 446, wrapText(data.companyName, 30), 'F2', 32, 38).replace('BT', '0.957 0.949 0.929 rg\nBT'),
-    linesAt(78, 360, wrapText(data.session.closure_summary ?? 'Sessão salva sem síntese final.', 66).slice(0, 4), 'F1', 13, 18).replace('BT', '0.804 0.761 0.698 rg\nBT'),
-    textAt(252, 300, `Sessão - ${formatDate(data.session.opened_at ?? data.session.created_at)}`, 'F1', 9, 12).replace('BT', '0.659 0.631 0.573 rg\nBT'),
+    paint(textAt(230, 520, `BOARD OS - ${title.toUpperCase()}`, 'F1', 10, 12), '0.768 0.573 0.184'),
+    paint(linesAt(78, 446, cappedLines(data.companyName, 30, 2), 'F2', 32, 38), '0.957 0.949 0.929'),
+    paint(linesAt(78, 360, cappedLines(data.session.closure_summary ?? 'Sessão salva sem síntese final.', 58, 4), 'F1', 13, 18), '0.804 0.761 0.698'),
+    paint(textAt(252, 300, `Sessão - ${formatDate(data.session.opened_at ?? data.session.created_at)}`, 'F1', 9, 12), '0.659 0.631 0.573'),
   ].join('\n')
 
-  const bodyStreams = pageRows.map((chunk, pageIndex) => {
+  const pageStartY = (pageIndex: number) => pageIndex === 0 ? 534 : 610
+  const bodyPages: Array<Array<{ row: typeof rows[number]; lines: string[]; height: number }>> = []
+  let currentPage: Array<{ row: typeof rows[number]; lines: string[]; height: number }> = []
+  let pageIndex = 0
+  let cursorY = pageStartY(pageIndex)
+
+  rows.forEach((row) => {
+    const lines = cappedLines(row.content, 76, 6)
+    const height = Math.max(72, 44 + lines.length * 13)
+    if (currentPage.length && cursorY - height < 92) {
+      bodyPages.push(currentPage)
+      currentPage = []
+      pageIndex += 1
+      cursorY = pageStartY(pageIndex)
+    }
+    currentPage.push({ row, lines, height })
+    cursorY -= height + 14
+  })
+  if (currentPage.length || bodyPages.length === 0) bodyPages.push(currentPage)
+
+  const bodyStreams = bodyPages.map((chunk, index) => {
     const stream: string[] = [
       '0.957 0.949 0.929 rg',
       '0 0 612 792 re f',
       '0.768 0.573 0.184 RG',
       '1 w',
       '48 742 m 564 742 l S',
-      textAt(48, 712, `${String(pageIndex + 1).padStart(2, '0')} - ${title}`, 'F1', 9, 11).replace('BT', '0.768 0.573 0.184 rg\nBT'),
-      linesAt(48, 670, pageIndex === 0
-        ? wrapText(data.session.closure_summary ?? 'Sessão salva sem síntese final.', 74).slice(0, 3)
-        : wrapText(data.companyName, 42).slice(0, 2),
-      'F2', 22, 27).replace('BT', '0.102 0.094 0.078 rg\nBT'),
+      paint(textAt(48, 712, `${String(index + 1).padStart(2, '0')} - ${title}`, 'F1', 9, 11), '0.768 0.573 0.184'),
+      paint(linesAt(48, 670, index === 0
+        ? cappedLines(data.session.closure_summary ?? 'Sessão salva sem síntese final.', 52, 4)
+        : cappedLines(data.companyName, 34, 2),
+      'F2', 18, 23), '0.102 0.094 0.078'),
     ]
 
-    let y = pageIndex === 0 ? 550 : 595
-    chunk.forEach((row) => {
+    let y = pageStartY(index)
+    chunk.forEach((item) => {
+      const boxY = y - item.height
       stream.push('1 1 1 rg')
-      stream.push(`46 ${y - 8} 520 58 re f`)
+      stream.push(`46 ${boxY} 520 ${item.height} re f`)
       stream.push('0.847 0.780 0.631 RG')
-      stream.push(`46 ${y - 8} 520 58 re S`)
-      stream.push(textAt(58, y + 30, `${row.section}${row.index > 1 ? ` ${row.index}` : ''}`, 'F1', 7, 9).replace('BT', '0.349 0.325 0.290 rg\nBT'))
-      stream.push(linesAt(58, y + 12, wrapText(row.content, 86).slice(0, 3), 'F1', 9.2, 12).replace('BT', '0.165 0.153 0.122 rg\nBT'))
-      y -= 72
+      stream.push(`46 ${boxY} 520 ${item.height} re S`)
+      stream.push(paint(textAt(58, y - 20, `${item.row.section}${item.row.index > 1 ? ` ${item.row.index}` : ''}`, 'F1', 7, 9), '0.349 0.325 0.290'))
+      stream.push(paint(linesAt(58, y - 42, item.lines, 'F1', 9.2, 12.5), '0.165 0.153 0.122'))
+      y -= item.height + 14
     })
 
     stream.push('0.847 0.780 0.631 RG')
     stream.push('48 48 m 564 48 l S')
-    stream.push(textAt(48, 28, `Board OS - ${data.companyName}`, 'F1', 8, 10).replace('BT', '0.349 0.325 0.290 rg\nBT'))
-    stream.push(textAt(528, 28, `Página ${pageIndex + 2}`, 'F1', 8, 10).replace('BT', '0.349 0.325 0.290 rg\nBT'))
+    stream.push(paint(textAt(48, 28, `Board OS - ${data.companyName}`, 'F1', 8, 10), '0.349 0.325 0.290'))
+    stream.push(paint(textAt(528, 28, `Página ${index + 2}`, 'F1', 8, 10), '0.349 0.325 0.290'))
     return stream.join('\n')
   })
 
