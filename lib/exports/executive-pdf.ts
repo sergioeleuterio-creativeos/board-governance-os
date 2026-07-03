@@ -95,12 +95,12 @@ function rowBlocks(rows: ExecutivePdfRow[]) {
   return rows.flatMap((row) => {
     const lines = wrapText(row.content, 92)
     const chunks: Array<{ label: string; lines: string[]; height: number }> = []
-    for (let index = 0; index < lines.length; index += 7) {
-      const chunk = lines.slice(index, index + 7)
+    for (let index = 0; index < lines.length; index += 8) {
+      const chunk = lines.slice(index, index + 8)
       chunks.push({
         label: index === 0 ? labelFor(row) : `${labelFor(row)} cont.`,
         lines: chunk,
-        height: 42 + chunk.length * 12.4,
+        height: 30 + chunk.length * 10.8,
       })
     }
     return chunks
@@ -108,8 +108,8 @@ function rowBlocks(rows: ExecutivePdfRow[]) {
 }
 
 function renderCover(options: ExecutivePdfOptions) {
-  const subjectLines = wrapText(options.subject, 34).slice(0, 3)
-  const summaryLines = wrapText(options.summary || 'Sessão registrada sem síntese executiva.', 66).slice(0, 5)
+  const subjectLines = wrapText(options.subject, 40).slice(0, 3)
+  const summaryLines = wrapText(options.summary || 'Sessão registrada sem síntese executiva.', 72).slice(0, 5)
   const titleLines = wrapText(options.title, 44).slice(0, 2)
 
   return [
@@ -117,9 +117,9 @@ function renderCover(options: ExecutivePdfOptions) {
     strokeLine(MARGIN_X, 700, PAGE_WIDTH - MARGIN_X, 700, BRASS, 1.4),
     textBlock(MARGIN_X, 650, ['BOARD OS'], { color: BRASS, font: 'F3', size: 8, leading: 10 }),
     textBlock(MARGIN_X, 626, titleLines, { color: '0.890 0.850 0.760', font: 'F1', size: 12, leading: 15 }),
-    textBlock(MARGIN_X, 548, subjectLines, { color: '0.970 0.955 0.925', font: 'F2', size: 27, leading: 32 }),
-    strokeLine(MARGIN_X, 448, MARGIN_X + 132, 448, BRASS, 0.9),
-    textBlock(MARGIN_X, 414, summaryLines, { color: '0.835 0.805 0.750', font: 'F1', size: 11, leading: 15 }),
+    textBlock(MARGIN_X, 552, subjectLines, { color: '0.970 0.955 0.925', font: 'F2', size: 22, leading: 27 }),
+    strokeLine(MARGIN_X, 462, MARGIN_X + 112, 462, BRASS, 0.8),
+    textBlock(MARGIN_X, 430, summaryLines, { color: '0.835 0.805 0.750', font: 'F1', size: 9.8, leading: 13.4 }),
     textBlock(MARGIN_X, 142, [options.eyebrow.toUpperCase(), options.dateLabel], { color: '0.610 0.575 0.505', font: 'F1', size: 8, leading: 11 }),
   ].join('\n')
 }
@@ -128,16 +128,16 @@ function renderBodyPages(options: ExecutivePdfOptions) {
   const blocks = rowBlocks(options.rows)
   const pages: Array<Array<{ label: string; lines: string[]; height: number }>> = []
   let current: Array<{ label: string; lines: string[]; height: number }> = []
-  let y = 624
+  let y = 632
 
   blocks.forEach((block) => {
     if (current.length && y - block.height < 86) {
       pages.push(current)
       current = []
-      y = 624
+      y = 632
     }
     current.push(block)
-    y -= block.height + 16
+    y -= block.height + 10
   })
   if (current.length || !pages.length) pages.push(current)
 
@@ -150,20 +150,20 @@ function renderBodyPages(options: ExecutivePdfOptions) {
       textBlock(MARGIN_X, 672, wrapText(pageIndex === 0 ? options.summary : options.subject, 72).slice(0, pageIndex === 0 ? 3 : 1), {
         color: INK,
         font: 'F2',
-        size: pageIndex === 0 ? 13.5 : 12,
-        leading: pageIndex === 0 ? 17 : 15,
+        size: pageIndex === 0 ? 11.8 : 10.8,
+        leading: pageIndex === 0 ? 14.5 : 13,
       }),
     ]
 
-    let cursorY = 610
+    let cursorY = 622
     page.forEach((block) => {
       const top = cursorY
       const bottom = cursorY - block.height
       stream.push(strokeLine(MARGIN_X, top + 8, PAGE_WIDTH - MARGIN_X, top + 8, '0.830 0.780 0.680', 0.45))
       stream.push(strokeLine(MARGIN_X, bottom + 8, MARGIN_X, top - 4, BRASS, 1.3))
-      stream.push(textBlock(MARGIN_X + 16, top - 12, [block.label.toUpperCase()], { color: MUTED, font: 'F3', size: 6.8, leading: 8 }))
-      stream.push(textBlock(MARGIN_X + 16, top - 31, block.lines, { color: INK, font: 'F1', size: 9.2, leading: 12.4 }))
-      cursorY -= block.height + 16
+      stream.push(textBlock(MARGIN_X + 14, top - 10, [block.label.toUpperCase()], { color: MUTED, font: 'F3', size: 6.4, leading: 7.6 }))
+      stream.push(textBlock(MARGIN_X + 14, top - 27, block.lines, { color: INK, font: 'F1', size: 8.6, leading: 10.8 }))
+      cursorY -= block.height + 10
     })
 
     stream.push(strokeLine(MARGIN_X, 54, PAGE_WIDTH - MARGIN_X, 54, '0.830 0.780 0.680', 0.45))
