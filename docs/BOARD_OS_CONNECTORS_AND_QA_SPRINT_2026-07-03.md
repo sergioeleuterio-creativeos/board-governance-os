@@ -44,6 +44,51 @@ Move Board OS from deterministic production-ready Decision Room to a more realis
   - Decision Memory, Follow-ups, and Outputs pages
 - Production still runs `DECISION_ROOM_ADAPTER=mock` or equivalent default, so room turns are deterministic.
 
+## 2026-07-03 Morning Progress
+
+Production baseline executed:
+
+- `git pull --ff-only origin main`: already up to date.
+- Working tree was clean except known private `lance_review_work/`.
+- `npm run typecheck`: passed.
+- `npm run qa:decision-room`: passed with `adapter=mock`, `creative_os=mock`, `seed=blank`.
+- `npm run build`: passed with 83 routes.
+- `node scripts/verify-production.mjs https://www.board-os.ai`: passed.
+- Authenticated QA-client API check:
+  - user `qa.client.202607030110@board-os.ai`
+  - company `Norte Foods QA 202607030110`
+  - role `founder`
+  - Decision Room mode `mock`
+  - confidence `76`
+  - visible client nav had no Operations/Admin links.
+
+Connector implementation added:
+
+- Added server-only `lib/creative-os/adapter.ts`.
+- Added Creative OS modes:
+  - `mock`
+  - `http`
+  - `worker`
+- Added stable capability functions:
+  - `runStrategyDiagnosis`
+  - `createBoardBrief`
+  - `createRoleBriefs`
+  - `createCampaignPlan`
+  - `compressRoomOutcome`
+- Routed `getDecisionRoomReadout()` through Creative OS enrichment so diagnosis, briefings, outputs, rooms, and readout API share the same contract.
+- Routed `createExecutionOutputs()` through the same enrichment path.
+- Added readiness validation for `CREATIVE_OS_MODE`.
+- Added env documentation to `.env.local.example` and `docs/PRODUCTION_SETUP_GUIDE.md`.
+
+Validation added:
+
+- Default `CREATIVE_OS_MODE=mock` passes readiness.
+- `CREATIVE_OS_MODE=http` fails readiness without `CREATIVE_OS_URL` and `CREATIVE_OS_API_KEY`.
+- `CREATIVE_OS_MODE=http` passes readiness when both are present.
+- `CREATIVE_OS_MODE=worker` passes with a warning because worker mode is currently fallback-only.
+- `npm run typecheck` passed.
+- `npm run build` passed.
+
 ## Morning Sprint Sequence
 
 ### 08:30-08:50 - Production Baseline
@@ -163,6 +208,29 @@ Exit criteria:
 - Adapter interface is frozen enough to implement.
 - Env names are confirmed.
 - Fallback and timeout behavior are specified.
+
+Implemented env names:
+
+```bash
+CREATIVE_OS_MODE="mock"
+CREATIVE_OS_URL=""
+CREATIVE_OS_API_KEY=""
+CREATIVE_OS_TIMEOUT_MS="45000"
+CREATIVE_OS_SYNC_ENABLED="false"
+```
+
+Current HTTP endpoint expected by Board OS:
+
+```text
+POST {CREATIVE_OS_URL}/api/board-os/capabilities
+Authorization: Bearer {CREATIVE_OS_API_KEY}
+```
+
+Current production recommendation:
+
+- Keep `CREATIVE_OS_MODE="mock"` until a Creative OS service or server worker exists.
+- Keep `CREATIVE_OS_SYNC_ENABLED="false"` until the data reflection policy is implemented.
+- Use preview first for `CREATIVE_OS_MODE="http"`.
 
 ### 11:00-11:35 - Client UX and Security Review
 

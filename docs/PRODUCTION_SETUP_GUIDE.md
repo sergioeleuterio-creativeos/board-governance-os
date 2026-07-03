@@ -51,6 +51,67 @@ npm run qa:decision-room
 
 This fails if production is configured with the Lance seed or if live mode is enabled without `OPENAI_API_KEY`.
 
+## Creative OS Connector
+
+Creative OS must be connected server-side. Do not expose Creative OS keys, URLs with secrets, or Claude workflow credentials to the browser.
+
+Use these env vars locally and in Vercel:
+
+```bash
+CREATIVE_OS_MODE="mock"
+CREATIVE_OS_URL=""
+CREATIVE_OS_API_KEY=""
+CREATIVE_OS_TIMEOUT_MS="45000"
+CREATIVE_OS_SYNC_ENABLED="false"
+```
+
+Modes:
+
+- `CREATIVE_OS_MODE="mock"` keeps Board OS using its local Strategy Core, Brief Engine, Campaign Planner, and Execution Studio fallbacks. This is the current safe production default.
+- `CREATIVE_OS_MODE="http"` calls a deployed Creative OS service from Board OS server routes. This requires `CREATIVE_OS_URL` and `CREATIVE_OS_API_KEY`.
+- `CREATIVE_OS_MODE="worker"` is reserved for an in-process server-side Creative OS worker/package. Until that worker is deliberately added to the Board OS server bundle, this mode falls back to Board OS output.
+
+Recommended Vercel setup for now:
+
+- Production:
+  - `CREATIVE_OS_MODE="mock"`
+  - `CREATIVE_OS_SYNC_ENABLED="false"`
+- Preview, when a Creative OS service exists:
+  - `CREATIVE_OS_MODE="http"`
+  - `CREATIVE_OS_URL="https://<creative-os-service-domain>"`
+  - `CREATIVE_OS_API_KEY="<server-only shared secret>"`
+  - `CREATIVE_OS_TIMEOUT_MS="45000"`
+  - `CREATIVE_OS_SYNC_ENABLED="false"`
+
+The first HTTP service endpoint expected by Board OS is:
+
+```text
+POST {CREATIVE_OS_URL}/api/board-os/capabilities
+Authorization: Bearer {CREATIVE_OS_API_KEY}
+Content-Type: application/json
+```
+
+The request includes a `capability` value:
+
+- `runStrategyDiagnosis`
+- `createBoardBrief`
+- `createRoleBriefs`
+- `createCampaignPlan`
+- `compressRoomOutcome`
+
+If Creative OS times out, returns an error, or is not configured, Board OS keeps using its local/fallback output. Board OS remains the source of truth for companies, Company Brain, board sessions, decisions, and follow-ups unless `CREATIVE_OS_SYNC_ENABLED` is later implemented and intentionally enabled.
+
+Data sync recommendation:
+
+- Reflect only selected Board OS events into Creative OS:
+  - new company profile
+  - approved Company Brain summary
+  - diagnosis request
+  - campaign/brief request
+  - final decision context when it affects strategy or go-to-market
+- Do not mirror every board session by default.
+- Creative OS should return generated strategy/creative artifacts with provenance; Board OS should store those as generated outputs, not as raw evidence.
+
 Official reference:
 - https://platform.openai.com/docs/quickstart
 - https://platform.openai.com/docs/guides/error-codes/api-errors

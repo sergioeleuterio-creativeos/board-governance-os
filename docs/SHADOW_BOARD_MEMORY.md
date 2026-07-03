@@ -1709,6 +1709,58 @@ Registered handoff:
   - pt-BR language/advisor quality
   - whether `/admin` should redirect non-admin users instead of rendering a forbidden shell
 
+### 2026-07-03 - Creative OS connector scaffold and env contract
+
+User asked to proceed from the connector sprint and clarify what env vars to create in Vercel and `.env.local`.
+
+Baseline executed:
+- Pulled `main`; already up to date.
+- Working tree was clean except private untracked `lance_review_work/`.
+- `npm run typecheck` passed.
+- `npm run qa:decision-room` passed with `adapter=mock`, `creative_os=mock`, `seed=blank`.
+- `npm run build` passed with 83 routes.
+- Production verifier passed on `https://www.board-os.ai`.
+- Authenticated production QA-client API check confirmed:
+  - `qa.client.202607030110@board-os.ai`
+  - `Norte Foods QA 202607030110`
+  - role `founder`
+  - Decision Room mode `mock`
+  - confidence `76`
+  - no visible Operations/Admin nav for non-admin user.
+
+Implemented:
+- Added server-only `lib/creative-os/adapter.ts`.
+- Added Creative OS connector modes:
+  - `mock`: safe fallback using Board OS local capability outputs.
+  - `http`: calls a deployed Creative OS service at `POST {CREATIVE_OS_URL}/api/board-os/capabilities`.
+  - `worker`: reserved for in-process server-side Creative OS worker/package and currently falls back.
+- Added stable capability functions:
+  - `runStrategyDiagnosis`
+  - `createBoardBrief`
+  - `createRoleBriefs`
+  - `createCampaignPlan`
+  - `compressRoomOutcome`
+- Routed `getDecisionRoomReadout()` and `createExecutionOutputs()` through Creative OS enrichment so `/diagnosis`, `/briefings`, `/outputs`, `/rooms`, and the Decision Room APIs use the same server-side seam.
+- Updated `.env.local.example` and `docs/PRODUCTION_SETUP_GUIDE.md` with Creative OS env vars:
+  - `CREATIVE_OS_MODE`
+  - `CREATIVE_OS_URL`
+  - `CREATIVE_OS_API_KEY`
+  - `CREATIVE_OS_TIMEOUT_MS`
+  - `CREATIVE_OS_SYNC_ENABLED`
+- Updated `scripts/check-decision-room-readiness.mjs` to validate Creative OS mode and require URL/key in `http` mode.
+
+Validation:
+- `CREATIVE_OS_MODE=http` fails readiness without `CREATIVE_OS_URL` and `CREATIVE_OS_API_KEY`.
+- `CREATIVE_OS_MODE=http` passes readiness when URL/key are present.
+- `CREATIVE_OS_MODE=worker` passes with a warning that it is fallback-only.
+- `npm run typecheck` passed.
+- `npm run build` passed.
+
+Recommended env state:
+- Local and Vercel production should use `CREATIVE_OS_MODE="mock"` until a real Creative OS service or worker exists.
+- Vercel preview can be used first for `CREATIVE_OS_MODE="http"` once Creative OS exposes the expected server endpoint.
+- Keep `CREATIVE_OS_SYNC_ENABLED="false"` until Board OS-to-Creative OS company/diagnostic reflection is explicitly implemented.
+
 ### 2026-06-30 - Governance Run clarity and LANCE demo framing
 
 User feedback:
