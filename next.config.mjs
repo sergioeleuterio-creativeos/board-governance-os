@@ -19,6 +19,10 @@ const nextConfig = {
     return [
       { source: '/legal/terms',           destination: '/legal/tos', permanent: true },
       { source: '/legal/acceptable-use',  destination: '/legal/aup', permanent: true },
+      { source: '/company',               destination: '/company-brain', permanent: false },
+      { source: '/governance-run',        destination: '/diagnosis', permanent: false },
+      { source: '/board-pack',            destination: '/outputs', permanent: false },
+      { source: '/shadow-board',          destination: '/rooms', permanent: false },
     ]
   },
 }

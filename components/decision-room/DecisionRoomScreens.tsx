@@ -1,0 +1,873 @@
+'use client'
+
+import Link from 'next/link'
+import { useMemo, useState } from 'react'
+import type { BoardTurn, DecisionRoomReadout } from '@/lib/decision-room/types'
+import { AdvisorMark, Meter, PageHeader, Panel, SectionTitle, StatusPill } from '@/components/shadow-board/ui'
+
+type ScreenProps = {
+  readout: DecisionRoomReadout
+}
+
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error'
+
+function agentFor(code: string, boardAgents: DecisionRoomReadout['boardAgents']) {
+  return boardAgents.find(agent => agent.code === code)
+}
+
+function evidenceTone(status: string): 'positive' | 'critical' | 'caution' | 'neutral' {
+  if (status === 'CONFIRMADO') return 'positive'
+  if (status === 'FALTANDO' || status === 'RISCO ATIVO') return 'critical'
+  if (status === 'PARCIAL') return 'caution'
+  return 'neutral'
+}
+
+function collectSynth(log: BoardTurn[]) {
+  return log.reduce(
+    (acc, turn) => {
+      turn.synth?.agreements?.forEach(item => acc.agreements.push(item))
+      turn.synth?.disagreements?.forEach(item => acc.disagreements.push(item))
+      turn.synth?.risks?.forEach(item => acc.risks.push(item))
+      return acc
+    },
+    { agreements: [] as string[], disagreements: [] as string[], risks: [] as string[] },
+  )
+}
+
+function shortRequestLabel(item: string) {
+  return item.split(':')[0]?.trim() || item
+}
+
+function newRoomId() {
+  return `room-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+function lowContext(diagnosis: DecisionRoomReadout['diagnosis']) {
+  return diagnosis.confidence < 58 || diagnosis.evidenceMap.some(item => item.status === 'FALTANDO')
+}
+
+function EvidenceList({ diagnosis }: { diagnosis: DecisionRoomReadout['diagnosis'] }) {
+  return (
+    <div className="grid gap-3">
+      {diagnosis.evidenceMap.map(item => (
+        <article key={`${item.claim}-${item.source}`} className="sb-row-card">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="sb-row-title">{item.claim}</p>
+              <p className="sb-muted mt-1">{item.source}</p>
+            </div>
+            <StatusPill tone={evidenceTone(item.status)}>{item.status}</StatusPill>
+          </div>
+        </article>
+      ))}
+    </div>
+  )
+}
+
+export function DecisionDashboardScreen({ readout }: ScreenProps) {
+  const { boardAgents, diagnosis, decisions, followUps } = readout
+  const missingCount = diagnosis.missingContext.length
+  const riskScore = Math.min(100, Math.max(22, missingCount * 14 + diagnosis.evidenceMap.filter(item => item.status === 'FALTANDO').length * 18))
+  const openFollowUps = followUps.filter(item => item.status !== 'Concluído').length
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="01 - Painel"
+        title="Board OS Decision Room"
+        description="A base de comando para diagnosticar, instruir a sala, decidir, gerar entregáveis e preservar memória."
+        action={<Link href="/rooms" className="btn-primary">Abrir Hot Seat</Link>}
+      />
+
+      <section className="grid gap-4 lg:grid-cols-4 sm:grid-cols-2">
+        <Panel>
+          <p className="sb-eyebrow">Contexto</p>
+          <div className="mt-5 flex items-baseline gap-2">
+            <strong className="sb-metric-value">{diagnosis.confidence}</strong>
+            <span className="sb-muted">/ 100</span>
+          </div>
+          <Meter value={diagnosis.confidence} tone={diagnosis.confidence >= 70 ? 'positive' : 'caution'} />
+        </Panel>
+        <Panel>
+          <p className="sb-eyebrow">Risco</p>
+          <div className="mt-5 flex items-baseline gap-2">
+            <strong className="sb-metric-value sb-tone-caution">{riskScore}</strong>
+            <span className="sb-muted">/ 100</span>
+          </div>
+          <Meter value={riskScore} tone={riskScore >= 70 ? 'critical' : 'caution'} />
+        </Panel>
+        <Panel>
+          <p className="sb-eyebrow">Decisões abertas</p>
+          <div className="mt-5 flex items-baseline gap-2">
+            <strong className="sb-metric-value">{decisions.length}</strong>
+            <span className="sb-muted">aguardando sala</span>
+          </div>
+          <Meter value={Math.min(100, decisions.length * 22)} tone="neutral" />
+        </Panel>
+        <Panel>
+          <p className="sb-eyebrow">Follow-ups</p>
+          <div className="mt-5 flex items-baseline gap-2">
+            <strong className="sb-metric-value sb-tone-critical">{openFollowUps}</strong>
+            <span className="sb-muted">em aberto</span>
+          </div>
+          <Meter value={Math.min(100, openFollowUps * 18)} tone={openFollowUps ? 'critical' : 'positive'} />
+        </Panel>
+      </section>
+
+      <section className="grid gap-5 xl:grid-cols-[1.35fr_0.9fr]">
+        <Panel tone="chamber">
+          <SectionTitle label="Salas ativas" />
+          <div className="grid gap-3">
+            <article className="sb-room-row">
+              <div>
+                <p className="sb-code">HS · AO VIVO</p>
+                <h3>{diagnosis.recommendedQuestion}</h3>
+                <p>Hot Seat com agentes instruídos, múltiplas perguntas e síntese ao vivo.</p>
+              </div>
+              <Link href="/rooms" className="btn-gold">Continuar</Link>
+            </article>
+            <article className="sb-room-row">
+              <div>
+                <p className="sb-code">PB-018 · PAUSADA</p>
+                <h3>Qual problema a queda de margem realmente revela?</h3>
+                <p>Problem Build aguardando contexto financeiro.</p>
+              </div>
+              <Link href="/diagnosis" className="btn-chamber">Ver diagnóstico</Link>
+            </article>
+          </div>
+        </Panel>
+
+        <div className="space-y-5">
+          <Panel>
+            <SectionTitle label="Próxima sala recomendada" />
+            <p className="sb-serif-callout">Hot Seat: pressionar a próxima decisão antes de comprometer execução.</p>
+            <p className="sb-muted mt-3">{diagnosis.recommendedQuestion}</p>
+            <Link href="/rooms" className="btn-primary mt-4">Rodar sala</Link>
+          </Panel>
+          <Panel>
+            <SectionTitle label="Dados que faltam" />
+            <ul className="sb-clean-list">
+              {diagnosis.missingContext.map(item => <li key={item}>{item}</li>)}
+            </ul>
+          </Panel>
+        </div>
+      </section>
+
+      <Panel>
+        <SectionTitle label="Conselho estratégico" />
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          {boardAgents.map(agent => (
+            <article key={agent.code} className="sb-agent-token">
+              <AdvisorMark code={agent.code} color={agent.color} />
+              <p>{agent.short}</p>
+            </article>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  )
+}
+
+export function CompanyBrainDecisionScreen({ readout }: ScreenProps) {
+  const { diagnosis } = readout
+  const confirmed = diagnosis.evidenceMap.filter(item => item.status === 'CONFIRMADO').length
+  const partial = diagnosis.evidenceMap.filter(item => item.status === 'PARCIAL').length
+  const missing = diagnosis.missingContext.length
+  const categoryScores = [
+    ['Fatos da empresa', Math.min(100, confirmed * 18 + partial * 8)],
+    ['Financeiro', diagnosis.missingContext.some(item => /finance|receita|margem|caixa|unit economics/i.test(item)) ? 35 : 82],
+    ['Riscos', diagnosis.missingContext.some(item => /risco|downside|premissa/i.test(item)) ? 48 : 78],
+    ['Arquivos-fonte', Math.min(100, diagnosis.evidenceMap.length * 16)],
+    ['Decisões passadas', diagnosis.missingContext.some(item => /decis/i.test(item)) ? 42 : 76],
+  ] as const
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="02 - Company Brain"
+        title="Memória que limita a confiança"
+        description="A sala só deve pressionar uma decisão com o contexto que consegue provar, derivar ou marcar como risco ativo."
+        action={<Link href="/company/intake" className="btn-secondary">Adicionar contexto</Link>}
+      />
+      <section className="grid gap-5 lg:grid-cols-[0.8fr_1.2fr]">
+        <Panel>
+          <SectionTitle label="Completude por categoria" />
+          {categoryScores.map(([label, value]) => (
+            <div key={label} className="mb-4">
+              <div className="flex justify-between gap-3 text-sm font-semibold"><span>{label}</span><span>{value}%</span></div>
+              <Meter value={Number(value)} tone={Number(value) > 75 ? 'positive' : 'caution'} />
+            </div>
+          ))}
+          <p className="sb-muted mt-2">{missing} lacunas ativas registradas para orientar a próxima sala.</p>
+        </Panel>
+        <Panel>
+          <SectionTitle label="Timeline de evidências" />
+          <EvidenceList diagnosis={diagnosis} />
+        </Panel>
+      </section>
+    </div>
+  )
+}
+
+export function DiagnosisScreen({ readout }: ScreenProps) {
+  const { diagnosis } = readout
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="03 - Diagnóstico"
+        title="Readout da Strategy Core"
+        description="Antes de entrar na sala, o founder vê o problema declarado, o problema inferido, as tensões e o mapa de evidências."
+        action={<Link href="/briefings" className="btn-primary">Instruir conselho</Link>}
+      />
+      <section className="grid gap-5 lg:grid-cols-[1fr_0.9fr]">
+        <Panel>
+          <SectionTitle label="Problema declarado vs inferido" />
+          <div className="grid gap-4 md:grid-cols-2">
+            <article className="sb-row-card">
+              <p className="sb-code">DECLARADO</p>
+              <h3 className="sb-row-title mt-2">{diagnosis.statedProblem}</h3>
+            </article>
+            <article className="sb-row-card">
+              <p className="sb-code">INFERIDO</p>
+              <h3 className="sb-row-title mt-2">{diagnosis.inferredProblem}</h3>
+            </article>
+          </div>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <article className="sb-row-card"><p className="sb-code">TENSÃO A</p><p className="sb-muted mt-2">{diagnosis.tension.a}</p></article>
+            <article className="sb-row-card"><p className="sb-code">TENSÃO B</p><p className="sb-muted mt-2">{diagnosis.tension.b}</p></article>
+          </div>
+        </Panel>
+        <Panel>
+          <SectionTitle label="Confiança do diagnóstico" />
+          <p className="sb-big-number">{diagnosis.confidence}%</p>
+          <Meter value={diagnosis.confidence} tone="positive" />
+          <p className="sb-muted mt-4">A confiança sobe quando os dados comerciais, a arquitetura da oferta e os sinais de agência forem confirmados.</p>
+        </Panel>
+      </section>
+
+      <section className="grid gap-5 lg:grid-cols-[0.9fr_1.1fr]">
+        <Panel>
+          <SectionTitle label="Enquadramentos possíveis" />
+          <div className="grid gap-3">
+            {diagnosis.frames.map(frame => (
+              <article key={frame.title} className={`sb-row-card ${frame.selected ? 'sb-selected-card' : ''}`}>
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="sb-row-title">{frame.title}</h3>
+                    <p className="sb-muted mt-1">{frame.detail}</p>
+                  </div>
+                  {frame.selected && <StatusPill tone="caution">Escolha SC</StatusPill>}
+                </div>
+              </article>
+            ))}
+          </div>
+        </Panel>
+        <Panel>
+          <SectionTitle label="Mapa de evidências" />
+          <EvidenceList diagnosis={diagnosis} />
+        </Panel>
+      </section>
+
+      <Panel>
+        <p className="sb-code">PERGUNTA RECOMENDADA AO CONSELHO</p>
+        <p className="sb-serif-callout mt-3">{diagnosis.recommendedQuestion}</p>
+      </Panel>
+    </div>
+  )
+}
+
+export function BriefingsScreen({ readout }: ScreenProps) {
+  const { boardAgents, boardBrief } = readout
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="04 - Briefings"
+        title="Agentes instruídos antes de falar"
+        description="O valor aqui é visível: cada papel recebe ângulo, evidências e pressão antes da sala começar."
+        action={<Link href="/rooms" className="btn-primary">Escolher sala</Link>}
+      />
+      <Panel tone="dossier">
+        <SectionTitle label="Brief do conselho" />
+        <p className="sb-serif-callout">{boardBrief.boardBrief}</p>
+        <p className="sb-muted mt-3">Brief Engine · derivado do Diagnóstico & Company Brain</p>
+      </Panel>
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {boardBrief.roleBriefs.map(brief => {
+          const agent = agentFor(brief.code, boardAgents)
+          return (
+            <Panel key={brief.code}>
+              <div className="flex items-center justify-between gap-3">
+                <AdvisorMark code={brief.code} color={agent?.color ?? '#4A5A6A'} />
+                <StatusPill tone="positive">INSTRUÍDO</StatusPill>
+              </div>
+              <h2 className="mt-4 text-sm font-bold">{agent?.role}</h2>
+              <p className="sb-code mt-4">Ângulo</p>
+              <p className="sb-muted mt-1">{brief.angle}</p>
+              <p className="sb-code mt-4">Evidência</p>
+              <p className="sb-muted mt-1">{brief.evidence}</p>
+              <p className="sb-code mt-4">Pressão</p>
+              <p className="sb-muted mt-1">{brief.pressure}</p>
+            </Panel>
+          )
+        })}
+      </section>
+    </div>
+  )
+}
+
+export function RoomsScreen({ readout }: ScreenProps) {
+  const { boardAgents, diagnosis, sessionTypes } = readout
+  const [clientRoomId, setClientRoomId] = useState(() => newRoomId())
+  const [activeSession, setActiveSession] = useState<string | null>(null)
+  const [log, setLog] = useState<BoardTurn[]>([])
+  const [baseIdx, setBaseIdx] = useState(0)
+  const [baseComplete, setBaseComplete] = useState(false)
+  const [isolate, setIsolate] = useState(false)
+  const [thinking, setThinking] = useState(false)
+  const [roomError, setRoomError] = useState('')
+  const [decisionOpen, setDecisionOpen] = useState(false)
+  const [decided, setDecided] = useState<'approved' | 'deferred' | null>(null)
+  const [queue, setQueue] = useState<string[]>([])
+  const [activeQuestion, setActiveQuestion] = useState(diagnosis.recommendedQuestion)
+  const [requestedData, setRequestedData] = useState<string[]>([])
+  const [bypassedData, setBypassedData] = useState<string[]>([])
+  const [founderNotes, setFounderNotes] = useState('')
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+
+  const synth = useMemo(() => collectSynth(log), [log])
+  const active = sessionTypes.find(item => item.id === activeSession)
+  const decisionQuestions = diagnosis.decisionQuestions?.length ? diagnosis.decisionQuestions : [diagnosis.recommendedQuestion]
+  const needsIntake = lowContext(diagnosis)
+  const logView = isolate
+    ? log.filter(turn => /DISCORDA|ATACA|PARCIAL|PRESSIONA|CONDICIONA|DADOS|RISCO/.test(turn.tag))
+    : log
+
+  function startSession(id: string) {
+    setClientRoomId(newRoomId())
+    setActiveSession(id)
+    setLog([])
+    setBaseIdx(0)
+    setBaseComplete(false)
+    setIsolate(false)
+    setThinking(false)
+    setRoomError('')
+    setDecisionOpen(false)
+    setDecided(null)
+    setQueue([])
+    setActiveQuestion(diagnosis.recommendedQuestion)
+    setRequestedData([])
+    setBypassedData([])
+    setFounderNotes('')
+    setSaveStatus('idle')
+  }
+
+  function pushTurn(turn: BoardTurn) {
+    setLog(current => [...current, turn])
+  }
+
+  async function saveSession(snapshot?: {
+    log?: BoardTurn[]
+    queue?: string[]
+    requestedData?: string[]
+    bypassedData?: string[]
+    activeQuestion?: string
+    baseIdx?: number
+    baseComplete?: boolean
+    decided?: 'approved' | 'deferred' | null
+  }) {
+    if (!activeSession) return
+    setSaveStatus('saving')
+    try {
+      const noteTurn: BoardTurn | null = founderNotes.trim()
+        ? { code: 'BB', tag: 'NOTAS DO FOUNDER', text: founderNotes.trim(), studio: true }
+        : null
+      const persistedLog = snapshot?.log ?? log
+      const response = await fetch('/api/decision-room/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientRoomId,
+          sessionId: activeSession,
+          activeQuestion: snapshot?.activeQuestion ?? activeQuestion,
+          queue: snapshot?.queue ?? queue,
+          log: noteTurn ? [...persistedLog, noteTurn] : persistedLog,
+          requestedData: snapshot?.requestedData ?? requestedData,
+          bypassedData: snapshot?.bypassedData ?? bypassedData,
+          baseIdx: snapshot?.baseIdx ?? baseIdx,
+          baseComplete: snapshot?.baseComplete ?? baseComplete,
+          decided: snapshot?.decided ?? decided,
+        }),
+      })
+      if (!response.ok) throw new Error('save_failed')
+      setSaveStatus('saved')
+    } catch {
+      setSaveStatus('error')
+    }
+  }
+
+  async function nextTurn() {
+    if (!activeSession || thinking) return
+    setThinking(true)
+    setRoomError('')
+    try {
+      const response = await fetch('/api/decision-room/turn', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: activeSession, index: baseIdx }),
+      })
+      const payload = await response.json().catch(() => null) as { turn?: BoardTurn | null; error?: string } | null
+      if (!response.ok) throw new Error(payload?.error ?? 'Turno falhou.')
+      if (payload?.turn) {
+        const nextBaseIdx = baseIdx + 1
+        const nextLog = [...log, payload.turn]
+        setBaseIdx(nextBaseIdx)
+        setLog(nextLog)
+        void saveSession({ log: nextLog, baseIdx: nextBaseIdx })
+      } else {
+        setBaseComplete(true)
+        void saveSession({ baseComplete: true })
+      }
+    } catch (error) {
+      setRoomError(error instanceof Error ? error.message : 'Turno falhou. A síntese foi preservada.')
+    } finally {
+      setThinking(false)
+    }
+  }
+
+  async function requestIntervention(kind: 'challenge' | 'evidence' | 'invite') {
+    if (!activeSession || thinking) return
+    setThinking(true)
+    setRoomError('')
+    try {
+      const response = await fetch('/api/decision-room/intervention', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId: activeSession, kind, log }),
+      })
+      const payload = await response.json().catch(() => null) as { turn?: BoardTurn; error?: string } | null
+      if (!response.ok || !payload?.turn) throw new Error(payload?.error ?? 'Intervenção falhou.')
+      const nextLog = [...log, payload.turn]
+      setLog(nextLog)
+      void saveSession({ log: nextLog })
+    } catch (error) {
+      setRoomError(error instanceof Error ? error.message : 'Intervenção falhou. A síntese foi preservada.')
+    } finally {
+      setThinking(false)
+    }
+  }
+
+  async function captureDecision(state: 'approved' | 'deferred') {
+    if (!activeSession || thinking) return
+    setThinking(true)
+    setRoomError('')
+    try {
+      const response = await fetch('/api/decision-room/decision', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sessionId: activeSession,
+          state,
+          clientRoomId,
+          activeQuestion,
+          queue,
+          log,
+          requestedData,
+          bypassedData,
+        }),
+      })
+      const payload = await response.json().catch(() => null) as { queue?: string[]; error?: string } | null
+      if (!response.ok) throw new Error(payload?.error ?? 'Não foi possível registrar a decisão.')
+      setDecided(state)
+      setDecisionOpen(false)
+      if (payload?.queue) setQueue(payload.queue)
+      void saveSession({ queue: payload?.queue ?? queue, decided: state })
+    } catch (error) {
+      setRoomError(error instanceof Error ? error.message : 'Não foi possível registrar a decisão.')
+    } finally {
+      setThinking(false)
+    }
+  }
+
+  function enqueue(item: string) {
+    const nextQueue = Array.from(new Set([...queue, item]))
+    setQueue(nextQueue)
+    void saveSession({ queue: nextQueue })
+  }
+
+  function requestData(item: string) {
+    const nextRequested = Array.from(new Set([...requestedData, item]))
+    const nextQueue = Array.from(new Set([...queue, `Pedido de dados: ${shortRequestLabel(item)}`]))
+    const turn: BoardTurn = {
+      code: 'RE',
+      tag: 'DADOS SOLICITADOS',
+      studio: true,
+      text: `A sala registrou um pedido de dados: ${item} Sem esse bloco, a recomendação deve ficar condicional e aparecer no follow-up.`,
+      synth: {
+        risks: [`Dado ausente: ${shortRequestLabel(item)}`],
+      },
+    }
+    const nextLog = [...log, turn]
+    setRequestedData(nextRequested)
+    setQueue(nextQueue)
+    setLog(nextLog)
+    void saveSession({ log: nextLog, queue: nextQueue, requestedData: nextRequested })
+  }
+
+  function bypassData(item: string) {
+    const nextBypassed = Array.from(new Set([...bypassedData, item]))
+    const turn: BoardTurn = {
+      code: 'BB',
+      tag: 'LACUNA ACEITA',
+      text: `Lacuna aceita para esta rodada: ${item} A sala pode avançar, mas a decisão precisa registrar que esta evidência não estava disponível.`,
+      synth: {
+        risks: [`A decisão avançou sem ${shortRequestLabel(item).toLowerCase()}.`],
+      },
+    }
+    const nextLog = [...log, turn]
+    setBypassedData(nextBypassed)
+    setLog(nextLog)
+    void saveSession({ log: nextLog, bypassedData: nextBypassed })
+  }
+
+  if (!activeSession) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          eyebrow="05 - Salas de decisão"
+          title="Escolha a sala certa para esta decisão"
+          description="Board OS não abre um chat vazio. Cada sala começa com finalidade, materiais de origem, perguntas e agentes já instruídos."
+        />
+        <section className="grid gap-4 lg:grid-cols-[1fr_0.7fr]">
+          <Panel>
+            <SectionTitle label="Estado da sala" />
+            <div className="flex flex-wrap gap-2">
+              <StatusPill tone={readout.mode === 'live' ? 'positive' : 'neutral'}>
+                {readout.mode === 'live' ? 'OpenAI ao vivo' : 'Modo determinístico'}
+              </StatusPill>
+              <StatusPill tone={needsIntake ? 'critical' : 'positive'}>
+                {diagnosis.confidence}% confiança
+              </StatusPill>
+            </div>
+            <p className="sb-muted mt-3">
+              {needsIntake
+                ? 'A sala pode rodar agora, mas deve tratar a recomendação como condicional até fechar as evidências pedidas.'
+                : 'A Company Brain tem contexto suficiente para uma rodada de decisão com boa confiança inicial.'}
+            </p>
+          </Panel>
+          <Panel>
+            <SectionTitle label="Melhor próximo passo" />
+            <p className="sb-muted">
+              {needsIntake
+                ? 'Adicione contexto ou rode Hot Seat e deixe os advisors registrarem os dados ausentes.'
+                : 'Abra Hot Seat, capture a decisão e deixe a sessão registrada na memória.'}
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link href="/company/intake" className="btn-secondary">Adicionar contexto</Link>
+            </div>
+          </Panel>
+        </section>
+        <section className="grid gap-4 lg:grid-cols-3">
+          {sessionTypes.map(session => (
+            <button key={session.id} type="button" className={`sb-session-card ${session.primary ? 'is-primary' : ''}`} onClick={() => startSession(session.id)}>
+              <span>{session.code}</span>
+              <strong>{session.name}</strong>
+              <em>{session.tag}</em>
+              <p>{session.desc}</p>
+              <small>{session.outputs.join(' · ')}</small>
+            </button>
+          ))}
+        </section>
+      </div>
+    )
+  }
+
+  return (
+    <div className="sb-room-shell">
+      <header className="sb-room-header">
+        <div>
+          <p className="sb-code">{active?.code} · {active?.name} · {decided ? decided.toUpperCase() : 'AO VIVO'} · {readout.mode === 'live' ? 'OPENAI' : 'DETERMINÍSTICO'}</p>
+          <h1>{activeQuestion}</h1>
+          <div className="sb-room-question-switcher">
+            {decisionQuestions.map((question, index) => (
+              <button
+                key={question}
+                type="button"
+                className={question === activeQuestion ? 'is-active' : ''}
+                onClick={() => setActiveQuestion(question)}
+              >
+                <span>Q{index + 1}</span>
+                <strong>{question}</strong>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-2">
+          <StatusPill tone={saveStatus === 'error' ? 'critical' : saveStatus === 'saved' ? 'positive' : 'neutral'}>
+            {saveStatus === 'saving' ? 'Salvando' : saveStatus === 'saved' ? 'Sessão salva' : saveStatus === 'error' ? 'Salvar falhou' : 'Rascunho local'}
+          </StatusPill>
+          <button type="button" className="btn-chamber-muted" onClick={() => { void saveSession(); setActiveSession(null) }}>Sair da sala</button>
+        </div>
+      </header>
+
+      <section className="sb-room-grid">
+        <aside className="sb-room-panel">
+          <SectionTitle label="Contexto da sessão" />
+          <p className="sb-room-question">{diagnosis.statedProblem}</p>
+          <div className="mt-5">
+            <p className="sb-code">Gaveta de evidências</p>
+            <div className="mt-3 grid gap-2">
+              {diagnosis.evidenceMap.slice(0, 4).map(item => (
+                <article key={item.claim} className="sb-room-evidence">
+                  <span>{item.status}</span>
+                  <p>{item.source}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+          <div className="mt-5">
+            <p className="sb-code">Dados que a sala pode pedir</p>
+            <div className="mt-3 grid gap-3">
+              {diagnosis.missingContext.slice(0, 5).map(item => {
+                const requested = requestedData.includes(item)
+                const bypassed = bypassedData.includes(item)
+                return (
+                  <article key={item} className="sb-room-data-request">
+                    <p>{item}</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button type="button" className="btn-chamber" disabled={requested} onClick={() => requestData(item)}>
+                        {requested ? 'Pedido registrado' : 'Pedir dado'}
+                      </button>
+                      <button type="button" className="btn-chamber-muted" disabled={bypassed} onClick={() => bypassData(item)}>
+                        {bypassed ? 'Lacuna aceita' : 'Seguir sem dado'}
+                      </button>
+                    </div>
+                  </article>
+                )
+              })}
+            </div>
+          </div>
+          <label className="field-label mt-5" htmlFor="founder-notes">Notas do founder</label>
+          <textarea
+            id="founder-notes"
+            className="field-textarea sb-room-notes"
+            placeholder="O que a sala precisa lembrar antes de decidir?"
+            value={founderNotes}
+            onChange={event => setFounderNotes(event.target.value)}
+            onBlur={() => void saveSession()}
+          />
+        </aside>
+
+        <main className="sb-room-center">
+          <div className="sb-room-transport">
+            <button type="button" className="btn-gold" onClick={() => void nextTurn()} disabled={thinking || baseComplete}>{thinking ? 'Rodando...' : baseComplete ? 'Turnos completos' : 'Próximo turno'}</button>
+            <button type="button" className="btn-chamber" disabled={thinking} onClick={() => void requestIntervention('challenge')}>Pressionar mais</button>
+            <button type="button" className="btn-chamber" disabled={thinking} onClick={() => void requestIntervention('evidence')}>Pedir evidência</button>
+            <button type="button" className="btn-chamber" disabled={thinking} onClick={() => void requestIntervention('invite')}>Convidar papel</button>
+            <button type="button" className="btn-chamber" onClick={() => setIsolate(value => !value)}>{isolate ? 'Ver todos' : 'Isolar divergência'}</button>
+          </div>
+
+          {thinking && (
+            <div className="sb-room-loading">
+              <p className="sb-code">CARREGANDO TURNO</p>
+              <p>Board Brain está coordenando o próximo agente e checando as evidências da sala.</p>
+            </div>
+          )}
+
+          {roomError && (
+            <div className="sb-room-error">
+              <p className="sb-code">TURNO PAUSADO</p>
+              <p>{roomError}</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button type="button" className="btn-chamber" onClick={() => void nextTurn()}>Repetir turno</button>
+                <button type="button" className="btn-chamber-muted" onClick={() => { setBaseIdx(current => current + 1); setRoomError('') }}>Pular agente</button>
+              </div>
+            </div>
+          )}
+
+          {log.length === 0 && (
+            <div className="sb-room-empty">
+              <p className="sb-code">SALA INSTRUÍDA</p>
+              <h2>A sala está instruída e aguardando.</h2>
+              <p>Inicie a deliberação para revelar os turnos do conselho estratégico.</p>
+            </div>
+          )}
+
+          <div className="grid gap-3">
+            {logView.map((turn, index) => {
+              const agent = agentFor(turn.code, boardAgents)
+              return (
+                <article key={`${turn.code}-${index}-${turn.tag}`} className="sb-turn-card">
+                  <div className="flex items-start gap-3">
+                    <AdvisorMark code={turn.code} color={agent?.color ?? '#51789B'} />
+                    <div>
+                      <p className="sb-code">{turn.tag}</p>
+                      <h3>{turn.studio ? 'Research / Evidence' : agent?.role}</h3>
+                      <p>{turn.text}</p>
+                    </div>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        </main>
+
+        <aside className="sb-room-panel">
+          <SectionTitle label="Síntese ao vivo" />
+          <SynthesisBlock title="Concorda" items={synth.agreements} />
+          <SynthesisBlock title="Discorda" items={synth.disagreements} />
+          <SynthesisBlock title="Riscos" items={synth.risks} />
+          <div className="mt-5 grid gap-2">
+            <button type="button" className="btn-gold" onClick={() => setDecisionOpen(true)}>Ir para decisão</button>
+            <button type="button" className="btn-chamber" onClick={() => enqueue('Brief de estratégia')}>+ Brief</button>
+            <button type="button" className="btn-chamber" onClick={() => enqueue('Memo do conselho')}>+ Memo</button>
+          </div>
+          <div className="mt-5">
+            <p className="sb-code">Fila de entregáveis</p>
+            <div className="mt-3 grid gap-2">
+              {queue.length === 0 && <p className="sb-muted">Nenhum artefato na fila.</p>}
+              {queue.map(item => <span key={item} className="sb-room-queue">{item}</span>)}
+            </div>
+          </div>
+        </aside>
+      </section>
+
+      {decisionOpen && (
+        <div className="sb-modal-backdrop">
+          <div className="sb-decision-modal">
+            <p className="sb-code">DECISÃO</p>
+            <h2>{activeQuestion}</h2>
+            <p>Registrar decisão com racional, opções rejeitadas, dono, condições, lacunas aceitas e data de revisão.</p>
+            <div className="mt-5 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="btn-primary"
+                disabled={thinking}
+                onClick={() => void captureDecision('approved')}
+              >
+                Aprovar
+              </button>
+              <button type="button" className="btn-secondary" disabled={thinking} onClick={() => void captureDecision('deferred')}>Adiar</button>
+              <button type="button" className="btn-secondary" onClick={() => setDecisionOpen(false)}>Voltar</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function SynthesisBlock({ title, items }: { title: string; items: string[] }) {
+  return (
+    <section className="sb-synth-block">
+      <div className="flex items-center justify-between gap-3">
+        <p>{title}</p>
+        <span>{items.length}</span>
+      </div>
+      {items.length === 0 ? <em>Nada ainda.</em> : (
+        <ul>
+          {items.map(item => <li key={item}>{item}</li>)}
+        </ul>
+      )}
+    </section>
+  )
+}
+
+export function OutputsScreen({ readout }: ScreenProps) {
+  const { outputs, studioAgents } = readout
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="06 - Entregáveis"
+        title="Execution Studio"
+        description="Depois da decisão, os artefatos saem com fontes, páginas e vínculo com a memória."
+      />
+      <Panel>
+        <SectionTitle label="Roster do studio" />
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+          {studioAgents.map(agent => (
+            <article key={agent.code} className="sb-row-card">
+              <p className="sb-code">{agent.code}</p>
+              <h3 className="sb-row-title mt-2">{agent.name}</h3>
+              <p className="sb-muted mt-1">{agent.desc}</p>
+            </article>
+          ))}
+        </div>
+      </Panel>
+      <section className="grid gap-4 md:grid-cols-2">
+        {outputs.map(output => (
+          <Panel key={output.title} tone="dossier">
+            <p className="sb-code">{output.type.toUpperCase()} · {output.pages} páginas</p>
+            <h2 className="mt-3 font-serif text-2xl font-semibold">{output.title}</h2>
+            <p className="sb-muted mt-3">{output.body}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {output.sources.map(source => <span key={source} className="sb-source-chip">{source}</span>)}
+            </div>
+          </Panel>
+        ))}
+      </section>
+    </div>
+  )
+}
+
+export function DecisionMemoryScreen({ readout }: ScreenProps) {
+  const { decisions } = readout
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="07 - Decision Memory"
+        title="Ledger de decisões"
+        description="A memória preserva racional, opções rejeitadas, confiança, dono, condições para revisitar e evidências ligadas."
+      />
+      <div className="grid gap-4">
+        {decisions.map(decision => (
+          <Panel key={decision.id} tone="dossier">
+            <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+              <div>
+                <p className="sb-code">{decision.id} · revisão {decision.reviewDate}</p>
+                <h2 className="mt-3 font-serif text-2xl font-semibold">{decision.statement}</h2>
+                <p className="sb-muted mt-3">{decision.rationale}</p>
+              </div>
+              <StatusPill tone="positive">{decision.confidence}% confiança</StatusPill>
+            </div>
+            <div className="mt-5 grid gap-4 md:grid-cols-3">
+              <article><p className="sb-code">Responsável</p><p className="mt-2 text-sm font-bold">{decision.owner}</p></article>
+              <article><p className="sb-code">Opções rejeitadas</p><p className="sb-muted mt-2">{decision.rejectedOptions.join(' · ')}</p></article>
+              <article><p className="sb-code">Condições</p><p className="sb-muted mt-2">{decision.conditions.join(' · ')}</p></article>
+            </div>
+          </Panel>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+export function DecisionFollowUpsScreen({ readout }: ScreenProps) {
+  const { followUps } = readout
+
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow="08 - Follow-ups"
+        title="Cadência depois da sala"
+        description="Cada decisão cria trabalho: responsável, prazo, status, dependência, gatilho de escalada e lembretes."
+      />
+      <Panel>
+        <div className="sb-table sb-followup-table">
+          <div className="sb-table-head"><span>Follow-up</span><span>Dono</span><span>Prazo</span><span>Status</span></div>
+          {followUps.map(item => (
+            <div key={item.title} className="sb-table-row">
+              <span>{item.title}<small>{item.dependency} · {item.escalation}</small></span>
+              <span>{item.owner}</span>
+              <span>{item.due}</span>
+              <span>{item.status}</span>
+            </div>
+          ))}
+        </div>
+      </Panel>
+    </div>
+  )
+}

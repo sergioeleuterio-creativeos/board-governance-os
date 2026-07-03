@@ -14,6 +14,7 @@
     "qa:mobile": "node scripts/qa-mobile-public.mjs",
     "qa:exports": "node scripts/qa-export-artifacts.mjs",
     "qa:security": "node scripts/qa-security-local.mjs",
+    "qa:decision-room": "node scripts/check-decision-room-readiness.mjs",
     "qa:exports:download": "node scripts/download-latest-exports.mjs",
     "seed:training-packs": "node scripts/seed-training-packs.mjs",
     "evaluate:training-packs": "node scripts/evaluate-advisors.mjs --training-packs --persist",

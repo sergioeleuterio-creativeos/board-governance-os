@@ -1,8 +1,10 @@
-# Board Governance OS Domain Model
+# Board OS Domain Model
 
-Last updated: 2026-06-26
+Last updated: 2026-07-02
 
-The durable product object is the governance cycle. Everything else either feeds the cycle, reviews the cycle, decides from the cycle, or follows up after the cycle.
+The durable product object is moving from a governance cycle to a decision room session. The legacy governance-cycle objects still back the current production APIs, but the founder-facing product now stages this flow:
+
+Company Brain -> Diagnosis -> Briefings -> Decision Rooms -> Outputs -> Decision Memory -> Follow-ups.
 
 ## Identity And Access
 
@@ -34,7 +36,29 @@ Admin surfaces:
 - `company_brain_entries`: persistent facts, goals, risks, financials, decisions, plans, team context, and unresolved questions.
 - `governance_inputs`: chat, voice, form, file, and admin-note inputs attached to a governance cycle.
 
-## Governance Cycle
+## Diagnosis And Briefings
+
+- `business_plans` remains the nearest durable store for Strategy Core diagnosis during the transition.
+- `board_packs` remains the nearest durable store for board briefings and exportable source context.
+- The new app contract exposes:
+  - `StrategyDiagnosis`
+  - `BoardBrief`
+  - `RoleBrief`
+  - `EvidenceItem`
+
+## Decision Rooms
+
+- `board_sessions` becomes the durable room/session object.
+- `agent_reviews` and `agent_conversations` remain available for agent turns, challenge rounds, dissent, and evidence requests.
+- Strategic Board agents: Board Brain, CEO, CFO, CMO, CRO, Product/Customer, Category Expert, Red Team.
+- Execution Studio agents: Strategy Core, Brief Engine, Campaign Planner, Sales Narrative Builder, Research/Evidence, Memo Writer, Project Manager.
+- The new app contract exposes:
+  - `SessionType`
+  - `BoardTurn`
+  - `TurnSynthesis`
+  - `DecisionCaptureRequest`
+
+## Legacy Governance Cycle
 
 - `governance_cycles`: the main product object.
 - `business_plans`: diagnosis, KPIs, priorities, workstreams, assumptions, and plan quality.
@@ -70,3 +94,15 @@ Admin surfaces:
 ## Compatibility
 
 The migration still includes `governance_runs` and `persona_reviews` so the current MVP API route can keep working while the app is gradually rewired to the full `governance_cycles` model.
+
+Decision Room API routes added during the migration:
+- `/api/decision-room/readout`
+- `/api/decision-room/turn`
+- `/api/decision-room/intervention`
+- `/api/decision-room/decision`
+- `/api/decision-room/outputs`
+- `/api/decision-room/session`
+
+These routes use `DECISION_ROOM_ADAPTER="mock"` by default for deterministic QA. Set `DECISION_ROOM_ADAPTER="live"` to generate advisor turns, interventions, and decision capture through the AI model router while keeping the same UI contract. Lance remains an explicit non-production seed via `DECISION_ROOM_SEED="lance"`.
+
+The `/api/decision-room/session` route persists in-progress room state to `board_sessions.metadata`, including the client room id, selected question, transcript, requested data, bypassed gaps, output queue, turn index, and decision state. Final decision capture also stores the same room trace on the decision metadata.

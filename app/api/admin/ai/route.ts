@@ -71,6 +71,10 @@ export async function GET() {
   const service = serviceClient()
   const observedEventTypes = [
     'governance.run_completed',
+    'decision_room.turn_completed',
+    'decision_room.intervention_completed',
+    'decision_room.decision_captured',
+    'decision_room.outputs_created',
     'shadow_board.challenge_rounds_generated',
     'shadow_board.agent_deep_dive_created',
     'ai.health_check',

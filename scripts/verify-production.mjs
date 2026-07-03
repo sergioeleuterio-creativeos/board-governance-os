@@ -10,6 +10,7 @@ function normalizeBaseUrl(input) {
 }
 
 const baseUrl = normalizeBaseUrl(process.argv[2] || process.env.NEXT_PUBLIC_APP_URL)
+const canonicalUrl = normalizeBaseUrl(process.env.NEXT_PUBLIC_APP_URL || DEFAULT_BASE_URL)
 
 async function fetchUrl(path) {
   const url = new URL(path, baseUrl)
@@ -53,8 +54,8 @@ const checks = [
   async () => {
     const { response } = await assertOk('/', 'text/html')
     const html = await response.text()
-    requireText(html, `<link rel="canonical" href="${baseUrl}`, 'home metadata')
-    requireText(html, 'Pensamento de conselho antes de poder bancar um conselho.', 'home page')
+    requireText(html, `<link rel="canonical" href="${canonicalUrl}`, 'home metadata')
+    requireText(html, 'A sala de decisao que conhece o negocio antes de dar conselho.', 'home page')
     return 'public home'
   },
   async () => {
@@ -76,6 +77,32 @@ const checks = [
     return 'protected app redirects'
   },
   async () => {
+    await assertRedirect('/company', '/company-brain')
+    await assertRedirect('/governance-run', '/diagnosis')
+    await assertRedirect('/board-pack', '/outputs')
+    await assertRedirect('/shadow-board', '/rooms')
+    return 'legacy route bridges'
+  },
+  async () => {
+    const apiPaths = [
+      '/api/decision-room/readout',
+      '/api/decision-room/turn',
+      '/api/decision-room/intervention',
+      '/api/decision-room/decision',
+      '/api/decision-room/outputs',
+      '/api/decision-room/session',
+    ]
+
+    for (const path of apiPaths) {
+      const { url, response } = await fetchUrl(path)
+      if (response.status !== 401) {
+        throw new Error(`${url} should require auth, got ${response.status}`)
+      }
+    }
+
+    return 'protected decision-room APIs'
+  },
+  async () => {
     await assertOk('/brand/mark.png', 'image/png')
     await assertOk('/brand/site-thumbnail.png', 'image/png')
     return 'brand images'
@@ -83,7 +110,7 @@ const checks = [
   async () => {
     const { response } = await assertOk('/manifest.webmanifest', 'application/manifest+json')
     const manifest = await response.json()
-    if (manifest.name !== 'Board Governance OS') {
+    if (manifest.name !== 'Board OS') {
       throw new Error(`manifest name is ${manifest.name}`)
     }
     requireText(JSON.stringify(manifest), '/brand/mark.png', 'manifest')
@@ -92,16 +119,16 @@ const checks = [
   async () => {
     const { response } = await assertOk('/robots.txt', 'text/plain')
     const robots = await response.text()
-    requireText(robots, `Sitemap: ${baseUrl}/sitemap.xml`, 'robots.txt')
+    requireText(robots, `Sitemap: ${canonicalUrl}/sitemap.xml`, 'robots.txt')
     requireText(robots, 'Disallow: /dashboard', 'robots.txt')
     return 'robots.txt'
   },
   async () => {
     const { response } = await assertOk('/sitemap.xml', 'application/xml')
     const sitemap = await response.text()
-    requireText(sitemap, `<loc>${baseUrl}</loc>`, 'sitemap.xml')
-    requireText(sitemap, `<loc>${baseUrl}/privacy</loc>`, 'sitemap.xml')
-    requireText(sitemap, `<loc>${baseUrl}/terms</loc>`, 'sitemap.xml')
+    requireText(sitemap, `<loc>${canonicalUrl}</loc>`, 'sitemap.xml')
+    requireText(sitemap, `<loc>${canonicalUrl}/privacy</loc>`, 'sitemap.xml')
+    requireText(sitemap, `<loc>${canonicalUrl}/terms</loc>`, 'sitemap.xml')
     if (sitemap.includes('/dashboard')) {
       throw new Error('sitemap.xml should not include protected app routes')
     }

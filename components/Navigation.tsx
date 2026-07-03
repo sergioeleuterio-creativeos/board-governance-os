@@ -15,23 +15,23 @@ const navGroups = [
     key: 'workspace',
     items: [
       { href: '/dashboard', code: '01', key: 'dashboard' },
-      { href: '/company', code: '02', key: 'company' },
-      { href: '/company/intake', code: 'IN', key: 'intake' },
+      { href: '/company-brain', code: '02', key: 'company' },
     ],
   },
   {
-    key: 'governance',
+    key: 'decisionFlow',
     items: [
-      { href: '/governance-run', code: '03', key: 'governanceRun' },
-      { href: '/board-pack', code: '04', key: 'boardPack' },
-      { href: '/shadow-board', code: '05', key: 'shadowBoard' },
+      { href: '/diagnosis', code: '03', key: 'diagnosis' },
+      { href: '/briefings', code: '04', key: 'briefings' },
+      { href: '/rooms', code: '05', key: 'rooms' },
+      { href: '/outputs', code: '06', key: 'outputs' },
     ],
   },
   {
-    key: 'decisions',
+    key: 'memory',
     items: [
-      { href: '/decisions', code: '06', key: 'decisions' },
-      { href: '/follow-ups', code: '07', key: 'followUps' },
+      { href: '/decisions', code: '07', key: 'decisions' },
+      { href: '/follow-ups', code: '08', key: 'followUps' },
     ],
   },
   {
@@ -53,9 +53,9 @@ const navGroups = [
 
 const mobileItems = [
   { href: '/dashboard', key: 'home' },
-  { href: '/company', key: 'brain' },
-  { href: '/shadow-board', key: 'review' },
-  { href: '/decisions', key: 'you' },
+  { href: '/diagnosis', key: 'diagnosis' },
+  { href: '/rooms', key: 'rooms' },
+  { href: '/follow-ups', key: 'followUps' },
 ]
 
 function userMetadataName(user: ReturnType<typeof useAuth>['user']): string | null {
@@ -83,7 +83,7 @@ export default function Navigation() {
   const [switchingCompany, setSwitchingCompany] = useState(false)
   if (pathname === '/' || pathname === '/login' || pathname === '/reset-password' || pathname === '/board-pack/presentation') return null
 
-  const companyName = workspace?.company?.name ?? workspace?.organization?.name ?? 'Board Governance OS'
+  const companyName = workspace?.company?.name ?? workspace?.organization?.name ?? 'Board OS'
   const companyInitials = initialsFor(companyName)
   const selectableCompanies = workspace?.companies?.length
     ? workspace.companies

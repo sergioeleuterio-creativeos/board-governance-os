@@ -21,21 +21,23 @@
     "resetEmailSent": "Si el usuario existe, enviamos un enlace para definir una nueva contrasena.",
     "resetRequestFailed": "No pudimos enviar el enlace de recuperacion.",
     "backToPassword": "Volver al login con contrasena",
-    "loginPrinciple": "Entra para revisar contexto, board packs, decisiones y follow-ups en un workspace de gobernanza protegido.",
+    "loginPrinciple": "Entra para revisar contexto, salas de decision, entregables y follow-ups en un workspace protegido.",
     "checkEmail": "Revisa tu email",
     "checkEmailBody": "Enviamos un enlace de acceso a {email}.",
     "noEmailNote": "No llego? Revisa spam, o",
     "tryAgain": "intenta de nuevo",
     "inviteOnly": "El acceso esta disponible solo por invitacion.",
-    "tagline": "Sistema operativo de gobernanza",
-    "welcomeBack": "Entrar a Board Governance OS",
+    "tagline": "Decision infrastructure",
+    "welcomeBack": "Entrar a Board OS",
     "enterEmail": "Ingresa tu email para continuar."
   },
   "nav": {
     "groups": {
       "workspace": "Workspace",
       "governance": "Gobernanza",
+      "decisionFlow": "Flujo de decision",
       "decisions": "Decisiones",
+      "memory": "Memoria",
       "reference": "Referencia",
       "operations": "Operaciones"
     },
@@ -46,6 +48,10 @@
       "governanceRun": "Governance Run",
       "boardPack": "Board Pack",
       "shadowBoard": "Shadow Board Review",
+      "diagnosis": "Diagnostico",
+      "briefings": "Briefings",
+      "rooms": "Salas de Decision",
+      "outputs": "Entregables",
       "decisions": "Decision Memory",
       "followUps": "Follow-ups",
       "designSystem": "Design System",
@@ -64,12 +70,15 @@
     "mobile": {
       "home": "Inicio",
       "brain": "Brain",
+      "diagnosis": "Diagnostico",
+      "rooms": "Salas",
       "review": "Review",
+      "followUps": "Follow-ups",
       "you": "Tu"
     }
   },
   "shell": {
-    "search": "Buscar decisiones, hechos, board packs...",
+    "search": "Buscar decisiones, hechos, evidencias...",
     "brainActive": "Board Brain activo",
     "founderRole": "Founder & CEO"
   },

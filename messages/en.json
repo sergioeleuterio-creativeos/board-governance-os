@@ -21,21 +21,23 @@
     "resetEmailSent": "If the user exists, we sent a link to set a new password.",
     "resetRequestFailed": "We could not send the password reset link.",
     "backToPassword": "Back to password login",
-    "loginPrinciple": "Sign in to review context, board packs, decisions, and follow-ups in a protected governance workspace.",
+    "loginPrinciple": "Sign in to review context, decision rooms, outputs, and follow-ups in a protected workspace.",
     "checkEmail": "Check your email",
     "checkEmailBody": "We sent a sign-in link to {email}. Click it to continue.",
     "noEmailNote": "Didn't get it? Check your spam folder, or",
     "tryAgain": "try again",
     "inviteOnly": "Access is currently invite-only.",
-    "tagline": "Governance operating system",
-    "welcomeBack": "Sign in to Board Governance OS",
+    "tagline": "Decision infrastructure",
+    "welcomeBack": "Sign in to Board OS",
     "enterEmail": "Enter your email to continue."
   },
   "nav": {
     "groups": {
       "workspace": "Workspace",
       "governance": "Governance",
+      "decisionFlow": "Decision flow",
       "decisions": "Decisions",
+      "memory": "Memory",
       "reference": "Reference",
       "operations": "Operations"
     },
@@ -46,6 +48,10 @@
       "governanceRun": "Governance Run",
       "boardPack": "Board Pack",
       "shadowBoard": "Shadow Board Review",
+      "diagnosis": "Diagnosis",
+      "briefings": "Briefings",
+      "rooms": "Decision Rooms",
+      "outputs": "Outputs",
       "decisions": "Decision Memory",
       "followUps": "Follow-ups",
       "designSystem": "Design System",
@@ -64,12 +70,15 @@
     "mobile": {
       "home": "Home",
       "brain": "Brain",
+      "diagnosis": "Diagnosis",
+      "rooms": "Rooms",
       "review": "Review",
+      "followUps": "Follow-ups",
       "you": "You"
     }
   },
   "shell": {
-    "search": "Search decisions, facts, board packs...",
+    "search": "Search decisions, facts, evidence...",
     "brainActive": "Board Brain active",
     "founderRole": "Founder & CEO"
   },

@@ -4,9 +4,9 @@ import { PRODUCT } from '@/lib/shadow-board/product'
 
 const pillars = [
   ['Company Brain', 'Contexto, historico, arquivos, riscos, decisoes e desafios em uma memoria viva.'],
-  ['Governance Run', 'Diagnostico, prioridades, KPIs, workstreams, riscos e agenda de decisao.'],
-  ['Shadow Board Review', 'Seis lentes independentes desafiam o plano antes do founder se comprometer.'],
-  ['Decision Memory', 'Cada decisao preserva racional, trade-offs, confianca, dono e follow-up.'],
+  ['Diagnosis', 'Strategy Core separa o problema declarado do problema real antes da sala abrir.'],
+  ['Decision Rooms', 'Oito agentes instruidos pressionam a decisao com evidencia, dissenso e sintese ao vivo.'],
+  ['Decision Memory', 'Cada decisao preserva racional, opcoes rejeitadas, confianca, dono e follow-up.'],
 ]
 
 export default function HomePage() {
@@ -26,12 +26,12 @@ export default function HomePage() {
 
       <main className="sb-public-hero">
         <section className="sb-public-copy">
-          <p className="sb-code">Sistema operacional de governanca</p>
-          <h1>Pensamento de conselho antes de poder bancar um conselho.</h1>
+          <p className="sb-code">Decision infrastructure</p>
+          <h1>A sala de decisao que conhece o negocio antes de dar conselho.</h1>
           <p>
-            Board Governance OS ajuda empresas lideradas por founders a transformar problemas confusos em
-            decisoes, memoria e follow-up, sem fingir ser um conselheiro, CEO virtual ou substituto
-            de conselho.
+            Board OS ajuda empresas lideradas por founders a transformar ambiguidade em diagnostico,
+            pressao executiva, entregaveis, memoria e follow-up, sem fingir ser um conselheiro,
+            CEO virtual ou substituto de conselho.
           </p>
           <div className="sb-public-actions">
             <Link href="/login" className="btn-gold">Acessar workspace</Link>
@@ -42,7 +42,7 @@ export default function HomePage() {
         <section className="sb-public-readout" aria-label="Modulos do produto">
           <div className="sb-public-panel">
             <p className="sb-code">Principio</p>
-            <h2>Conselho vira decisao, responsavel, memoria e acompanhamento.</h2>
+            <h2>Mais contexto. Melhor desacordo. Decisoes que viram trabalho.</h2>
           </div>
           <div className="sb-public-grid">
             {pillars.map(([title, description]) => (

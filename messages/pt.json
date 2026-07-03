@@ -16,15 +16,17 @@
     "noEmailNote": "Nao recebeu? Verifique o spam, ou",
     "tryAgain": "tente novamente",
     "inviteOnly": "O acesso esta disponivel apenas por convite.",
-    "tagline": "Sistema operacional de governanca",
-    "welcomeBack": "Entrar no Board Governance OS",
+    "tagline": "Decision infrastructure",
+    "welcomeBack": "Entrar no Board OS",
     "enterEmail": "Digite seu email para continuar."
   },
   "nav": {
     "groups": {
       "workspace": "Workspace",
       "governance": "Governanca",
+      "decisionFlow": "Fluxo de decisao",
       "decisions": "Decisoes",
+      "memory": "Memoria",
       "reference": "Referencia",
       "operations": "Operacoes"
     },
@@ -35,7 +37,11 @@
       "governanceRun": "Governance Run",
       "boardPack": "Board Pack",
       "shadowBoard": "Shadow Board Review",
-      "decisions": "Memoria de decisoes",
+      "diagnosis": "Diagnostico",
+      "briefings": "Briefings",
+      "rooms": "Salas de Decisao",
+      "outputs": "Entregaveis",
+      "decisions": "Decision Memory",
       "followUps": "Follow-ups",
       "admin": "Admin",
       "adminUsers": "Usuarios",
@@ -51,12 +57,15 @@
     "mobile": {
       "home": "Inicio",
       "brain": "Brain",
+      "diagnosis": "Diagnostico",
+      "rooms": "Salas",
       "review": "Review",
+      "followUps": "Follow-ups",
       "you": "Voce"
     }
   },
   "shell": {
-    "search": "Buscar decisoes, fatos, board packs...",
+    "search": "Buscar decisoes, fatos, evidencias...",
     "brainActive": "Board Brain ativo",
     "founderRole": "Fundador e CEO"
   }

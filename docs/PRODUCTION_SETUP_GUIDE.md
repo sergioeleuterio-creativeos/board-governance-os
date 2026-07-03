@@ -2,7 +2,7 @@
 
 Last updated: 2026-06-29
 
-This guide keeps Board Governance OS separate from Creative OS while the product moves toward production.
+This guide keeps Board OS separate from Creative OS while the product moves toward production.
 
 ## Current Environment Files
 
@@ -32,6 +32,24 @@ Implementation note:
 - Agent prompt hardening is still pending; IBGC training will be folded into persona prompts before live paid usage.
 - If OpenAI returns `insufficient_quota`, the key reached the API but the OpenAI project/account has no available paid quota. Add billing/credits in the OpenAI platform or switch `AI_PROVIDER="mock"` temporarily for demos.
 - Governance Run falls back to the deterministic governance engine when the external AI provider fails, so demos can continue while quota is fixed.
+
+## Decision Room Adapter
+
+Board OS ships the Decision Room UI behind a stable adapter contract.
+
+Current setting:
+- `DECISION_ROOM_ADAPTER="mock"`
+- `DECISION_ROOM_SEED=""`
+
+Use `DECISION_ROOM_ADAPTER="mock"` for deterministic QA and private demos. Use `DECISION_ROOM_ADAPTER="live"` when OpenAI-backed advisor turns, interventions, and decision capture should run against the current company's Company Brain. Keep `DECISION_ROOM_SEED` blank for real clients; `DECISION_ROOM_SEED="lance"` is reserved for local/preview demos and is disabled in production.
+
+Before deploy, run:
+
+```bash
+npm run qa:decision-room
+```
+
+This fails if production is configured with the Lance seed or if live mode is enabled without `OPENAI_API_KEY`.
 
 Official reference:
 - https://platform.openai.com/docs/quickstart

@@ -39,10 +39,10 @@ function LoginForm() {
 
   const siteKey = getTurnstileSiteKey()
   const normalizedEmail = email.trim().toLowerCase()
-  const turnstileRequired = Boolean(siteKey)
+  const turnstileRequired = Boolean(siteKey) && process.env.NODE_ENV === 'production'
 
   useEffect(() => {
-    if (!siteKey || !turnstileRef.current) return
+    if (!turnstileRequired || !turnstileRef.current) return
 
     const scriptId = 'cf-turnstile-script'
     const renderWidget = () => {
@@ -79,7 +79,7 @@ function LoginForm() {
         widgetIdRef.current = ''
       }
     }
-  }, [siteKey, t])
+  }, [siteKey, t, turnstileRequired])
 
   async function verifyTurnstile(): Promise<boolean> {
     if (!turnstileRequired) return true
@@ -223,7 +223,7 @@ function LoginForm() {
         />
       </label>
 
-      {siteKey && (
+      {turnstileRequired && (
         <div className="sb-turnstile-wrap">
           <div ref={turnstileRef} />
         </div>
@@ -258,12 +258,12 @@ export default function LoginPage() {
   return (
     <div className="sb-login-shell">
       <section className="sb-login-brief">
-        <p className="sb-code">Board Governance OS</p>
+        <p className="sb-code">Board OS</p>
         <h1>{t('welcomeBack')}</h1>
         <p>{t('loginPrinciple')}</p>
         <div className="sb-login-proof">
           <span>Company Brain</span>
-          <span>Board Pack</span>
+          <span>Decision Rooms</span>
           <span>Decision Memory</span>
         </div>
       </section>
