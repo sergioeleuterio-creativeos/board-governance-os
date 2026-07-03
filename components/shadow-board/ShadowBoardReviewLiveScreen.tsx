@@ -115,6 +115,8 @@ export function ShadowBoardReviewLiveScreen() {
   const [generating, setGenerating] = useState(false)
   const [closing, setClosing] = useState(false)
   const [deepDivingKey, setDeepDivingKey] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportUrl, setExportUrl] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
@@ -227,6 +229,34 @@ export function ShadowBoardReviewLiveScreen() {
     setDeepDivingKey(null)
   }
 
+  async function exportSession() {
+    if (!readout?.board_session || exporting) return
+    setExporting(true)
+    setError('')
+    setNotice('')
+
+    const response = await fetch('/api/session-export', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        board_session_id: readout.board_session.id,
+        export_type: 'pdf',
+      }),
+    })
+    const payload = await response.json().catch(() => null) as ErrorResponse | { signed_url?: string | null } | null
+
+    if (!response.ok || !payload || !('signed_url' in payload) || !payload.signed_url) {
+      const errorMessage = payload && 'error' in payload ? payload.error : undefined
+      setError(errorMessage ?? 'Não foi possível exportar a sessão.')
+      setExporting(false)
+      return
+    }
+
+    setExportUrl(payload.signed_url)
+    setNotice('PDF da sessão gerado e pronto para abrir.')
+    setExporting(false)
+  }
+
   useEffect(() => {
     void loadReview()
   }, [])
@@ -267,6 +297,15 @@ export function ShadowBoardReviewLiveScreen() {
             >
               {closing ? 'Encerrando...' : 'Encerrar sessao'}
             </button>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => void exportSession()}
+              disabled={exporting || loading || !readout?.board_session}
+            >
+              {exporting ? 'Exportando...' : 'Exportar PDF'}
+            </button>
+            {exportUrl && <a className="btn-gold" href={exportUrl} target="_blank" rel="noreferrer">Abrir PDF</a>}
           </div>
         }
       />

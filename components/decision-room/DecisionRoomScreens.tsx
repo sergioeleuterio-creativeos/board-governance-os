@@ -335,6 +335,10 @@ export function RoomsScreen({ readout }: ScreenProps) {
   const [bypassedData, setBypassedData] = useState<string[]>([])
   const [founderNotes, setFounderNotes] = useState('')
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const [boardSessionId, setBoardSessionId] = useState<string | null>(null)
+  const [exporting, setExporting] = useState(false)
+  const [exportUrl, setExportUrl] = useState<string | null>(null)
+  const [exportError, setExportError] = useState('')
 
   const synth = useMemo(() => collectSynth(log), [log])
   const active = sessionTypes.find(item => item.id === activeSession)
@@ -361,6 +365,10 @@ export function RoomsScreen({ readout }: ScreenProps) {
     setBypassedData([])
     setFounderNotes('')
     setSaveStatus('idle')
+    setBoardSessionId(null)
+    setExporting(false)
+    setExportUrl(null)
+    setExportError('')
   }
 
   function pushTurn(turn: BoardTurn) {
@@ -377,7 +385,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
     baseComplete?: boolean
     decided?: 'approved' | 'deferred' | null
   }) {
-    if (!activeSession) return
+    if (!activeSession) return null
     setSaveStatus('saving')
     try {
       const noteTurn: BoardTurn | null = founderNotes.trim()
@@ -401,9 +409,39 @@ export function RoomsScreen({ readout }: ScreenProps) {
         }),
       })
       if (!response.ok) throw new Error('save_failed')
+      const payload = await response.json().catch(() => null) as { persistence?: { boardSessionId?: string } } | null
+      if (payload?.persistence?.boardSessionId) setBoardSessionId(payload.persistence.boardSessionId)
       setSaveStatus('saved')
+      return payload?.persistence?.boardSessionId ?? boardSessionId
     } catch {
       setSaveStatus('error')
+      return null
+    }
+  }
+
+  async function exportSession() {
+    if (exporting) return
+    setExporting(true)
+    setExportError('')
+    try {
+      const savedSessionId = await saveSession()
+      const targetSessionId = savedSessionId ?? boardSessionId
+      if (!targetSessionId) throw new Error('Salve a sessão antes de exportar o PDF.')
+      const response = await fetch('/api/session-export', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          board_session_id: targetSessionId,
+          export_type: 'pdf',
+        }),
+      })
+      const payload = await response.json().catch(() => null) as { signed_url?: string | null; error?: string } | null
+      if (!response.ok || !payload?.signed_url) throw new Error(payload?.error ?? 'Não foi possível exportar a sessão.')
+      setExportUrl(payload.signed_url)
+    } catch (error) {
+      setExportError(error instanceof Error ? error.message : 'Não foi possível exportar a sessão.')
+    } finally {
+      setExporting(false)
     }
   }
 
@@ -607,9 +645,14 @@ export function RoomsScreen({ readout }: ScreenProps) {
           <StatusPill tone={saveStatus === 'error' ? 'critical' : saveStatus === 'saved' ? 'positive' : 'neutral'}>
             {saveStatus === 'saving' ? 'Salvando' : saveStatus === 'saved' ? 'Sessão salva' : saveStatus === 'error' ? 'Salvar falhou' : 'Rascunho local'}
           </StatusPill>
+          <button type="button" className="btn-chamber" disabled={exporting} onClick={() => void exportSession()}>
+            {exporting ? 'Exportando...' : 'Exportar PDF'}
+          </button>
+          {exportUrl && <a className="btn-gold" href={exportUrl} target="_blank" rel="noreferrer">Abrir PDF</a>}
           <button type="button" className="btn-chamber-muted" onClick={() => { void saveSession(); setActiveSession(null) }}>Sair da sala</button>
         </div>
       </header>
+      {exportError && <p className="sb-error">{exportError}</p>}
 
       <section className="sb-room-grid">
         <aside className="sb-room-panel">
