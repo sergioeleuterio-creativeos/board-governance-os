@@ -100,6 +100,7 @@ export default function Navigation() {
       fallback: 'Usuario',
     })
   const displayRole = user ? (isAdmin ? 'Admin' : tShell('founderRole')) : 'Visitante'
+  const visibleNavGroups = isAdmin ? navGroups : navGroups.filter(group => group.key !== 'operations')
 
   async function handleCompanyChange(companyId: string) {
     if (!companyId || companyId === workspace?.company?.id) return
@@ -132,7 +133,7 @@ export default function Navigation() {
         </Link>
 
         <nav className="sb-rail-nav" aria-label={`${PRODUCT.name} navigation`}>
-          {navGroups.map(group => (
+          {visibleNavGroups.map(group => (
             <div key={group.key} className="sb-nav-group">
               <p>{tNav(`groups.${group.key}`)}</p>
               {group.items.map(item => {
