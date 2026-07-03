@@ -53,6 +53,12 @@ async function postJson(url, apiKey, body) {
 
 loadEnvFile(envFile)
 
+const mode = (process.env.CREATIVE_OS_MODE || 'mock').toLowerCase()
+if (mode !== 'http') {
+  ok(`Creative OS connector smoke skipped: CREATIVE_OS_MODE=${mode}. Set CREATIVE_OS_MODE=http with CREATIVE_OS_URL and CREATIVE_OS_API_KEY for live cross-system QA.`)
+  process.exit(0)
+}
+
 const baseUrl = requiredEnv('CREATIVE_OS_URL').replace(/\/+$/, '')
 const apiKey = requiredEnv('CREATIVE_OS_API_KEY')
 const boardOsCompanyId = process.env.CREATIVE_OS_SMOKE_COMPANY_ID || '00000000-0000-4000-8000-000000000703'

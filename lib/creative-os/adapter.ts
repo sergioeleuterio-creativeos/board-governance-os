@@ -103,6 +103,37 @@ function creativeOSConfig() {
   }
 }
 
+export function creativeOSReadiness() {
+  const mode = creativeOSMode()
+  const syncEnabled = creativeOSSyncEnabled()
+  const { baseUrl, apiKey } = creativeOSConfig()
+  const missing: string[] = []
+
+  if (mode === 'http' && !baseUrl) missing.push('CREATIVE_OS_URL')
+  if (mode === 'http' && !apiKey) missing.push('CREATIVE_OS_API_KEY')
+
+  return {
+    mode,
+    syncEnabled,
+    timeoutMs: timeoutMs(),
+    httpConfigured: Boolean(baseUrl && apiKey),
+    baseUrlConfigured: Boolean(baseUrl),
+    apiKeyConfigured: Boolean(apiKey),
+    missing,
+    status: mode === 'mock'
+      ? 'fallback_local'
+      : mode === 'worker'
+        ? 'worker_reserved'
+        : missing.length
+          ? 'needs_configuration'
+          : syncEnabled
+            ? 'ready_with_company_sync'
+            : 'ready_capability_only',
+    sourceOfTruth: 'board_os',
+    boundary: 'Creative OS enriches strategy, brief, campaign, and room-compression outputs. Board OS remains source of truth for company memory, decisions, board sessions, and follow-ups.',
+  }
+}
+
 function text(value: unknown, fallback: string) {
   return typeof value === 'string' && value.trim() ? value.trim() : fallback
 }

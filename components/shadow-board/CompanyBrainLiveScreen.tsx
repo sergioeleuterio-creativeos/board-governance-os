@@ -58,7 +58,7 @@ const statCards = [
   ['Financeiro', 'financial'],
   ['Riscos', 'risk'],
   ['Arquivos', 'files'],
-  ['Decisoes', 'decision'],
+  ['Decisões', 'decision'],
 ] as const
 
 function isCompanyBrainReadout(payload: CompanyBrainReadout | ErrorResponse | null): payload is CompanyBrainReadout {
@@ -104,7 +104,7 @@ export function CompanyBrainLiveScreen() {
 
     if (!response.ok || !isCompanyBrainReadout(payload)) {
       const errorMessage = payload && 'error' in payload ? payload.error : undefined
-      setError(errorMessage ?? 'Nao foi possivel carregar a Company Brain.')
+      setError(errorMessage ?? 'Não foi possível carregar a Company Brain.')
       setLoading(false)
       return
     }
@@ -126,15 +126,15 @@ export function CompanyBrainLiveScreen() {
     const payload = await response.json().catch(() => null) as ExtractDocumentResponse | null
 
     if (!response.ok) {
-      setError(payload?.error ?? 'Nao foi possivel processar o documento.')
+      setError(payload?.error ?? 'Não foi possível processar o documento.')
       setExtractingId(null)
       return
     }
 
     setNotice([
       'Documento processado.',
-      payload?.result ? `${payload.result.charactersExtracted} caracteres extraidos` : null,
-      payload?.result ? `${payload.result.memoryEntriesCreated} memoria criada` : null,
+      payload?.result ? `${payload.result.charactersExtracted} caracteres extraídos` : null,
+      payload?.result ? `${payload.result.memoryEntriesCreated} memória criada` : null,
     ].filter(Boolean).join(' - '))
     setExtractingId(null)
     await loadReadout()
@@ -153,14 +153,14 @@ export function CompanyBrainLiveScreen() {
     const payload = await response.json().catch(() => null) as { error?: string } | null
 
     if (!response.ok) {
-      setError(payload?.error ?? 'Nao foi possivel atualizar a relevancia do documento.')
+      setError(payload?.error ?? 'Não foi possível atualizar a relevância do documento.')
       setUpdatingDocumentId(null)
       return
     }
 
     setNotice(relevance === 'included'
-      ? 'Documento incluido no contexto de governanca.'
-      : 'Documento excluido do contexto de governanca.')
+      ? 'Documento incluído no contexto de governança.'
+      : 'Documento excluído do contexto de governança.')
     setUpdatingDocumentId(null)
     await loadReadout()
   }
@@ -173,10 +173,10 @@ export function CompanyBrainLiveScreen() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="02 - Company Brain"
-        title="Memoria institucional"
+        title="Memória institucional"
         description={readout?.company
-          ? `Tudo que o board sabe sobre ${readout.company.name} - ${readout.memory_entries.length} memorias ativas`
-          : 'Crie a primeira empresa no intake para iniciar a memoria institucional.'}
+          ? `Tudo que o board sabe sobre ${readout.company.name} - ${readout.memory_entries.length} memórias ativas`
+          : 'Crie a primeira empresa no intake para iniciar a memória institucional.'}
         action={<Link href="/company/intake" className="btn-primary">Iniciar intake</Link>}
       />
 
@@ -202,12 +202,12 @@ export function CompanyBrainLiveScreen() {
 
       <section className="grid gap-5 xl:grid-cols-[1.3fr_0.8fr]">
         <Panel>
-          <SectionTitle label="Linha do tempo da memoria" />
+          <SectionTitle label="Linha do tempo da memória" />
           <div className="mb-4 flex flex-wrap gap-2">
             {['Todos', 'Riscos', 'Financeiro', 'Perguntas'].map(label => <StatusPill key={label}>{label}</StatusPill>)}
           </div>
           <div className="space-y-3">
-            {loading && <p className="sb-muted">Carregando memoria...</p>}
+            {loading && <p className="sb-muted">Carregando memória...</p>}
             {!loading && readout?.memory_entries.map(entry => (
               <article key={entry.id} className="sb-memory-item">
                 <p className="sb-code">{codeFor(entry.category)}</p>
@@ -215,13 +215,13 @@ export function CompanyBrainLiveScreen() {
                   <h3 className="sb-row-title">{entry.title}</h3>
                   <p className="sb-muted mt-1">{entry.content}</p>
                   <p className="sb-code mt-3">
-                    {entry.source_type} - {entry.confidence_score ?? '-'} confianca - {dateLabel(entry.created_at)}
+                    {entry.source_type} - {entry.confidence_score ?? '-'} confiança - {dateLabel(entry.created_at)}
                   </p>
                 </div>
               </article>
             ))}
             {!loading && !readout?.memory_entries.length && (
-              <p className="sb-muted">Nenhuma memoria ativa ainda. Use o intake para alimentar a Company Brain.</p>
+              <p className="sb-muted">Nenhuma memória ativa ainda. Use o intake para alimentar a Company Brain.</p>
             )}
           </div>
         </Panel>
@@ -249,7 +249,7 @@ export function CompanyBrainLiveScreen() {
                     <p className="font-semibold">{document.original_filename}</p>
                     <p className="sb-muted">
                       {document.status}
-                      {document.metadata?.governance_relevance === 'excluded' ? ' - excluido do contexto' : ' - incluido no contexto'}
+                      {document.metadata?.governance_relevance === 'excluded' ? ' - excluído do contexto' : ' - incluído no contexto'}
                       {' - '}
                       {document.summary ?? document.document_type ?? 'sem resumo'}
                     </p>

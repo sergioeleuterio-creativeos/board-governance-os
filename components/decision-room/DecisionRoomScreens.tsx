@@ -648,11 +648,36 @@ export function RoomsScreen({ readout }: ScreenProps) {
           <button type="button" className="btn-chamber" disabled={exporting} onClick={() => void exportSession()}>
             {exporting ? 'Exportando...' : 'Exportar PDF'}
           </button>
+          <p className="max-w-[220px] text-right text-xs text-[#B9AD98]">
+            {decided ? 'Exporta o readout final da sala.' : log.length ? 'Exporta um registro em andamento.' : 'Rode turnos antes do PDF final.'}
+          </p>
           {exportUrl && <a className="btn-gold" href={exportUrl} target="_blank" rel="noreferrer">Abrir PDF</a>}
           <button type="button" className="btn-chamber-muted" onClick={() => { void saveSession(); setActiveSession(null) }}>Sair da sala</button>
         </div>
       </header>
       {exportError && <p className="sb-error">{exportError}</p>}
+      {decided && (
+        <Panel tone="dossier">
+          <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
+            <div>
+              <p className="sb-code">PRÓXIMO PASSO</p>
+              <h2 className="sb-row-title mt-2">
+                {decided === 'approved' ? 'Decisão registrada. Feche o ciclo.' : 'Decisão adiada. Feche as evidências antes de voltar.'}
+              </h2>
+              <p className="sb-muted mt-2">
+                {decided === 'approved'
+                  ? 'Exporte o PDF, revise a Decision Memory e confirme os follow-ups antes de compartilhar a saída com o founder ou CEO.'
+                  : 'Exporte o registro da sala, confirme os dados pedidos e use os follow-ups como condição para uma nova rodada.'}
+              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-3">
+              <Link href="/decisions" className="btn-secondary">Decision Memory</Link>
+              <Link href="/follow-ups" className="btn-secondary">Follow-ups</Link>
+              <Link href="/board-pack" className="btn-secondary">Board Pack</Link>
+            </div>
+          </div>
+        </Panel>
+      )}
 
       <section className="sb-room-grid">
         <aside className="sb-room-panel">

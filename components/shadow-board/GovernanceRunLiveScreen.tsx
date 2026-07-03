@@ -160,7 +160,7 @@ function decisionQuestionFrom(readout: GovernanceRunReadout | null) {
 
   const strategicQuestions = asArray(readout?.latest_board_pack?.strategic_questions)
   const firstQuestion = strategicQuestions[0]
-  return firstQuestion ? valueFrom(firstQuestion, []) : 'Definir qual decisao deve sair da proxima reuniao de board.'
+  return firstQuestion ? valueFrom(firstQuestion, []) : 'Definir qual decisão deve sair da próxima reunião de board.'
 }
 
 function priorityCards(readout: GovernanceRunReadout | null) {
@@ -169,9 +169,9 @@ function priorityCards(readout: GovernanceRunReadout | null) {
   return source.slice(0, 5).map((item, index) => ({
     rank: valueFrom(item, ['rank'], String(index + 1)),
     title: valueFrom(item, ['priority', 'title', 'workstream'], `Prioridade ${index + 1}`),
-    reason: valueFrom(item, ['why_now', 'rationale'], 'Selecionada por impacto esperado na decisao do ciclo.'),
-    evidence: valueFrom(item, ['evidence', 'proof_point'], 'Evidencia ainda precisa ser explicitada com fonte e indicador.'),
-    gap: valueFrom(item, ['evidence_gap'], 'Fechar fonte, indicador, responsavel e data de revisao.'),
+    reason: valueFrom(item, ['why_now', 'rationale'], 'Selecionada por impacto esperado na decisão do ciclo.'),
+    evidence: valueFrom(item, ['evidence', 'proof_point'], 'Evidência ainda precisa ser explicitada com fonte e indicador.'),
+    gap: valueFrom(item, ['evidence_gap'], 'Fechar fonte, indicador, responsável e data de revisão.'),
     owner: valueFrom(item, ['owner_suggestion', 'owner_label'], 'Fundador/CEO'),
     question: valueFrom(item, ['decision_question'], ''),
   }))
@@ -181,8 +181,8 @@ function workstreamRows(readout: GovernanceRunReadout | null) {
   return asArray(readout?.latest_business_plan?.workstreams).slice(0, 5).map((item, index) => ({
     title: valueFrom(item, ['workstream', 'priority', 'title'], `Frente ${index + 1}`),
     owner: valueFrom(item, ['owner_suggestion', 'owner_label'], 'Fundador/CEO'),
-    cadence: valueFrom(item, ['cadence'], 'Revisao semanal'),
-    proof: valueFrom(item, ['proof_point', 'evidence'], 'Prova de avanco a definir'),
+    cadence: valueFrom(item, ['cadence'], 'Revisão semanal'),
+    proof: valueFrom(item, ['proof_point', 'evidence'], 'Prova de avanço a definir'),
   }))
 }
 
@@ -213,7 +213,7 @@ export function GovernanceRunLiveScreen() {
       tone: (lastRun?.output.run.risk_score ?? readout?.latest_run?.risk_score ?? 0) >= 70 ? 'critical' : 'caution',
     },
     {
-      label: 'Confianca',
+      label: 'Confiança',
       value: String(lastRun?.output.run.confidence_score ?? readout?.latest_run?.confidence_score ?? readout?.latest_business_plan?.completeness_score ?? 0),
       detail: '/ 100',
       tone: (lastRun?.output.run.confidence_score ?? readout?.latest_run?.confidence_score ?? 0) >= 70 ? 'positive' : 'neutral',
@@ -221,7 +221,7 @@ export function GovernanceRunLiveScreen() {
     {
       label: 'Board pack',
       value: readout?.latest_board_pack ? `v${readout.latest_board_pack.version}` : '-',
-      detail: readout?.latest_board_pack?.status ?? 'nao gerado',
+      detail: readout?.latest_board_pack?.status ?? 'não gerado',
       tone: 'neutral',
     },
   ]), [lastRun, readout])
@@ -235,7 +235,7 @@ export function GovernanceRunLiveScreen() {
 
     if (!response.ok || !isReadout(payload)) {
       const errorMessage = payload && 'error' in payload ? payload.error : undefined
-      setError(errorMessage ?? 'Nao foi possivel carregar a governance run.')
+      setError(errorMessage ?? 'Não foi possível carregar a governance run.')
       setLoading(false)
       return
     }
@@ -252,7 +252,7 @@ export function GovernanceRunLiveScreen() {
 
     setRunning(true)
     setError('')
-    setNotice('Board Brain esta preparando o pacote. Isso pode levar ate um minuto.')
+    setNotice('Board Brain está preparando o pacote. Isso pode levar até um minuto.')
     setLastRun(null)
 
     const response = await fetch('/api/governance/run', {
@@ -264,7 +264,7 @@ export function GovernanceRunLiveScreen() {
 
     if (!response.ok || !isRunResponse(payload)) {
       const errorMessage = payload && 'error' in payload ? payload.error : undefined
-      setError(errorMessage ?? 'Nao foi possivel rodar a governance run.')
+      setError(errorMessage ?? 'Não foi possível rodar a governance run.')
       setNotice('')
       setRunning(false)
       return
@@ -272,9 +272,9 @@ export function GovernanceRunLiveScreen() {
 
     setLastRun(payload)
     const fallbackNotice = payload.ai?.used_fallback
-      ? ' Motor de contingencia usado porque a IA externa nao esta disponivel no momento.'
+      ? ' Motor de contingência usado porque a IA externa não está disponível no momento.'
       : ''
-    setNotice(`Governance run concluida.${fallbackNotice} Fechamento sugerido: ${formatClosure(payload.persistence.closureRecommendation)}.`)
+    setNotice(`Governance run concluída.${fallbackNotice} Fechamento sugerido: ${formatClosure(payload.persistence.closureRecommendation)}.`)
     setRunning(false)
     await loadReadout()
   }
@@ -295,7 +295,7 @@ export function GovernanceRunLiveScreen() {
       <PageHeader
         eyebrow="03 - Governance Run"
         title="Governance Run"
-        description="Transforme a Company Brain em uma tese curta de decisao, prioridades justificadas e pauta para o board."
+        description="Transforme a Company Brain em uma tese curta de decisão, prioridades justificadas e pauta para o board."
         action={workspace?.company?.id ? (
           <button className="btn-primary" type="button" onClick={() => void runGovernance()} disabled={running || workspaceLoading}>
             {running ? 'Rodando...' : 'Rodar Board Brain'}
@@ -321,12 +321,12 @@ export function GovernanceRunLiveScreen() {
         <div className="grid gap-4 lg:grid-cols-3">
           <div className="rounded-md border border-[#E4DED2] bg-[#FBFAF7] p-4">
             <p className="sb-code">1 - O Brain entendeu</p>
-            <p className="mt-3 text-lg font-semibold text-[#1F1B16]">{conciseDiagnosis || (loading ? 'Carregando diagnostico...' : 'Ainda sem diagnostico.')}</p>
+            <p className="mt-3 text-lg font-semibold text-[#1F1B16]">{conciseDiagnosis || (loading ? 'Carregando diagnóstico...' : 'Ainda sem diagnóstico.')}</p>
           </div>
           <div className="rounded-md border border-[#E4DED2] bg-[#FBFAF7] p-4">
             <p className="sb-code">2 - A abordagem</p>
             <p className="mt-3 text-lg font-semibold text-[#1F1B16]">
-              Filtrar o problema em poucas prioridades, testar evidencia minima e separar o que vira decisao do que fica como follow-up.
+              Filtrar o problema em poucas prioridades, testar evidência mínima e separar o que vira decisão do que fica como follow-up.
             </p>
           </div>
           <div className="rounded-md border border-[#E4DED2] bg-[#FBFAF7] p-4">
@@ -339,10 +339,10 @@ export function GovernanceRunLiveScreen() {
       <Panel>
         <div className="grid gap-5 lg:grid-cols-[0.78fr_1.22fr]">
           <div>
-            <SectionTitle label="Diagnostico executivo" />
-            <p className="sb-serif-callout">{conciseDiagnosis || (loading ? 'Carregando diagnostico...' : 'Nenhuma governance run gerada ainda.')}</p>
+            <SectionTitle label="Diagnóstico executivo" />
+            <p className="sb-serif-callout">{conciseDiagnosis || (loading ? 'Carregando diagnóstico...' : 'Nenhuma governance run gerada ainda.')}</p>
             <div className="mt-5 rounded-md border border-[#E4DED2] bg-white p-4">
-              <p className="sb-code">Decisao que precisa sair</p>
+              <p className="sb-code">Decisão que precisa sair</p>
               <p className="mt-2 font-semibold text-[#1F1B16]">{decisionQuestion}</p>
             </div>
             <div className="mt-5 flex flex-wrap gap-2">
@@ -368,7 +368,7 @@ export function GovernanceRunLiveScreen() {
                       <p className="sb-muted mt-1">{limitText(priority.reason, 22)}</p>
                     </div>
                     <div>
-                      <p className="sb-code">Evidencia</p>
+                      <p className="sb-code">Evidência</p>
                       <p className="sb-muted mt-1">{limitText(priority.evidence, 22)}</p>
                     </div>
                     <div>
@@ -394,7 +394,7 @@ export function GovernanceRunLiveScreen() {
           <SectionTitle label="Workstreams derivados" />
           <div className="sb-table">
             <div className="sb-table-head">
-              <span>Frente</span><span>Dono</span><span>Cadencia</span><span>Prova</span>
+              <span>Frente</span><span>Dono</span><span>Cadência</span><span>Prova</span>
             </div>
             {workstreamPlan.map((item) => (
               <div className="sb-table-row" key={item.title}>
@@ -415,7 +415,7 @@ export function GovernanceRunLiveScreen() {
           </div>
         </Panel>
         <Panel>
-          <SectionTitle label="Evidencias antes de aprovar" />
+          <SectionTitle label="Evidências antes de aprovar" />
           <div className="space-y-3">
             {gaps.map((gap, index) => (
               <div className="rounded-md border border-[#E4DED2] bg-white p-3" key={`${gap}-${index}`}>
@@ -423,7 +423,7 @@ export function GovernanceRunLiveScreen() {
                 <p className="sb-muted mt-1">{limitText(gap, 20)}</p>
               </div>
             ))}
-            {!loading && !gaps.length && <p className="sb-muted">Nenhuma lacuna de evidencia registrada.</p>}
+            {!loading && !gaps.length && <p className="sb-muted">Nenhuma lacuna de evidência registrada.</p>}
           </div>
         </Panel>
       </section>
@@ -435,7 +435,7 @@ export function GovernanceRunLiveScreen() {
             <h2 className="sb-row-title mt-3">{lastRun.persistence.boardPackId.slice(0, 8)}</h2>
           </Panel>
           <Panel>
-            <p className="sb-code">Analises dos advisors</p>
+            <p className="sb-code">Análises dos advisors</p>
             <h2 className="sb-row-title mt-3">{lastRun.persistence.agentReviewsCreated}</h2>
           </Panel>
           <Panel>

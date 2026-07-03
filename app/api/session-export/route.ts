@@ -89,8 +89,11 @@ function friendlyLabel(value: string) {
     closure_recommendation: 'Recomendação',
     closure_summary: 'Síntese',
     closed: 'Encerrada',
+    commit: 'Aprovar',
+    commit_with_conditions: 'Aprovar com condições',
     confidence_score: 'Confiança',
     conflicts: 'Conflitos',
+    defer: 'Adiar',
     decision_room_active_question: 'Pergunta ativa',
     decision_room_bypassed_data: 'Lacunas aceitas',
     decision_room_requested_data: 'Dados pedidos',
@@ -99,6 +102,8 @@ function friendlyLabel(value: string) {
     live_facilitated: 'Hot Seat',
     open: 'Aberta',
     relationship: 'Relação',
+    reject: 'Rejeitar',
+    request_more_data: 'Pedir mais dados',
     requested_data: 'Dados pedidos',
     risk_score: 'Risco',
     stance: 'Postura',
@@ -112,6 +117,10 @@ function friendlyLabel(value: string) {
 
 function topTexts(value: unknown, limit = 6): string[] {
   return asArray(value).map(valueText).filter(Boolean).slice(0, limit)
+}
+
+function firstText(value: unknown): string {
+  return topTexts(value, 1)[0] ?? ''
 }
 
 function turnText(value: unknown): string {
@@ -149,16 +158,57 @@ function bypassedData(session: SessionRow) {
   return topTexts(asRecord(session.metadata).decision_room_bypassed_data, 12)
 }
 
+function queuedOutputs(session: SessionRow) {
+  return topTexts(asRecord(session.metadata).decision_room_queue, 12)
+}
+
+function activeQuestion(session: SessionRow) {
+  return valueText(asRecord(session.metadata).decision_room_active_question)
+}
+
+function sessionStateLine(session: SessionRow) {
+  const logCount = roomLog(session).length
+  const requestedCount = requestedData(session).length
+  const bypassedCount = bypassedData(session).length
+  const queueCount = queuedOutputs(session).length
+  if (session.closure_recommendation) {
+    return `Sessão fechada com recomendação: ${friendlyLabel(session.closure_recommendation)}. ${logCount} turnos registrados, ${requestedCount} pedidos de dados, ${bypassedCount} lacunas aceitas e ${queueCount} entregáveis na fila.`
+  }
+  if (logCount > 0 || requestedCount > 0 || bypassedCount > 0) {
+    return `Sessão em andamento: ${logCount} turnos registrados, ${requestedCount} pedidos de dados, ${bypassedCount} lacunas aceitas e ${queueCount} entregáveis na fila. Capture a decisão ou registre uma recomendação antes de compartilhar como saída final.`
+  }
+  return 'Sessão criada e salva antes dos turnos do conselho. Use este arquivo como registro de preparação; rode a sala, capture a decisão e exporte novamente para compartilhar uma saída final.'
+}
+
+function nextStepLine(session: SessionRow) {
+  if (session.closure_recommendation) return 'Revisar Decision Memory, confirmar follow-ups e compartilhar o PDF final com os responsáveis.'
+  if (roomLog(session).length === 0) return 'Iniciar os turnos da sala e registrar pelo menos uma rodada de advisors antes do envio externo.'
+  if (!session.closure_summary) return 'Ir para decisão, aprovar ou adiar com condições, e gerar um novo PDF com síntese final.'
+  return 'Confirmar recomendação, donos, condições e data de revisão antes de enviar ao cliente.'
+}
+
+function exportSummary(data: SessionExportData) {
+  const { session } = data
+  return session.closure_summary
+    ?? firstText(asRecord(session.metadata).decision_room_log)
+    ?? sessionStateLine(session)
+}
+
 function exportRows(data: SessionExportData) {
   const { companyName, session, decisions, followUps, agentReviews, conversations } = data
+  const question = activeQuestion(session)
   const rows = [
     { section: 'Empresa', index: 1, content: companyName },
     { section: 'Sessão', index: 1, content: `${friendlyLabel(session.session_type)} · ${friendlyLabel(session.status)} · aberta em ${formatDate(session.opened_at ?? session.created_at)}` },
-    { section: 'Síntese', index: 1, content: session.closure_summary ?? 'Sessão salva sem síntese final.' },
-    { section: 'Recomendação', index: 1, content: session.closure_recommendation ?? 'Sem recomendação final registrada.' },
+    ...(question ? [{ section: 'Pergunta ativa', index: 1, content: question }] : []),
+    { section: 'Estado da sala', index: 1, content: sessionStateLine(session) },
+    { section: 'Próximo passo', index: 1, content: nextStepLine(session) },
+    { section: 'Síntese', index: 1, content: exportSummary(data) },
+    { section: 'Recomendação', index: 1, content: session.closure_recommendation ? friendlyLabel(session.closure_recommendation) : 'Ainda sem recomendação final registrada.' },
     ...roomLog(session).map((content, index) => ({ section: 'Hot Seat - turnos', index: index + 1, content })),
     ...requestedData(session).map((content, index) => ({ section: 'Dados pedidos', index: index + 1, content })),
     ...bypassedData(session).map((content, index) => ({ section: 'Lacunas aceitas', index: index + 1, content })),
+    ...queuedOutputs(session).map((content, index) => ({ section: 'Entregáveis na fila', index: index + 1, content })),
     ...decisions.map((decision, index) => ({ section: 'Decisões', index: index + 1, content: valueText(decision) })),
     ...agentReviews.map((review, index) => ({ section: 'Advisor reviews', index: index + 1, content: valueText(review) })),
     ...conversations.map((conversation, index) => ({ section: 'Board round', index: index + 1, content: valueText(conversation) })),
@@ -202,7 +252,7 @@ function renderHtml(data: SessionExportData) {
   <section class="cover">
     <p class="code">Board OS · ${escapeHtml(title)}</p>
     <h1>${escapeHtml(data.companyName)}</h1>
-    <p class="summary">${escapeHtml(data.session.closure_summary ?? 'Sessão salva sem síntese final.')}</p>
+    <p class="summary">${escapeHtml(exportSummary(data))}</p>
   </section>
   ${Object.entries(sectionGroups).map(([section, items]) => `
     <section>
@@ -225,7 +275,7 @@ function renderCsv(data: SessionExportData) {
 function renderPdf(data: SessionExportData): Buffer {
   const title = data.session.metadata?.source === 'decision-room' ? 'Hot Seat Readout' : 'Board Session Readout'
   const rows = exportRows(data)
-  const summary = data.session.closure_summary ?? 'Sessão registrada sem síntese final.'
+  const summary = exportSummary(data)
   return renderExecutivePdf({
     eyebrow: 'Board OS',
     title,

@@ -74,6 +74,7 @@ export function AdminSessionsClient() {
   const [sessions, setSessions] = useState<AdminSession[]>([])
   const [loading, setLoading] = useState(true)
   const [savingSessionId, setSavingSessionId] = useState<string | null>(null)
+  const [summaryDrafts, setSummaryDrafts] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
 
@@ -83,9 +84,9 @@ export function AdminSessionsClient() {
     const withoutClosure = sessions.filter((session) => !session.closure_recommendation).length
 
     return [
-      ['Sessoes', String(sessions.length), `${open} abertas`],
-      ['Fechadas', String(closed), 'com memoria registrada'],
-      ['Sem fechamento', String(withoutClosure), 'precisam recomendacao'],
+      ['Sessões', String(sessions.length), `${open} abertas`],
+      ['Fechadas', String(closed), 'com memória registrada'],
+      ['Sem fechamento', String(withoutClosure), 'precisam recomendação'],
     ] as const
   }, [sessions])
 
@@ -98,12 +99,13 @@ export function AdminSessionsClient() {
 
     if (!response.ok || !isSessionsResponse(payload)) {
       const errorMessage = payload && 'error' in payload ? payload.error : undefined
-      setError(errorMessage ?? 'Nao foi possivel carregar sessoes.')
+      setError(errorMessage ?? 'Não foi possível carregar sessões.')
       setLoading(false)
       return
     }
 
     setSessions(payload.sessions)
+    setSummaryDrafts(Object.fromEntries(payload.sessions.map((session) => [session.id, session.closure_summary ?? ''])))
     setLoading(false)
   }
 
@@ -120,12 +122,12 @@ export function AdminSessionsClient() {
     const payload = await response.json().catch(() => null) as { error?: string } | null
 
     if (!response.ok) {
-      setError(payload?.error ?? 'Nao foi possivel atualizar a sessao.')
+      setError(payload?.error ?? 'Não foi possível atualizar a sessão.')
       setSavingSessionId(null)
       return
     }
 
-    setNotice('Sessao atualizada.')
+    setNotice('Sessão atualizada.')
     setSavingSessionId(null)
     await loadSessions()
   }
@@ -137,9 +139,9 @@ export function AdminSessionsClient() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="Admin - Sessoes"
+        eyebrow="Admin - Sessões"
         title="Monitor de board sessions"
-        description="Acompanhamento ao vivo de status, consumo, janela de revisao e recomendacao de fechamento."
+        description="Acompanhamento ao vivo de status, consumo, janela de revisão e recomendação de fechamento."
         action={<button className="btn-secondary" type="button" onClick={() => void loadSessions()}>Atualizar</button>}
       />
 
@@ -161,19 +163,19 @@ export function AdminSessionsClient() {
       </section>
 
       <Panel>
-        <SectionTitle label="Sessoes" />
+        <SectionTitle label="Sessões" />
         <div className="sb-table sb-admin-sessions-table">
           <div className="sb-table-head">
-            <span>Sessao</span>
+            <span>Sessão</span>
             <span>Empresa</span>
             <span>Status</span>
             <span>Closure</span>
             <span>Janela</span>
-            <span>Acoes</span>
+            <span>Ações</span>
           </div>
           {loading && (
             <div className="sb-table-row">
-              <span>Carregando sessoes...</span>
+              <span>Carregando sessões...</span>
               <span>-</span>
               <span>-</span>
               <span>-</span>
@@ -183,7 +185,7 @@ export function AdminSessionsClient() {
           )}
           {!loading && sessions.length === 0 && (
             <div className="sb-table-row">
-              <span>Nenhuma sessao encontrada.</span>
+              <span>Nenhuma sessão encontrada.</span>
               <span>-</span>
               <span>-</span>
               <span>-</span>
@@ -196,7 +198,7 @@ export function AdminSessionsClient() {
               <span>
                 <strong>{session.id.slice(0, 8)}</strong>
                 <small>{formatStatus(session.session_type)}</small>
-                <small>{session.governance_cycle_title ?? 'Ciclo sem titulo'}</small>
+                <small>{session.governance_cycle_title ?? 'Ciclo sem título'}</small>
               </span>
               <span>
                 {session.company_name}
@@ -226,7 +228,21 @@ export function AdminSessionsClient() {
                     <option key={closure || 'empty'} value={closure}>{formatClosure(closure)}</option>
                   ))}
                 </select>
-                <small>{session.closure_summary ?? 'Sem resumo de fechamento'}</small>
+                <textarea
+                  className="field-input mt-2 min-h-[72px]"
+                  value={summaryDrafts[session.id] ?? session.closure_summary ?? ''}
+                  onChange={(event) => setSummaryDrafts(current => ({ ...current, [session.id]: event.target.value }))}
+                  placeholder="Resumo executivo para recuperar ou finalizar a sessão."
+                  disabled={savingSessionId === session.id}
+                />
+                <button
+                  className="btn-secondary mt-2"
+                  type="button"
+                  onClick={() => void updateSession(session.id, { closure_summary: summaryDrafts[session.id] ?? '' })}
+                  disabled={savingSessionId === session.id}
+                >
+                  Salvar resumo
+                </button>
               </span>
               <span>
                 {windowLabel(session)}
@@ -244,10 +260,26 @@ export function AdminSessionsClient() {
                 <button
                   className="btn-secondary"
                   type="button"
+                  onClick={() => void updateSession(session.id, { status: 'in_review' })}
+                  disabled={savingSessionId === session.id}
+                >
+                  Marcar revisão
+                </button>
+                <button
+                  className="btn-secondary"
+                  type="button"
                   onClick={() => void updateSession(session.id, { status: 'awaiting_founder' })}
                   disabled={savingSessionId === session.id}
                 >
                   Aguardar fundador
+                </button>
+                <button
+                  className="btn-secondary"
+                  type="button"
+                  onClick={() => void updateSession(session.id, { status: 'open' })}
+                  disabled={savingSessionId === session.id}
+                >
+                  Reabrir
                 </button>
               </span>
             </div>

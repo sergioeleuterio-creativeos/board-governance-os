@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { isAuthError, requireSuperAdmin, serviceClient } from '@/lib/auth-server'
+import { creativeOSReadiness } from '@/lib/creative-os/adapter'
 
 type AuditEventRow = {
   id: string
@@ -124,6 +125,7 @@ export async function GET() {
       notification_events: notificationEvents.length,
       notification_failures: notificationEvents.filter((event) => event.signal.status === 'failed').length,
     },
+    creative_os: creativeOSReadiness(),
     ai_events: aiEvents,
     notification_events: notificationEvents,
   })
