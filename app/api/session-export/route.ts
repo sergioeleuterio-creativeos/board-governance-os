@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getSessionUser, isAuthError, requireCompanyAdmin, serviceClient } from '@/lib/auth-server'
+import { renderExecutivePdf } from '@/lib/exports/executive-pdf'
 import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
 
 export const maxDuration = 30
@@ -49,17 +50,6 @@ function escapeHtml(value: unknown): string {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
-}
-
-function escapePdf(value: string): string {
-  return value
-    .replace(/[“”]/g, '"')
-    .replace(/[‘’]/g, "'")
-    .replace(/[–—]/g, '-')
-    .replace(/·/g, '-')
-    .replace(/\\/g, '\\\\')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)')
 }
 
 function csvCell(value: unknown): string {
@@ -131,23 +121,6 @@ function turnText(value: unknown): string {
   const tag = valueText(record.tag ?? '').trim()
   const prefix = [speaker, tag].filter(Boolean).join(' - ')
   return prefix && text ? `${prefix}: ${text}` : text
-}
-
-function wrapText(value: string, width = 92): string[] {
-  const words = value.replace(/\s+/g, ' ').trim().split(' ').filter(Boolean)
-  const lines: string[] = []
-  let line = ''
-  for (const word of words) {
-    const next = line ? `${line} ${word}` : word
-    if (next.length > width && line) {
-      lines.push(line)
-      line = word
-    } else {
-      line = next
-    }
-  }
-  if (line) lines.push(line)
-  return lines.length ? lines : ['']
 }
 
 function formatDate(value: string | null | undefined) {
@@ -252,129 +225,15 @@ function renderCsv(data: SessionExportData) {
 function renderPdf(data: SessionExportData): Buffer {
   const title = data.session.metadata?.source === 'decision-room' ? 'Hot Seat Readout' : 'Board Session Readout'
   const rows = exportRows(data)
-
-  const textAt = (x: number, y: number, text: string, font = 'F1', size = 10, leading = 13) => [
-    'BT',
-    `/${font} ${size} Tf`,
-    `${x} ${y} Td`,
-    `${leading} TL`,
-    `(${escapePdf(text.slice(0, 170))}) Tj`,
-    'ET',
-  ].join('\n')
-
-  const linesAt = (x: number, y: number, lines: string[], font = 'F1', size = 10, leading = 13) => [
-    'BT',
-    `/${font} ${size} Tf`,
-    `${x} ${y} Td`,
-    `${leading} TL`,
-    ...lines.map(line => `(${escapePdf(line.slice(0, 150))}) Tj T*`),
-    'ET',
-  ].join('\n')
-
-  const paint = (stream: string, rgb: string) => stream.replace('BT', `${rgb} rg\nBT`)
-  const cappedLines = (text: string, width: number, limit: number) => {
-    const lines = wrapText(text, width)
-    if (lines.length <= limit) return lines
-    const capped = lines.slice(0, limit)
-    capped[limit - 1] = `${capped[limit - 1].replace(/\.+$/, '')}...`
-    return capped
-  }
-
-  const coverStream = [
-    '0.086 0.078 0.059 rg',
-    '0 0 612 792 re f',
-    '0.768 0.573 0.184 RG',
-    '2 w',
-    '48 720 m 564 720 l S',
-    paint(textAt(230, 520, `BOARD OS - ${title.toUpperCase()}`, 'F1', 10, 12), '0.768 0.573 0.184'),
-    paint(linesAt(78, 446, cappedLines(data.companyName, 30, 2), 'F2', 32, 38), '0.957 0.949 0.929'),
-    paint(linesAt(78, 360, cappedLines(data.session.closure_summary ?? 'Sessão salva sem síntese final.', 58, 4), 'F1', 13, 18), '0.804 0.761 0.698'),
-    paint(textAt(252, 300, `Sessão - ${formatDate(data.session.opened_at ?? data.session.created_at)}`, 'F1', 9, 12), '0.659 0.631 0.573'),
-  ].join('\n')
-
-  const pageStartY = (pageIndex: number) => pageIndex === 0 ? 534 : 610
-  const bodyPages: Array<Array<{ row: typeof rows[number]; lines: string[]; height: number }>> = []
-  let currentPage: Array<{ row: typeof rows[number]; lines: string[]; height: number }> = []
-  let pageIndex = 0
-  let cursorY = pageStartY(pageIndex)
-
-  rows.forEach((row) => {
-    const lines = cappedLines(row.content, 76, 6)
-    const height = Math.max(72, 44 + lines.length * 13)
-    if (currentPage.length && cursorY - height < 92) {
-      bodyPages.push(currentPage)
-      currentPage = []
-      pageIndex += 1
-      cursorY = pageStartY(pageIndex)
-    }
-    currentPage.push({ row, lines, height })
-    cursorY -= height + 14
+  const summary = data.session.closure_summary ?? 'Sessão registrada sem síntese final.'
+  return renderExecutivePdf({
+    eyebrow: 'Board OS',
+    title,
+    subject: data.companyName,
+    summary,
+    dateLabel: formatDate(data.session.opened_at ?? data.session.created_at),
+    rows: rows.map(row => ({ section: row.section, index: row.index, content: row.content })),
   })
-  if (currentPage.length || bodyPages.length === 0) bodyPages.push(currentPage)
-
-  const bodyStreams = bodyPages.map((chunk, index) => {
-    const stream: string[] = [
-      '0.957 0.949 0.929 rg',
-      '0 0 612 792 re f',
-      '0.768 0.573 0.184 RG',
-      '1 w',
-      '48 742 m 564 742 l S',
-      paint(textAt(48, 712, `${String(index + 1).padStart(2, '0')} - ${title}`, 'F1', 9, 11), '0.768 0.573 0.184'),
-      paint(linesAt(48, 670, index === 0
-        ? cappedLines(data.session.closure_summary ?? 'Sessão salva sem síntese final.', 52, 4)
-        : cappedLines(data.companyName, 34, 2),
-      'F2', 18, 23), '0.102 0.094 0.078'),
-    ]
-
-    let y = pageStartY(index)
-    chunk.forEach((item) => {
-      const boxY = y - item.height
-      stream.push('1 1 1 rg')
-      stream.push(`46 ${boxY} 520 ${item.height} re f`)
-      stream.push('0.847 0.780 0.631 RG')
-      stream.push(`46 ${boxY} 520 ${item.height} re S`)
-      stream.push(paint(textAt(58, y - 20, `${item.row.section}${item.row.index > 1 ? ` ${item.row.index}` : ''}`, 'F1', 7, 9), '0.349 0.325 0.290'))
-      stream.push(paint(linesAt(58, y - 42, item.lines, 'F1', 9.2, 12.5), '0.165 0.153 0.122'))
-      y -= item.height + 14
-    })
-
-    stream.push('0.847 0.780 0.631 RG')
-    stream.push('48 48 m 564 48 l S')
-    stream.push(paint(textAt(48, 28, `Board OS - ${data.companyName}`, 'F1', 8, 10), '0.349 0.325 0.290'))
-    stream.push(paint(textAt(528, 28, `Página ${index + 2}`, 'F1', 8, 10), '0.349 0.325 0.290'))
-    return stream.join('\n')
-  })
-
-  const streams = [coverStream, ...bodyStreams]
-  const objects: string[] = []
-  objects.push('<< /Type /Catalog /Pages 2 0 R >>')
-  objects.push('')
-  objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>')
-  objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Times-Bold /Encoding /WinAnsiEncoding >>')
-
-  const pageObjectIds: number[] = []
-  for (const stream of streams) {
-    const pageObjectId = objects.length + 1
-    const contentObjectId = pageObjectId + 1
-    pageObjectIds.push(pageObjectId)
-    objects.push(`<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /MediaBox [0 0 612 792] /Contents ${contentObjectId} 0 R >>`)
-    objects.push(`<< /Length ${Buffer.byteLength(stream, 'latin1')} >>\nstream\n${stream}\nendstream`)
-  }
-
-  objects[1] = `<< /Type /Pages /Kids [${pageObjectIds.map(id => `${id} 0 R`).join(' ')}] /Count ${pageObjectIds.length} >>`
-
-  let pdf = '%PDF-1.4\n'
-  const offsets = [0]
-  objects.forEach((object, index) => {
-    offsets.push(Buffer.byteLength(pdf, 'latin1'))
-    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`
-  })
-  const xrefOffset = Buffer.byteLength(pdf, 'latin1')
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`
-  pdf += offsets.slice(1).map(offset => `${String(offset).padStart(10, '0')} 00000 n \n`).join('')
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`
-
-  return Buffer.from(pdf, 'latin1')
 }
 
 async function renderExport(data: SessionExportData, exportType: SupportedExportType) {

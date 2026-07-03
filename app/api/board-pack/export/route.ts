@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto'
 import JSZip from 'jszip'
 import { NextRequest, NextResponse } from 'next/server'
 import { isAuthError, requireCompanyAdmin, serviceClient } from '@/lib/auth-server'
+import { renderExecutivePdf } from '@/lib/exports/executive-pdf'
 
 export const maxDuration = 30
 
@@ -58,13 +59,6 @@ function escapeXml(value: unknown): string {
     .replace(/'/g, '&apos;')
 }
 
-function escapePdf(value: string): string {
-  return value
-    .replace(/\\/g, '\\\\')
-    .replace(/\(/g, '\\(')
-    .replace(/\)/g, '\\)')
-}
-
 function asArray(value: unknown): unknown[] {
   return Array.isArray(value) ? value : []
 }
@@ -106,20 +100,20 @@ function friendlyLabel(value: string): string {
     advisor_name: 'Advisor',
     board_note: 'Nota do board',
     c_level_questions: 'Perguntas de conselho',
-    closure_recommendation: 'Recomendacao final',
-    confidence_score: 'Confianca',
-    decision: 'Decisao',
+    closure_recommendation: 'Recomendação final',
+    confidence_score: 'Confiança',
+    decision: 'Decisão',
     detail: 'Detalhe',
     due_in_days: 'Prazo',
     focus_area: 'Foco',
     line_item: 'Linha',
-    owner_label: 'Responsavel',
-    owner_suggestion: 'Responsavel sugerido',
+    owner_label: 'Responsável',
+    owner_suggestion: 'Responsável sugerido',
     priority: 'Prioridade',
     risk_level: 'Risco',
-    risk_score: 'Indice de risco',
+    risk_score: 'Índice de risco',
     source_persona_key: 'Fonte',
-    title: 'Titulo',
+    title: 'Título',
   }
   return labels[value] ?? value.replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase())
 }
@@ -153,11 +147,11 @@ function exportRows(boardPack: BoardPackRow, companyName: string): ExportRow[] {
   const sourceReferences = asArray(payload.source_references)
   const rows: ExportRow[] = [
     { section: 'Empresa', index: 1, content: companyName },
-    { section: 'Nota de uso', index: 1, content: 'Este Board Pack e uma sintese de governanca assistida por IA. Use como estrutura de decisao, nao como substituto de conselho formal, auditoria, parecer juridico ou decisao fiduciaria.' },
+    { section: 'Nota de uso', index: 1, content: 'Este Board Pack é uma síntese de governança assistida por IA. Use como estrutura de decisão, não como substituto de conselho formal, auditoria, parecer jurídico ou decisão fiduciária.' },
     ...(sourceReferences.length
       ? sourceReferences.map((source, index) => ({ section: 'Fontes consideradas', index: index + 1, content: valueText(source) }))
-      : [{ section: 'Fontes consideradas', index: 1, content: 'Company Brain, documentos enviados e memoria de decisoes disponiveis no momento da geracao.' }]),
-    { section: 'Sumario executivo', index: 1, content: boardPack.executive_summary ?? '' },
+      : [{ section: 'Fontes consideradas', index: 1, content: 'Company Brain, documentos enviados e memória de decisões disponíveis no momento da geração.' }]),
+    { section: 'Sumário executivo', index: 1, content: boardPack.executive_summary ?? '' },
   ]
 
   const pushSection = (section: string, value: unknown) => {
@@ -169,13 +163,13 @@ function exportRows(boardPack: BoardPackRow, companyName: string): ExportRow[] {
     items.forEach((item, index) => rows.push({ section, index: index + 1, content: valueText(item) }))
   }
 
-  pushSection('Perguntas estrategicas', boardPack.strategic_questions)
+  pushSection('Perguntas estratégicas', boardPack.strategic_questions)
   Object.entries(financialReport).forEach(([section, value]) => pushSection(`Financeiro - ${section}`, value))
-  pushSection('Relatorios dos advisors', advisorReports)
+  pushSection('Relatórios dos advisors', advisorReports)
   pushSection('Mapa de riscos', boardPack.risk_map)
   pushSection('Ranking de prioridades', boardPack.priority_ranking)
-  pushSection('Agenda da reuniao', boardPack.meeting_agenda)
-  pushSection('Candidatos de decisao', boardPack.decision_candidates)
+  pushSection('Agenda da reunião', boardPack.meeting_agenda)
+  pushSection('Candidatos de decisão', boardPack.decision_candidates)
 
   return rows.filter(row => row.content.trim())
 }
@@ -251,38 +245,38 @@ function renderHtml(boardPack: BoardPackRow, companyName: string): string {
   <p class="meta">Board Governance OS · Board Pack v${boardPack.version}</p>
   <h1>${escapeHtml(companyName)}</h1>
   <div class="disclaimer">
-    <strong>Nota de uso.</strong> Este Board Pack e uma sintese de governanca assistida por IA. Use como estrutura de decisao, nao como substituto de conselho formal, auditoria, parecer juridico ou decisao fiduciaria.
+    <strong>Nota de uso.</strong> Este Board Pack é uma síntese de governança assistida por IA. Use como estrutura de decisão, não como substituto de conselho formal, auditoria, parecer jurídico ou decisão fiduciária.
   </div>
-  <p class="summary">${escapeHtml(boardPack.executive_summary || 'Nenhum sumario executivo disponivel.')}</p>
+  <p class="summary">${escapeHtml(boardPack.executive_summary || 'Nenhum sumário executivo disponível.')}</p>
 
   <h2>Fontes consideradas</h2>
   ${sourceReferences.length
     ? renderHtmlCards(sourceReferences, 'Nenhuma fonte registrada.')
-    : '<p>Company Brain, documentos enviados e memoria de decisoes disponiveis no momento da geracao.</p>'}
+    : '<p>Company Brain, documentos enviados e memória de decisões disponíveis no momento da geração.</p>'}
 
-  <h2>Perguntas estrategicas</h2>
-  ${renderHtmlList(questions, 'Nenhuma pergunta estrategica registrada.')}
+  <h2>Perguntas estratégicas</h2>
+  ${renderHtmlList(questions, 'Nenhuma pergunta estratégica registrada.')}
 
   <h2>Mapa de riscos</h2>
   ${renderHtmlCards(risks, 'Nenhum risco registrado.')}
 
-  <h2>Relatorios financeiros</h2>
+  <h2>Relatórios financeiros</h2>
   ${Object.entries(financialReport).map(([section, rows]) => `
     <h3>${escapeHtml(section)}</h3>
-    ${renderHtmlTable(asArray(rows), 'Sem linhas financeiras para esta secao.')}
-  `).join('') || '<p>Nenhum relatorio financeiro estruturado disponivel ainda.</p>'}
+    ${renderHtmlTable(asArray(rows), 'Sem linhas financeiras para esta seção.')}
+  `).join('') || '<p>Nenhum relatório financeiro estruturado disponível ainda.</p>'}
 
-  <h2>Relatorios estruturados dos advisors</h2>
-  ${renderHtmlCards(advisorReports, 'Nenhum relatorio de advisor disponivel ainda.')}
+  <h2>Relatórios estruturados dos advisors</h2>
+  ${renderHtmlCards(advisorReports, 'Nenhum relatório de advisor disponível ainda.')}
 
   <h2>Ranking de prioridades</h2>
   ${renderHtmlCards(priorities, 'Nenhuma prioridade registrada.')}
 
-  <h2>Agenda da reuniao</h2>
+  <h2>Agenda da reunião</h2>
   ${renderHtmlList(agenda, 'Nenhuma agenda registrada.')}
 
-  <h2>Candidatos de decisao</h2>
-  ${renderHtmlCards(decisions, 'Nenhum candidato de decisao registrado.')}
+  <h2>Candidatos de decisão</h2>
+  ${renderHtmlCards(decisions, 'Nenhum candidato de decisão registrado.')}
 </main>
 </body>
 </html>`
@@ -310,50 +304,14 @@ function renderCsv(boardPack: BoardPackRow, companyName: string): string {
 }
 
 function renderPdf(boardPack: BoardPackRow, companyName: string): Buffer {
-  const allLines = textLines(boardPack, companyName).flatMap(line => wrapText(line, 86))
-  const linesPerPage = 46
-  const pages: string[][] = []
-  for (let index = 0; index < allLines.length; index += linesPerPage) {
-    pages.push(allLines.slice(index, index + linesPerPage))
-  }
-
-  const objects: string[] = []
-  objects.push('<< /Type /Catalog /Pages 2 0 R >>')
-  objects.push('')
-  objects.push('<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>')
-
-  const pageObjectIds: number[] = []
-  for (const pageLines of pages) {
-    const pageObjectId = objects.length + 1
-    const contentObjectId = pageObjectId + 1
-    pageObjectIds.push(pageObjectId)
-    const stream = [
-      'BT',
-      '/F1 10 Tf',
-      '50 748 Td',
-      '14 TL',
-      ...pageLines.map(line => `(${escapePdf(line.slice(0, 110))}) Tj T*`),
-      'ET',
-    ].join('\n')
-
-    objects.push(`<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 3 0 R >> >> /MediaBox [0 0 612 792] /Contents ${contentObjectId} 0 R >>`)
-    objects.push(`<< /Length ${Buffer.byteLength(stream, 'utf8')} >>\nstream\n${stream}\nendstream`)
-  }
-
-  objects[1] = `<< /Type /Pages /Kids [${pageObjectIds.map(id => `${id} 0 R`).join(' ')}] /Count ${pageObjectIds.length} >>`
-
-  let pdf = '%PDF-1.4\n'
-  const offsets = [0]
-  objects.forEach((object, index) => {
-    offsets.push(Buffer.byteLength(pdf, 'utf8'))
-    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`
+  return renderExecutivePdf({
+    eyebrow: 'Board OS',
+    title: `Board Pack v${boardPack.version}`,
+    subject: companyName,
+    summary: boardPack.executive_summary || 'Board Pack gerado sem sumário executivo registrado.',
+    dateLabel: `v${boardPack.version}`,
+    rows: exportRows(boardPack, companyName),
   })
-  const xrefOffset = Buffer.byteLength(pdf, 'utf8')
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`
-  pdf += offsets.slice(1).map(offset => `${String(offset).padStart(10, '0')} 00000 n \n`).join('')
-  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`
-
-  return Buffer.from(pdf, 'utf8')
 }
 
 async function renderDocx(boardPack: BoardPackRow, companyName: string): Promise<Buffer> {
