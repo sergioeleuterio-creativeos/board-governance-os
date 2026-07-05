@@ -30,7 +30,8 @@ const genericAdapter: DecisionRoomAdapter = {
   },
   async nextTurn(input) {
     const pack = await buildGenericDecisionRoomPack()
-    const transcript = selectedTranscript(pack.transcript, input.selectedAgents)
+    const baseTranscript = pack.advisoryTranscripts[input.sessionId] ?? pack.transcript
+    const transcript = selectedTranscript(baseTranscript, input.selectedAgents)
     return transcript[input.index] ?? null
   },
   async intervention(input) {
@@ -58,7 +59,7 @@ const genericAdapter: DecisionRoomAdapter = {
     return pack.outputs.filter(output => {
       if ((normalized.has('memo do conselho') || normalized.has('memo da decisão')) && output.type === 'memo') return true
       if ((normalized.has('brief de estratégia') || normalized.has('brief de estrategia')) && output.type === 'strategy') return true
-      if ((normalized.has('plano operacional') || normalized.has('plano de validação em 30 dias')) && output.type === 'plan') return true
+      if ([...normalized].some(item => item.includes('plano') || item.includes('workstreams')) && output.type === 'plan') return true
       if (normalized.has('narrativa comercial') && output.type === 'sales') return true
       if (normalized.has('ata da sala') && output.type === 'minutes') return true
       return normalized.size === 0

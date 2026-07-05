@@ -1428,6 +1428,11 @@
     grid-template-columns: 1fr;
   }
 
+  .sb-advisory-overview,
+  .sb-advisory-steps {
+    grid-template-columns: 1fr;
+  }
+
   .sb-room-grid {
     gap: 12px;
   }
@@ -1660,6 +1665,36 @@
   line-height: 1.08;
 }
 
+.sb-room-lede {
+  max-width: 780px;
+  margin-top: 8px;
+  color: #c9c2b2;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.sb-room-output-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.sb-room-output-strip span {
+  min-height: 28px;
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid rgba(196, 146, 47, 0.28);
+  border-radius: 7px;
+  background: rgba(196, 146, 47, 0.12);
+  color: var(--amber);
+  padding: 5px 8px;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
 .sb-room-question-switcher {
   max-width: 1040px;
   display: grid;
@@ -1709,6 +1744,76 @@
   font-size: 11.5px;
   font-weight: 750;
   line-height: 1.25;
+}
+
+.sb-advisory-overview {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.78fr) minmax(0, 1.22fr);
+  gap: 14px;
+  align-items: stretch;
+  border-bottom: 1px solid rgba(244, 242, 237, 0.12);
+  padding: 16px 0;
+}
+
+.sb-advisory-overview > div {
+  min-width: 0;
+  border: 1px solid rgba(244, 242, 237, 0.12);
+  border-radius: 10px;
+  background: rgba(244, 242, 237, 0.04);
+  padding: 16px;
+}
+
+.sb-advisory-overview h2 {
+  margin-top: 8px;
+  color: #f4f2ed;
+  font-family: Spectral, Georgia, serif;
+  font-size: 26px;
+  font-weight: 600;
+}
+
+.sb-advisory-overview p:not(.sb-code) {
+  margin-top: 8px;
+  color: #d8d1c1;
+  font-size: 13px;
+  line-height: 1.58;
+}
+
+.sb-advisory-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.sb-advisory-steps article {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(196, 146, 47, 0.2);
+  border-radius: 9px;
+  background: rgba(196, 146, 47, 0.08);
+  padding: 12px;
+}
+
+.sb-advisory-steps strong,
+.sb-plan-preview h3 {
+  color: #f4f2ed;
+  font-size: 13px;
+  font-weight: 850;
+}
+
+.sb-advisory-steps span,
+.sb-advisory-steps em {
+  color: #c9c2b2;
+  font-size: 12px;
+  font-style: normal;
+  line-height: 1.45;
+}
+
+.sb-advisory-steps em {
+  color: var(--amber);
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
 }
 
 .sb-room-grid {
@@ -1886,6 +1991,44 @@
   display: grid;
   gap: 6px;
   margin-top: 8px;
+}
+
+.sb-plan-preview {
+  border: 1px solid rgba(196, 146, 47, 0.24);
+  border-radius: 10px;
+  background: rgba(196, 146, 47, 0.08);
+  padding: 12px;
+}
+
+.sb-plan-preview h3 {
+  margin-top: 8px;
+  font-family: Spectral, Georgia, serif;
+  font-size: 21px;
+  font-weight: 600;
+}
+
+.sb-plan-workstream {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 8px;
+  background: rgba(244, 242, 237, 0.06);
+  padding: 9px;
+}
+
+.sb-plan-workstream strong {
+  color: #f4f2ed;
+  font-size: 12px;
+}
+
+.sb-plan-workstream span {
+  color: var(--amber);
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 9px;
+  font-weight: 800;
+  text-align: right;
+  text-transform: uppercase;
 }
 
 .sb-room-queue,

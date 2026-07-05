@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import type { BoardTurn, DecisionRoomReadout } from '@/lib/decision-room/types'
+import type { AgentCode, BoardTurn, DecisionRoomReadout, SessionTypeId } from '@/lib/decision-room/types'
 import { AdvisorMark, Meter, PageHeader, Panel, SectionTitle, StatusPill } from '@/components/shadow-board/ui'
 
 type ScreenProps = {
@@ -48,6 +48,104 @@ function lowContext(diagnosis: DecisionRoomReadout['diagnosis']) {
 
 function advisorTurnCount(log: BoardTurn[]) {
   return log.filter(turn => !turn.studio).length
+}
+
+type AdvisoryPlan = {
+  title: string
+  subtitle: string
+  question: string
+  closeLabel: string
+  primaryOutput: string
+  queue: string[]
+  focus: string[]
+  workstreams: Array<{ label: string; detail: string; kpi: string }>
+  emptyTitle: string
+  emptyBody: string
+}
+
+const defaultAdvisorSelection: AgentCode[] = ['BB', 'CMO', 'CFO', 'CRO']
+
+const advisoryPlans: Partial<Record<SessionTypeId, AdvisoryPlan>> = {
+  problem: {
+    title: 'Diagnóstico consultivo',
+    subtitle: 'Vamos primeiro nomear o problema, separar sintomas de causa e decidir que tipo de ajuda vem depois.',
+    question: 'O que está realmente acontecendo, quais hipóteses explicam o problema e que evidência precisamos pedir antes de recomendar um caminho?',
+    closeLabel: 'Salvar diagnóstico',
+    primaryOutput: 'Diagnóstico executivo',
+    queue: ['Diagnóstico executivo', 'Perguntas melhores', 'Próximas decisões sugeridas'],
+    focus: ['Problema declarado vs. problema inferido', 'Hipóteses concorrentes', 'Lacunas de contexto', 'Próximas opções de ação'],
+    workstreams: [
+      { label: 'Diagnóstico', detail: 'Sintomas, causa provável, tensão central e hipóteses alternativas.', kpi: 'Confiança do diagnóstico' },
+      { label: 'Evidência', detail: 'Dados, documentos e conversas que precisam entrar no Company Brain.', kpi: 'Lacunas fechadas' },
+      { label: 'Próximas escolhas', detail: 'Decisões que podem surgir depois da investigação.', kpi: 'Decisões candidatas' },
+    ],
+    emptyTitle: 'Comece pela investigação, não por uma decisão.',
+    emptyBody: 'Os advisors vão ajudar a formular melhor o problema, pedir contexto e transformar a conversa em um diagnóstico utilizável.',
+  },
+  reset: {
+    title: 'Plano estratégico consultivo',
+    subtitle: 'Vamos transformar contexto disperso em direção, prioridades, workstreams, KPIs e riscos assumidos.',
+    question: 'Qual plano estratégico faz sentido agora, quais frentes de trabalho precisam existir e como saberemos se a direção está funcionando?',
+    closeLabel: 'Salvar plano estratégico',
+    primaryOutput: 'Plano estratégico',
+    queue: ['Resumo executivo consultivo', 'Plano estratégico', 'Workstreams e KPIs'],
+    focus: ['Diagnóstico executivo', 'Prioridades', 'Workstreams', 'KPIs', 'Riscos e premissas'],
+    workstreams: [
+      { label: 'Direção', detail: 'Tese, escolhas explícitas, não escolhas e prioridades de 30 a 90 dias.', kpi: 'Prioridades fechadas' },
+      { label: 'Execução', detail: 'Workstreams, donos, cadência e dependências operacionais.', kpi: 'Marcos cumpridos' },
+      { label: 'Controle', detail: 'KPIs, riscos, premissas e gatilhos de revisão.', kpi: 'Sinais de avanço' },
+    ],
+    emptyTitle: 'A sala vai construir um plano, não forçar uma aprovação.',
+    emptyBody: 'Use os turnos para chegar em direção, ações, responsáveis e métricas antes de transformar qualquer coisa em decisão formal.',
+  },
+  campaign: {
+    title: 'Plano de marketing e marca',
+    subtitle: 'Vamos usar CMO, go-to-market, receita e categoria para construir posicionamento, narrativa, canais, campanha e KPIs.',
+    question: 'Qual plano de marketing, marca e go-to-market deve sair daqui, e que evidências de cliente, categoria e receita precisam sustentá-lo?',
+    closeLabel: 'Salvar plano de marketing',
+    primaryOutput: 'Plano de marketing',
+    queue: ['Diagnóstico de marca', 'Narrativa e posicionamento', 'Plano de marketing', 'Workstreams e KPIs'],
+    focus: ['Posicionamento', 'Narrativa', 'Canais', 'Campanha', 'KPIs comerciais'],
+    workstreams: [
+      { label: 'Posicionamento', detail: 'ICP, categoria, promessa, diferenciação e memória que o mercado deve repetir.', kpi: 'Clareza da proposta' },
+      { label: 'Narrativa e campanha', detail: 'Mensagem central, provas, ofertas, criativos e sequência de campanha.', kpi: 'Engajamento e resposta' },
+      { label: 'GTM e receita', detail: 'Canais, pipeline, objeções, handoff comercial e próximos testes.', kpi: 'Conversão e pipeline' },
+    ],
+    emptyTitle: 'Esta sala começa como consultoria de marketing.',
+    emptyBody: 'Os advisors vão construir diagnóstico de marca, narrativa, plano de mercado, workstreams e KPIs antes de sugerir decisões futuras.',
+  },
+}
+
+function advisoryPlanFor(id: string | null | undefined) {
+  return id ? advisoryPlans[id as SessionTypeId] ?? null : null
+}
+
+function defaultQuestionForSession(id: SessionTypeId, diagnosis: DecisionRoomReadout['diagnosis']) {
+  return advisoryPlans[id]?.question ?? diagnosis.recommendedQuestion
+}
+
+function defaultQueueForSession(id: SessionTypeId) {
+  return advisoryPlans[id]?.queue ?? []
+}
+
+function defaultAgentsForSession(id: SessionTypeId): AgentCode[] {
+  if (id === 'campaign') return ['BB', 'CMO', 'MDA', 'CRO', 'CAT', 'CRM']
+  if (id === 'reset') return ['BB', 'CEO', 'CFO', 'CMO', 'CRO', 'PRD']
+  if (id === 'problem') return ['BB', 'CEO', 'CMO', 'CFO']
+  return defaultAdvisorSelection
+}
+
+function sameSelection(a: AgentCode[], b: AgentCode[]) {
+  return a.length === b.length && a.every((code, index) => code === b[index])
+}
+
+function isAutoAdvisorSelection(current: AgentCode[]) {
+  return [
+    defaultAdvisorSelection,
+    defaultAgentsForSession('problem'),
+    defaultAgentsForSession('reset'),
+    defaultAgentsForSession('campaign'),
+  ].some(selection => sameSelection(current, selection))
 }
 
 function EvidenceList({ diagnosis }: { diagnosis: DecisionRoomReadout['diagnosis'] }) {
@@ -325,7 +423,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
   const { boardAgents, diagnosis, sessionTypes } = readout
   const [clientRoomId, setClientRoomId] = useState(() => newRoomId())
   const [activeSession, setActiveSession] = useState<string | null>(null)
-  const [selectedAgents, setSelectedAgents] = useState<string[]>(['BB', 'CMO', 'CFO', 'CRO'])
+  const [selectedAgents, setSelectedAgents] = useState<AgentCode[]>(defaultAdvisorSelection)
   const [log, setLog] = useState<BoardTurn[]>([])
   const [baseIdx, setBaseIdx] = useState(0)
   const [baseComplete, setBaseComplete] = useState(false)
@@ -352,6 +450,8 @@ export function RoomsScreen({ readout }: ScreenProps) {
   const advisorySessions = sessionTypes.filter(session => session.kind === 'advisory')
   const boardSessions = sessionTypes.filter(session => session.kind !== 'advisory')
   const activeKind = sessionTypes.find(session => session.id === activeSession)?.kind ?? 'board'
+  const isAdvisory = activeKind === 'advisory'
+  const activePlan = advisoryPlanFor(activeSession)
   const turnLimit = active?.maxTurns ?? (activeKind === 'advisory' ? 6 : 8)
   const usedAdvisorTurns = advisorTurnCount(log)
   const turnLimitReached = usedAdvisorTurns >= turnLimit
@@ -360,6 +460,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
     : log
 
   function startSession(id: string) {
+    const sessionId = id as SessionTypeId
     setClientRoomId(newRoomId())
     setActiveSession(id)
     setLog([])
@@ -370,8 +471,8 @@ export function RoomsScreen({ readout }: ScreenProps) {
     setRoomError('')
     setDecisionOpen(false)
     setDecided(null)
-    setQueue([])
-    setActiveQuestion(diagnosis.recommendedQuestion)
+    setQueue(defaultQueueForSession(sessionId))
+    setActiveQuestion(defaultQuestionForSession(sessionId, diagnosis))
     setRequestedData([])
     setBypassedData([])
     setFounderNotes('')
@@ -380,9 +481,12 @@ export function RoomsScreen({ readout }: ScreenProps) {
     setExporting(false)
     setExportUrl(null)
     setExportError('')
+    setSelectedAgents(current => {
+      return isAutoAdvisorSelection(current) ? defaultAgentsForSession(sessionId) : current
+    })
   }
 
-  function toggleAgent(code: string) {
+  function toggleAgent(code: AgentCode) {
     setSelectedAgents(current => {
       if (code === 'BB') return current.includes('BB') ? current : ['BB', ...current]
       return current.includes(code)
@@ -675,21 +779,32 @@ export function RoomsScreen({ readout }: ScreenProps) {
     <div className="sb-room-shell">
       <header className="sb-room-header">
         <div>
-          <p className="sb-code">{active?.code} · {active?.name} · {activeKind === 'advisory' ? 'CONSULTIVA' : 'BOARD'} · {decided ? decided.toUpperCase() : 'AO VIVO'}</p>
-          <h1>{activeQuestion}</h1>
-          <div className="sb-room-question-switcher">
-            {decisionQuestions.map((question, index) => (
-              <button
-                key={question}
-                type="button"
-                className={question === activeQuestion ? 'is-active' : ''}
-                onClick={() => setActiveQuestion(question)}
-              >
-                <span>Q{index + 1}</span>
-                <strong>{question}</strong>
-              </button>
-            ))}
-          </div>
+          <p className="sb-code">{active?.code} · {active?.name} · {isAdvisory ? 'CONSULTORIA' : 'BOARD'} · {decided ? decided.toUpperCase() : 'AO VIVO'}</p>
+          <h1>{isAdvisory && activePlan ? activePlan.title : activeQuestion}</h1>
+          <p className="sb-room-lede">
+            {isAdvisory && activePlan
+              ? activePlan.subtitle
+              : 'A sala pressiona uma escolha concreta, registra trade-offs e fecha decisão, condições ou adiamento.'}
+          </p>
+          {isAdvisory && activePlan ? (
+            <div className="sb-room-output-strip">
+              {activePlan.focus.map(item => <span key={item}>{item}</span>)}
+            </div>
+          ) : (
+            <div className="sb-room-question-switcher">
+              {decisionQuestions.map((question, index) => (
+                <button
+                  key={question}
+                  type="button"
+                  className={question === activeQuestion ? 'is-active' : ''}
+                  onClick={() => setActiveQuestion(question)}
+                >
+                  <span>Q{index + 1}</span>
+                  <strong>{question}</strong>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex flex-col items-end gap-2">
           <StatusPill tone={saveStatus === 'error' ? 'critical' : saveStatus === 'saved' ? 'positive' : 'neutral'}>
@@ -706,19 +821,37 @@ export function RoomsScreen({ readout }: ScreenProps) {
         </div>
       </header>
       {exportError && <p className="sb-error">{exportError}</p>}
+      {isAdvisory && activePlan && (
+        <section className="sb-advisory-overview">
+          <div>
+            <p className="sb-code">SAÍDA ESPERADA</p>
+            <h2>{activePlan.primaryOutput}</h2>
+            <p>{activeQuestion}</p>
+          </div>
+          <div className="sb-advisory-steps">
+            {activePlan.workstreams.map(item => (
+              <article key={item.label}>
+                <strong>{item.label}</strong>
+                <span>{item.detail}</span>
+                <em>KPI: {item.kpi}</em>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
       {decided && (
         <Panel tone="dossier">
           <div className="grid gap-4 lg:grid-cols-[0.8fr_1.2fr]">
             <div>
               <p className="sb-code">PRÓXIMO PASSO</p>
               <h2 className="sb-row-title mt-2">
-                {activeKind === 'advisory'
+                {isAdvisory
                   ? 'Sessão registrada. Transforme a análise em plano e próximos passos.'
                   : decided === 'approved' ? 'Decisão registrada. Feche o ciclo.' : 'Decisão adiada. Feche as evidências antes de voltar.'}
               </h2>
               <p className="sb-muted mt-2">
                 {decided === 'approved'
-                  ? activeKind === 'advisory'
+                  ? isAdvisory
                     ? 'Exporte o PDF, revise as tarefas e transforme perguntas abertas em decisões futuras quando necessário.'
                     : 'Exporte o PDF, revise a Decision Memory e confirme os follow-ups antes de compartilhar a saída com o founder ou CEO.'
                   : 'Exporte o registro da sala, confirme os dados pedidos e use os follow-ups como condição para uma nova rodada.'}
@@ -727,7 +860,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
             <div className="grid gap-2 sm:grid-cols-3">
               <Link href="/decisions" className="btn-secondary">Decision Memory</Link>
               <Link href="/follow-ups" className="btn-secondary">Follow-ups</Link>
-              <Link href={activeKind === 'advisory' ? '/company-brain' : '/board-pack'} className="btn-secondary">{activeKind === 'advisory' ? 'Contexto' : 'Board Pack'}</Link>
+              <Link href={isAdvisory ? '/company-brain' : '/board-pack'} className="btn-secondary">{isAdvisory ? 'Contexto' : 'Board Pack'}</Link>
             </div>
           </div>
         </Panel>
@@ -735,8 +868,13 @@ export function RoomsScreen({ readout }: ScreenProps) {
 
       <section className="sb-room-grid">
         <aside className="sb-room-panel">
-          <SectionTitle label="Contexto da sessão" />
-          <p className="sb-room-question">{diagnosis.statedProblem}</p>
+          <SectionTitle label={isAdvisory ? 'Brief da consultoria' : 'Contexto da sessão'} />
+          <p className="sb-room-question">{isAdvisory ? activeQuestion : diagnosis.statedProblem}</p>
+          {isAdvisory && (
+            <p className="sb-muted mt-3">
+              Contexto de partida: {diagnosis.statedProblem}
+            </p>
+          )}
           <div className="mt-5">
             <p className="sb-code">Gaveta de evidências</p>
             <div className="mt-3 grid gap-2">
@@ -774,7 +912,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
           <textarea
             id="founder-notes"
             className="field-textarea sb-room-notes"
-            placeholder="O que a sala precisa lembrar antes de decidir?"
+            placeholder={isAdvisory ? 'O que os advisors precisam considerar para construir o plano?' : 'O que a sala precisa lembrar antes de decidir?'}
             value={founderNotes}
             onChange={event => setFounderNotes(event.target.value)}
             onBlur={() => void saveSession()}
@@ -783,10 +921,10 @@ export function RoomsScreen({ readout }: ScreenProps) {
 
         <main className="sb-room-center">
           <div className="sb-room-transport">
-            <button type="button" className="btn-gold" onClick={() => void nextTurn()} disabled={thinking || baseComplete || turnLimitReached}>{thinking ? 'Rodando...' : baseComplete || turnLimitReached ? 'Limite atingido' : 'Próximo turno'}</button>
-            <button type="button" className="btn-chamber" disabled={thinking || turnLimitReached} onClick={() => void requestIntervention('challenge')}>Pressionar mais</button>
+            <button type="button" className="btn-gold" onClick={() => void nextTurn()} disabled={thinking || baseComplete || turnLimitReached}>{thinking ? 'Rodando...' : baseComplete || turnLimitReached ? 'Limite atingido' : isAdvisory ? 'Pedir conselho' : 'Próximo turno'}</button>
+            <button type="button" className="btn-chamber" disabled={thinking || turnLimitReached} onClick={() => void requestIntervention('challenge')}>{isAdvisory ? 'Aprofundar' : 'Pressionar mais'}</button>
             <button type="button" className="btn-chamber" disabled={thinking || turnLimitReached} onClick={() => void requestIntervention('evidence')}>Pedir evidência</button>
-            <button type="button" className="btn-chamber" disabled={thinking || turnLimitReached} onClick={() => void requestIntervention('invite')}>Convidar papel</button>
+            <button type="button" className="btn-chamber" disabled={thinking || turnLimitReached} onClick={() => void requestIntervention('invite')}>{isAdvisory ? 'Adicionar advisor' : 'Convidar papel'}</button>
             <button type="button" className="btn-chamber" onClick={() => setIsolate(value => !value)}>{isolate ? 'Ver todos' : 'Isolar divergência'}</button>
           </div>
           <p className="sb-code mt-3">{usedAdvisorTurns}/{turnLimit} turnos de advisor</p>
@@ -794,7 +932,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
           {thinking && (
             <div className="sb-room-loading">
               <p className="sb-code">CARREGANDO TURNO</p>
-              <p>Board Brain está coordenando o próximo agente e checando as evidências da sala.</p>
+              <p>{isAdvisory ? 'Board Brain está coordenando o próximo advisor e puxando a conversa para um plano útil.' : 'Board Brain está coordenando o próximo agente e checando as evidências da sala.'}</p>
             </div>
           )}
 
@@ -811,9 +949,9 @@ export function RoomsScreen({ readout }: ScreenProps) {
 
           {log.length === 0 && (
             <div className="sb-room-empty">
-              <p className="sb-code">SALA INSTRUÍDA</p>
-              <h2>A sala está instruída e aguardando.</h2>
-              <p>Inicie a deliberação para revelar os turnos do conselho estratégico.</p>
+              <p className="sb-code">{isAdvisory ? 'CONSULTORIA INSTRUÍDA' : 'SALA INSTRUÍDA'}</p>
+              <h2>{isAdvisory && activePlan ? activePlan.emptyTitle : 'A sala está instruída e aguardando.'}</h2>
+              <p>{isAdvisory && activePlan ? activePlan.emptyBody : 'Inicie a deliberação para revelar os turnos do conselho estratégico.'}</p>
             </div>
           )}
 
@@ -837,14 +975,28 @@ export function RoomsScreen({ readout }: ScreenProps) {
         </main>
 
         <aside className="sb-room-panel">
-          <SectionTitle label="Síntese ao vivo" />
+          <SectionTitle label={isAdvisory ? 'Plano em construção' : 'Síntese ao vivo'} />
+          {isAdvisory && activePlan && (
+            <div className="sb-plan-preview">
+              <p className="sb-code">ENTREGÁVEL</p>
+              <h3>{activePlan.primaryOutput}</h3>
+              <div className="mt-3 grid gap-2">
+                {activePlan.workstreams.map(item => (
+                  <article key={item.label} className="sb-plan-workstream">
+                    <strong>{item.label}</strong>
+                    <span>{item.kpi}</span>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
           <SynthesisBlock title="Concorda" items={synth.agreements} />
           <SynthesisBlock title="Discorda" items={synth.disagreements} />
           <SynthesisBlock title="Riscos" items={synth.risks} />
           <div className="mt-5 grid gap-2">
-            <button type="button" className="btn-gold" onClick={() => setDecisionOpen(true)}>{activeKind === 'advisory' ? 'Encerrar com plano' : 'Ir para decisão'}</button>
-            <button type="button" className="btn-chamber" onClick={() => enqueue(activeKind === 'advisory' ? 'Plano consultivo' : 'Brief de estratégia')}>{activeKind === 'advisory' ? '+ Plano' : '+ Brief'}</button>
-            <button type="button" className="btn-chamber" onClick={() => enqueue(activeKind === 'advisory' ? 'Resumo executivo' : 'Memo do conselho')}>{activeKind === 'advisory' ? '+ Resumo' : '+ Memo'}</button>
+            <button type="button" className="btn-gold" onClick={() => setDecisionOpen(true)}>{isAdvisory && activePlan ? activePlan.closeLabel : 'Ir para decisão'}</button>
+            <button type="button" className="btn-chamber" onClick={() => enqueue(isAdvisory && activePlan ? activePlan.primaryOutput : 'Brief de estratégia')}>{isAdvisory ? '+ Plano' : '+ Brief'}</button>
+            <button type="button" className="btn-chamber" onClick={() => enqueue(isAdvisory ? 'Resumo executivo consultivo' : 'Memo do conselho')}>{isAdvisory ? '+ Resumo' : '+ Memo'}</button>
           </div>
           <div className="mt-5">
             <p className="sb-code">Fila de entregáveis</p>
@@ -859,11 +1011,11 @@ export function RoomsScreen({ readout }: ScreenProps) {
       {decisionOpen && (
         <div className="sb-modal-backdrop">
           <div className="sb-decision-modal">
-            <p className="sb-code">{activeKind === 'advisory' ? 'PLANO' : 'DECISÃO'}</p>
-            <h2>{activeQuestion}</h2>
+            <p className="sb-code">{isAdvisory ? 'PLANO CONSULTIVO' : 'DECISÃO'}</p>
+            <h2>{isAdvisory && activePlan ? activePlan.title : activeQuestion}</h2>
             <p>
-              {activeKind === 'advisory'
-                ? 'Registrar diagnóstico, recomendação, workstreams, KPIs, riscos, perguntas abertas e próximas decisões sugeridas.'
+              {isAdvisory
+                ? 'Isto salva a análise como plano consultivo com diagnóstico, recomendação, workstreams, KPIs, riscos, perguntas abertas e possíveis decisões futuras. Não aprova uma decisão de board.'
                 : 'Registrar decisão com racional, opções rejeitadas, dono, condições, lacunas aceitas e data de revisão.'}
             </p>
             <div className="mt-5 flex flex-wrap gap-2">
@@ -873,9 +1025,9 @@ export function RoomsScreen({ readout }: ScreenProps) {
                 disabled={thinking}
                 onClick={() => void captureDecision('approved')}
               >
-                {activeKind === 'advisory' ? 'Fechar plano' : 'Aprovar'}
+                {isAdvisory && activePlan ? activePlan.closeLabel : 'Aprovar'}
               </button>
-              <button type="button" className="btn-secondary" disabled={thinking} onClick={() => void captureDecision('deferred')}>{activeKind === 'advisory' ? 'Pedir mais contexto' : 'Adiar'}</button>
+              <button type="button" className="btn-secondary" disabled={thinking} onClick={() => void captureDecision('deferred')}>{isAdvisory ? 'Continuar investigando' : 'Adiar'}</button>
               <button type="button" className="btn-secondary" onClick={() => setDecisionOpen(false)}>Voltar</button>
             </div>
           </div>

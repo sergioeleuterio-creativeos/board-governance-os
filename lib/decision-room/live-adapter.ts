@@ -144,7 +144,9 @@ export const liveDecisionRoomAdapter = {
 
   async nextTurn(input: TurnRequest) {
     const pack = await buildGenericDecisionRoomPack()
-    const transcript = selectedTranscript(pack.transcript, input.selectedAgents)
+    const isAdvisory = input.sessionId === 'problem' || input.sessionId === 'reset' || input.sessionId === 'campaign'
+    const baseTranscript = pack.advisoryTranscripts[input.sessionId] ?? pack.transcript
+    const transcript = selectedTranscript(baseTranscript, input.selectedAgents)
     const fallback = transcript[input.index] ?? null
     if (!fallback) return null
 
@@ -155,8 +157,11 @@ export const liveDecisionRoomAdapter = {
       maxTokens: 1400,
       system: SYSTEM,
       prompt: JSON.stringify({
-        task: 'Generate the next advisor turn for a live board decision room.',
+        task: isAdvisory
+          ? 'Generate the next consulting advisor turn. The user needs diagnosis, advice, plan, workstreams and KPIs before any future decision is suggested.'
+          : 'Generate the next advisor turn for a live board decision room.',
         sessionId: input.sessionId,
+        sessionKind: isAdvisory ? 'advisory' : 'board',
         turnIndex: input.index,
         advisor: agent,
         selectedAdvisors: selectedBoardAgents(pack.readout, input.selectedAgents),
@@ -221,7 +226,9 @@ export const liveDecisionRoomAdapter = {
       maxTokens: 1800,
       system: SYSTEM,
       prompt: JSON.stringify({
-        task: 'Capture the decision from a live decision-room session.',
+        task: input.sessionKind === 'advisory'
+          ? 'Capture the consulting plan from a live advisory session. This is a diagnostic plan with suggested future decisions, not an approved board decision.'
+          : 'Capture the decision from a live decision-room session.',
         state: input.state,
         sessionId: input.sessionId,
         activeQuestion: input.activeQuestion,
@@ -234,9 +241,9 @@ export const liveDecisionRoomAdapter = {
         recentLog: compactTurnLog(input.log),
         expectedShape: {
           decision: {
-            statement: 'decision statement in pt-BR',
-            rationale: 'rationale grounded in the room log',
-            rejectedOptions: ['options not chosen'],
+            statement: input.sessionKind === 'advisory' ? 'consulting plan statement in pt-BR' : 'decision statement in pt-BR',
+            rationale: input.sessionKind === 'advisory' ? 'diagnostic and recommendation grounded in the room log' : 'rationale grounded in the room log',
+            rejectedOptions: input.sessionKind === 'advisory' ? ['paths not recommended yet or questions still open'] : ['options not chosen'],
             confidence: 0,
             owner: 'owner label',
             conditions: ['conditions and accepted gaps'],
@@ -266,7 +273,7 @@ export const liveDecisionRoomAdapter = {
     return pack.outputs.filter(output => {
       if ((normalized.has('memo do conselho') || normalized.has('memo da decisão')) && output.type === 'memo') return true
       if ((normalized.has('brief de estratégia') || normalized.has('brief de estrategia')) && output.type === 'strategy') return true
-      if ((normalized.has('plano operacional') || normalized.has('plano de validação em 30 dias')) && output.type === 'plan') return true
+      if ([...normalized].some(item => item.includes('plano') || item.includes('workstreams')) && output.type === 'plan') return true
       if (normalized.has('narrativa comercial') && output.type === 'sales') return true
       if (normalized.has('ata da sala') && output.type === 'minutes') return true
       return normalized.size === 0

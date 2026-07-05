@@ -11,6 +11,7 @@ import type {
   ExecutionOutput,
   FollowUp,
   SessionType,
+  SessionTypeId,
   StrategyDiagnosis,
   StudioAgent,
 } from './types'
@@ -39,6 +40,7 @@ type UploadedDocument = {
 export type DecisionRoomPack = {
   readout: DecisionRoomReadout
   transcript: BoardTurn[]
+  advisoryTranscripts: Partial<Record<SessionTypeId, BoardTurn[]>>
   cannedTurns: Record<'challenge' | 'evidence' | 'invite', BoardTurn>
   decisions: DecisionRecord[]
   followUps: FollowUp[]
@@ -142,7 +144,7 @@ const genericStudioAgents: StudioAgent[] = [
 const genericSessionTypes: SessionType[] = [
   { id: 'problem', kind: 'advisory', code: 'DG', name: 'Diagnosticar o problema', tag: 'Quando a questão ainda está nebulosa', desc: 'Transforme contexto solto, documentos e perguntas abertas em diagnóstico, tensões e próximos caminhos.', outputs: ['Diagnóstico', 'Perguntas melhores', 'Próximas decisões'], maxTurns: maxTurnsForSession('problem') },
   { id: 'reset', kind: 'advisory', code: 'ST', name: 'Plano estratégico', tag: 'Quando o cliente quer direção', desc: 'Construa uma recomendação consultiva com plano, workstreams, KPIs, riscos e premissas.', outputs: ['Análise executiva', 'Plano', 'Workstreams e KPIs'], maxTurns: maxTurnsForSession('reset') },
-  { id: 'campaign', kind: 'advisory', code: 'MK', name: 'Marketing e marca', tag: 'CMO, GTM e Creative OS', desc: 'Use advisors de marca, receita e mercado para posicionamento, narrativa, campanha ou plano comercial.', outputs: ['Diagnóstico de marca', 'Narrativa', 'Plano de mercado'], maxTurns: maxTurnsForSession('campaign') },
+  { id: 'campaign', kind: 'advisory', code: 'MK', name: 'Marketing e marca', tag: 'CMO, GTM e Creative OS', desc: 'Use advisors de marca, receita e mercado para posicionamento, narrativa, campanha ou plano comercial.', outputs: ['Diagnóstico de marca', 'Narrativa', 'Plano de marketing'], maxTurns: maxTurnsForSession('campaign') },
   { id: 'hotseat', kind: 'board', code: 'BD', name: 'Revisar uma decisão', tag: 'Pressão executiva sobre uma escolha', desc: 'Coloque uma decisão concreta sob pressão de marca, receita, finanças, produto, cliente e categoria.', outputs: ['Trade-offs', 'Recomendação', 'Decisão e condições'], maxTurns: maxTurnsForSession('hotseat'), primary: true },
   { id: 'prep', kind: 'board', code: 'BP', name: 'Preparar board pack', tag: 'Antes de conselho, sócios ou liderança', desc: 'Prepare a conversa formal com evidências, perguntas prováveis, pontos frágeis e narrativa executiva.', outputs: ['Board pack', 'Perguntas prováveis', 'Pontos frágeis'], maxTurns: maxTurnsForSession('prep') },
   { id: 'review', kind: 'board', code: 'RV', name: 'Revisar execução', tag: 'Depois de executar', desc: 'Revisite uma decisão para separar o que se sustentou do que precisa mudar.', outputs: ['O que mudou', 'Evidências novas', 'Continuar / ajustar / parar'], maxTurns: maxTurnsForSession('review') },
@@ -338,34 +340,172 @@ function buildTranscript(company: CurrentCompany | null, diagnosis: StrategyDiag
   ]
 }
 
+function buildAdvisoryTranscripts(company: CurrentCompany | null, diagnosis: StrategyDiagnosis): Partial<Record<SessionTypeId, BoardTurn[]>> {
+  const name = companyLabel(company)
+  return {
+    problem: [
+      {
+        code: 'BB',
+        text: `Vamos tratar isso como diagnóstico, não como votação. Primeiro separo sintoma, causa provável, hipótese e evidência ausente. Para ${name}, a pergunta útil é: o que está acontecendo de verdade e o que ainda estamos só presumindo?`,
+        tag: 'ABRE DIAGNÓSTICO',
+        synth: {
+          agreements: ['A conversa começa formulando melhor o problema.'],
+          risks: ['Pular para decisão agora pode cristalizar uma hipótese fraca.'],
+        },
+      },
+      {
+        code: 'CEO',
+        text: 'Do ponto de vista operacional, eu quero saber onde o problema aparece na rotina: prioridade, time, cliente, caixa, produto ou venda. Se não localizarmos o sintoma na operação, o plano nasce bonito e pouco executável.',
+        tag: 'LOCALIZA SINTOMA',
+        synth: {
+          agreements: ['O diagnóstico precisa apontar onde a empresa sente o problema.'],
+          risks: ['Um problema mal localizado vira iniciativa genérica.'],
+        },
+      },
+      {
+        code: 'CMO',
+        text: 'Se houver confusão de mercado, marca ou mensagem, eu mapearia o que o cliente entende hoje, o que deveria entender e que prova faria essa mudança ser crível. Isso vira hipótese de posicionamento, não ainda campanha.',
+        tag: 'TESTA MERCADO',
+        synth: {
+          agreements: ['A leitura de mercado pode revelar se o problema é de narrativa, demanda ou oferta.'],
+          disagreements: ['Nem todo problema comercial é problema de marketing.'],
+        },
+      },
+      {
+        code: 'CFO',
+        text: `Eu manteria a análise honesta: sem receita, margem, caixa e custo do problema, qualquer recomendação para ${name} precisa vir com faixa de confiança e pedido de dados. Diagnóstico bom também diz o que não sabe.`,
+        tag: 'MARCA LACUNAS',
+        synth: {
+          agreements: ['O plano deve separar evidência confirmada de hipótese.'],
+          risks: ['Falta de dados financeiros reduz confiança da recomendação.'],
+        },
+      },
+    ],
+    reset: [
+      {
+        code: 'BB',
+        text: `Vou conduzir como consultoria estratégica. A saída não é aprovar uma decisão; é um plano para ${name}: diagnóstico, direção, workstreams, KPIs, riscos e perguntas que podem virar decisões depois.`,
+        tag: 'ABRE PLANO',
+        synth: {
+          agreements: ['A sessão deve fechar com plano e próximos passos.'],
+          risks: ['Sem critérios, plano estratégico vira lista de desejos.'],
+        },
+      },
+      {
+        code: 'CEO',
+        text: 'Plano bom muda calendário, dono e foco. Eu estruturaria três frentes no máximo, cada uma com dono, ritual semanal, métrica de avanço e uma coisa que deve parar para liberar capacidade.',
+        tag: 'DESENHA EXECUÇÃO',
+        synth: {
+          agreements: ['Workstreams precisam de donos, cadência e trade-offs.'],
+          risks: ['Adicionar frentes sem parar nada cria sobrecarga.'],
+        },
+      },
+      {
+        code: 'CFO',
+        text: 'Eu colocaria limites econômicos no plano: investimento máximo, prazo de validação, métrica que prova retorno e gatilho para reduzir escopo. Estratégia sem guardrail financeiro vira aposta sem proteção.',
+        tag: 'DEFINE GUARDRAILS',
+        synth: {
+          agreements: ['O plano precisa ter limites e gatilhos de revisão.'],
+          risks: ['Sem guardrails, execução pode consumir foco e caixa demais.'],
+        },
+      },
+      {
+        code: 'CRO',
+        text: 'A estratégia precisa aparecer no pipeline: oferta, pitch, ICP, objeções e primeira evidência comercial. Se a direção não muda a conversa de venda ou retenção, ela ainda está abstrata demais.',
+        tag: 'LIGA RECEITA',
+        synth: {
+          agreements: ['Plano estratégico deve produzir movimento comercial mensurável.'],
+          risks: ['Direção sem teste comercial demora a revelar se funciona.'],
+        },
+      },
+    ],
+    campaign: [
+      {
+        code: 'BB',
+        text: `Vou conduzir como plano de marketing e marca. A saída esperada para ${name} é posicionamento, narrativa, canais, campanha, workstreams, KPIs e evidências que precisam entrar no Company Brain.`,
+        tag: 'ABRE MARKETING',
+        synth: {
+          agreements: ['A sessão deve construir plano de marketing antes de sugerir decisões futuras.'],
+          risks: ['Pular direto para campanha sem diagnóstico de marca cria execução frágil.'],
+        },
+      },
+      {
+        code: 'CMO',
+        text: 'Eu começaria pelo posicionamento: quem precisa nos escolher, contra qual alternativa, por que agora e que frase o mercado deveria conseguir repetir. Sem essa memória, canais e campanha só amplificam ruído.',
+        tag: 'POSICIONAMENTO',
+        synth: {
+          agreements: ['O plano precisa de uma promessa simples e defensável.'],
+          disagreements: ['Mais canal não resolve uma mensagem indistinta.'],
+        },
+      },
+      {
+        code: 'MDA',
+        text: 'Para GTM, eu separaria canal de ritual de compra. Quais canais chegam ao ICP, qual oferta abre a conversa, que prova reduz risco e qual sequência transforma atenção em pipeline ou demanda qualificada?',
+        tag: 'DESENHA GTM',
+        synth: {
+          agreements: ['Plano de marketing precisa explicar canal, oferta e sequência.'],
+          risks: ['Escolher canal sem ritual de compra claro desperdiça energia.'],
+        },
+      },
+      {
+        code: 'CRO',
+        text: 'Receita entra para garantir que o plano gere conversa comercial. Quero ver impacto em pitch, objeções, proposta de valor, conversão e pipeline. Marketing que não conversa com venda fica difícil de defender.',
+        tag: 'LIGA PIPELINE',
+        synth: {
+          agreements: ['KPIs comerciais devem acompanhar KPIs de marca e campanha.'],
+          risks: ['Métricas de vaidade podem mascarar falta de receita.'],
+        },
+      },
+      {
+        code: 'CAT',
+        text: 'Categoria: o plano precisa dizer contra qual comparação mental estamos competindo. Se o cliente compara por preço, conveniência, confiança ou status, a mensagem precisa vencer nesse critério real.',
+        tag: 'CATEGORIA',
+        synth: {
+          agreements: ['A narrativa deve vencer uma comparação de categoria concreta.'],
+          disagreements: ['A empresa pode estar contando uma história diferente da que o cliente usa para comprar.'],
+        },
+      },
+      {
+        code: 'CRM',
+        text: 'Cliente e comunidade: antes de escalar campanha, eu buscaria sinais qualitativos de quem já confia, compra, retorna ou indica. Isso alimenta prova, segmentação e mensagens menos genéricas.',
+        tag: 'PROVA DE CLIENTE',
+        synth: {
+          agreements: ['A voz do cliente deve alimentar posicionamento e prova.'],
+          risks: ['Sem evidência de cliente, o plano pode ficar autocentrado.'],
+        },
+      },
+    ],
+  }
+}
+
 function buildCannedTurns(diagnosis: StrategyDiagnosis): DecisionRoomPack['cannedTurns'] {
   return {
     challenge: {
       code: 'MDA',
-      text: 'Pressão adicional: escolha uma situação real de compra, venda, contratação, operação ou cliente. Quem precisa mudar de comportamento? O que essa pessoa faz diferente depois da decisão? Sem esse exemplo, a tese ainda está longe demais da execução.',
+      text: 'Pressão adicional: escolha uma situação real de compra, venda, contratação, operação ou cliente. Quem precisa mudar de comportamento? O que essa pessoa faz diferente depois da recomendação ou do plano? Sem esse exemplo, a tese ainda está longe demais da execução.',
       tag: 'PRESSIONA A TESE',
       synth: {
         disagreements: ['Sem exemplo operacional, a recomendação pode soar genérica.'],
-        risks: ['A sala pode aprovar uma direção que ninguém consegue executar na prática.'],
+        risks: ['A sala pode recomendar uma direção que ninguém consegue executar na prática.'],
       },
     },
     evidence: {
       code: 'RE',
-      text: `Pedido de evidência: ${diagnosis.missingContext.slice(0, 4).join(' ')} Se esses dados não existirem agora, registre a lacuna e aprove apenas uma fase de validação.`,
+      text: `Pedido de evidência: ${diagnosis.missingContext.slice(0, 4).join(' ')} Se esses dados não existirem agora, registre a lacuna e transforme a recomendação em plano condicional ou fase de validação.`,
       tag: 'DADOS NECESSÁRIOS',
       studio: true,
       synth: {
-        agreements: ['É possível avançar sem todos os dados, desde que a decisão seja condicional.'],
+        agreements: ['É possível avançar sem todos os dados, desde que a recomendação seja condicional.'],
         risks: ['Lacunas escondidas viram falsa confiança.'],
       },
     },
     invite: {
       code: 'CAT',
-      text: 'Papel convidado: especialista de categoria. Minha recomendação é escolher um benchmark, um concorrente e um substituto. A sala precisa saber contra quem a decisão compete na cabeça do cliente, do investidor, do parceiro ou do time.',
+      text: 'Papel convidado: especialista de categoria. Minha recomendação é escolher um benchmark, um concorrente e um substituto. A sala precisa saber contra quem o plano compete na cabeça do cliente, do investidor, do parceiro ou do time.',
       tag: 'CATEGORIA CONVIDADA',
       synth: {
         agreements: ['Comparações externas ajudam a testar se a tese é defensável.'],
-        risks: ['Sem referência de categoria, a decisão pode ficar autocentrada.'],
+        risks: ['Sem referência de categoria, o plano pode ficar autocentrado.'],
       },
     },
   }
@@ -448,6 +588,7 @@ export async function buildGenericDecisionRoomPack(): Promise<DecisionRoomPack> 
   const decisions = [buildDecision(company, diagnosis)]
   const outputs = buildOutputs(company)
   const followUps = buildFollowUps(diagnosis)
+  const advisoryTranscripts = buildAdvisoryTranscripts(company, diagnosis)
 
   return {
     readout: {
@@ -462,6 +603,7 @@ export async function buildGenericDecisionRoomPack(): Promise<DecisionRoomPack> 
       followUps,
     },
     transcript: buildTranscript(company, diagnosis),
+    advisoryTranscripts,
     cannedTurns: buildCannedTurns(diagnosis),
     decisions,
     followUps,
