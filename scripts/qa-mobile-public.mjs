@@ -8,16 +8,25 @@ const mobileHeaders = {
 const publicRoutes = ['/', '/login', '/reset-password', '/privacy', '/terms']
 const protectedRoutes = [
   '/dashboard',
-  '/company',
-  '/governance-run',
-  '/board-pack',
+  '/company-brain',
+  '/company/intake',
+  '/rooms',
+  '/diagnosis',
+  '/briefings',
+  '/outputs',
   '/board-pack/presentation',
-  '/shadow-board',
   '/decisions',
   '/follow-ups',
   '/admin',
   '/admin/training-packs',
   '/admin/ai',
+]
+
+const legacyRoutes = [
+  ['/company', '/company-brain'],
+  ['/governance-run', '/diagnosis'],
+  ['/board-pack', '/outputs'],
+  ['/shadow-board', '/rooms'],
 ]
 
 async function checkPublic(route) {
@@ -37,6 +46,16 @@ async function checkProtected(route) {
   console.log(`OK protected mobile redirect ${route}`)
 }
 
+async function checkLegacyBridge(route, expectedLocation) {
+  const response = await fetch(`${baseUrl}${route}`, { headers: mobileHeaders, redirect: 'manual' })
+  const location = response.headers.get('location') || ''
+  if (![301, 302, 303, 307, 308].includes(response.status) || !location.includes(expectedLocation)) {
+    throw new Error(`Expected ${route} to bridge mobile visitor to ${expectedLocation}, got ${response.status} ${location}`)
+  }
+  console.log(`OK legacy mobile bridge ${route}`)
+}
+
 console.log(`Mobile route QA: ${baseUrl}`)
 for (const route of publicRoutes) await checkPublic(route)
 for (const route of protectedRoutes) await checkProtected(route)
+for (const [route, expectedLocation] of legacyRoutes) await checkLegacyBridge(route, expectedLocation)
