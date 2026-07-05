@@ -52,7 +52,7 @@
       "dashboard": "Painel",
       "company": "Contexto",
       "sessions": "Sessões",
-      "decisionsAndTasks": "Decisões e tarefas",
+      "decisionsAndTasks": "Planos e decisões",
       "intake": "Intake",
       "governanceRun": "Governance Run",
       "boardPack": "Board Pack",
@@ -62,7 +62,7 @@
       "rooms": "Sessões",
       "outputs": "Entregáveis",
       "decisions": "Decisões",
-      "followUps": "Follow-ups",
+      "followUps": "Ações",
       "designSystem": "Design System",
       "mobile": "Mobile",
       "admin": "Admin",
@@ -93,18 +93,18 @@
     "founderRole": "Fundador e CEO"
   },
   "companyBrain": {
-    "eyebrow": "02 - Company Brain",
-    "title": "Memória institucional",
-    "addToMemory": "+ Adicionar memória",
-    "startIntake": "Iniciar intake",
-    "intakeDescription": "Capture conversa, notas de voz, arquivos, dados financeiros, riscos e contexto antes da sala."
+    "eyebrow": "02 - Contexto",
+    "title": "Contexto da empresa",
+    "addToMemory": "+ Adicionar contexto",
+    "startIntake": "Adicionar contexto",
+    "intakeDescription": "Capture conversa, notas de voz, arquivos, dados financeiros, riscos e contexto antes da próxima sessão."
   },
   "intake": {
-    "eyebrow": "Intake do Company Brain",
-    "title": "Construir o contexto de conselho",
-    "description": "Colete fatos, premissas, arquivos e perguntas abertas que o Board Brain precisa antes de uma sala.",
+    "eyebrow": "Contexto",
+    "title": "Conte o que está acontecendo",
+    "description": "Comece com conversa, documentos ou WhatsApp. O Board Brain transforma isso em contexto, lacunas e próximos passos.",
     "saveDraft": "Salvar rascunho",
-    "sendToBrain": "Enviar para Company Brain",
+    "sendToBrain": "Salvar contexto",
     "mockMode": "Modo local",
     "liveMode": "Supabase ativo",
     "savedLive": "Rascunho salvo no Supabase",
@@ -127,7 +127,7 @@
     },
     "company": {
       "title": "Perfil da empresa",
-      "description": "O contexto operacional básico para a sala.",
+      "description": "O contexto operacional básico para orientar diagnóstico, planos e decisões.",
       "name": "Nome da empresa",
       "industry": "Setor",
       "businessModel": "Modelo de negócio",
@@ -138,11 +138,11 @@
     },
     "strategy": {
       "title": "Estratégia e desafio",
-      "description": "O que o founder acredita que o negócio precisa e o que a sala deve desafiar.",
+      "description": "O que você acredita que o negócio precisa, onde há dúvida e que tipo de ajuda espera receber.",
       "goals": "Objetivos",
       "mainChallenge": "Principal desafio",
       "currentPlan": "Plano atual",
-      "strategicQuestions": "Perguntas para o conselho"
+      "strategicQuestions": "Perguntas abertas"
     },
     "finance": {
       "title": "Snapshot financeiro",
@@ -163,18 +163,18 @@
     },
     "chat": {
       "title": "Chat com o Board Brain",
-      "description": "Comece pela conversa. O Board Brain transforma contexto solto em perguntas, lacunas e memória para a sala.",
-      "prompt": "O que o conselho precisa entender antes de revisar esta empresa?",
+      "description": "Comece pela conversa. O Board Brain transforma contexto solto em perguntas melhores, lacunas e memória para a sessão.",
+      "prompt": "O que está acontecendo e que ajuda você precisa?",
       "add": "Adicionar nota",
       "open": "Abrir chat de intake",
       "send": "Enviar ao Board Brain",
       "thinking": "Board Brain pensando...",
-      "placeholder": "Digite uma nota do founder, pergunta de conselho ou fragmento de contexto...",
+      "placeholder": "Digite o problema, dúvida, conversa com cliente, decisão em aberto ou contexto solto...",
       "emptyTitle": "Comece com uma conversa. Os campos estruturados podem vir depois.",
       "starters": {
-        "decision": "Qual decisão precisa ser tomada e por que agora?",
+        "decision": "Não sei qual decisão tomar; preciso entender o problema primeiro.",
         "blocker": "O que você já tentou e onde travou?",
-        "financials": "Quais números financeiros a sala precisa ver antes de recomendar?"
+        "financials": "Tenho números, conversas ou arquivos que podem explicar o que está acontecendo."
       }
     },
     "voice": {
@@ -201,11 +201,18 @@
       }
     },
     "review": {
-      "title": "Revisar antes da sala",
-      "description": "Revise o resumo que será salvo na memória da empresa.",
+      "title": "Revisar contexto",
+      "description": "Confira o que será salvo para orientar sessões consultivas, planos e decisões futuras.",
       "missing": "Contexto faltante",
       "ready": "Pronto para a primeira sala",
-      "notReady": "Precisa de mais contexto antes da sessão"
+      "notReady": "Precisa de mais contexto antes da sessão",
+      "emptyCompany": "Empresa sem nome",
+      "emptyDetail": "Complete os campos principais ou siga apenas com a conversa.",
+      "emptyChat": "Nenhuma conversa registrada ainda.",
+      "notes": "notas",
+      "files": "arquivos",
+      "willSave": "Memórias que serão salvas",
+      "noMemory": "Nenhuma memória pronta para salvar ainda."
     }
   }
 }

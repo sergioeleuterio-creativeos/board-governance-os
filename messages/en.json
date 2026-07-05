@@ -52,7 +52,7 @@
       "dashboard": "Home",
       "company": "Context",
       "sessions": "Sessions",
-      "decisionsAndTasks": "Decisions & tasks",
+      "decisionsAndTasks": "Plans & decisions",
       "intake": "Intake",
       "governanceRun": "Governance Run",
       "boardPack": "Board Pack",
@@ -62,7 +62,7 @@
       "rooms": "Sessions",
       "outputs": "Outputs",
       "decisions": "Decisions",
-      "followUps": "Follow-ups",
+      "followUps": "Actions",
       "designSystem": "Design System",
       "mobile": "Mobile Behavior",
       "admin": "Admin Control",
@@ -93,18 +93,18 @@
     "founderRole": "Founder & CEO"
   },
   "companyBrain": {
-    "eyebrow": "02 - Company Brain",
-    "title": "Institutional memory",
-    "addToMemory": "+ Add to memory",
-    "startIntake": "Start intake",
-    "intakeDescription": "Capture chat, voice-ready notes, files, financials, risks, and company context before the first session."
+    "eyebrow": "02 - Context",
+    "title": "Company context",
+    "addToMemory": "+ Add context",
+    "startIntake": "Add context",
+    "intakeDescription": "Capture chat, voice-ready notes, files, financials, risks, and company context before the next session."
   },
   "intake": {
-    "eyebrow": "Company Brain intake",
-    "title": "Build the board-level context",
-    "description": "Collect the facts, assumptions, files, and open questions that Board Brain needs before a session.",
+    "eyebrow": "Context",
+    "title": "Tell us what is happening",
+    "description": "Start with conversation, documents, or WhatsApp. Board Brain turns that into context, gaps, and next steps.",
     "saveDraft": "Save draft",
-    "sendToBrain": "Send to Company Brain",
+    "sendToBrain": "Save context",
     "mockMode": "Local mode",
     "liveMode": "Supabase live",
     "savedLive": "Draft saved to Supabase",
@@ -127,7 +127,7 @@
     },
     "company": {
       "title": "Company profile",
-      "description": "The basic operating context for the governance cycle.",
+      "description": "The basic operating context for diagnosis, plans, and decisions.",
       "name": "Company name",
       "industry": "Industry",
       "businessModel": "Business model",
@@ -138,11 +138,11 @@
     },
     "strategy": {
       "title": "Strategy and challenge",
-      "description": "What the founder thinks the business needs and what the board should challenge.",
+      "description": "What you believe the business needs, where there is uncertainty, and what kind of help you expect.",
       "goals": "Goals",
       "mainChallenge": "Main challenge",
       "currentPlan": "Current plan",
-      "strategicQuestions": "Questions for the board"
+      "strategicQuestions": "Open questions"
     },
     "finance": {
       "title": "Financial snapshot",
@@ -163,18 +163,18 @@
     },
     "chat": {
       "title": "Board Brain chat",
-      "description": "Start with the conversation. Board Brain turns loose context into questions, gaps, and board memory.",
-      "prompt": "What does the board need to understand before reviewing this company?",
+      "description": "Start with the conversation. Board Brain turns loose context into better questions, gaps, and session memory.",
+      "prompt": "What is happening, and what help do you need?",
       "add": "Add note",
       "open": "Open intake chat",
       "send": "Send to Board Brain",
       "thinking": "Board Brain thinking...",
-      "placeholder": "Type a founder note, board question, or context fragment...",
+      "placeholder": "Type the problem, question, customer conversation, open decision, or loose context...",
       "emptyTitle": "Start with a conversation. Structured fields can come later.",
       "starters": {
-        "decision": "What decision needs to be made, and why now?",
+        "decision": "I do not know what decision to make yet; help me understand the problem first.",
         "blocker": "What have you already tried, and where did it get stuck?",
-        "financials": "Which financial numbers must the board see before recommending?"
+        "financials": "I have numbers, conversations, or files that may explain what is happening."
       }
     },
     "voice": {
@@ -201,11 +201,18 @@
       }
     },
     "review": {
-      "title": "Review before governance run",
-      "description": "Review the summary that will be saved to company memory.",
+      "title": "Review context",
+      "description": "Review what will be saved to guide advisory sessions, plans, and future decisions.",
       "missing": "Missing context",
       "ready": "Ready for the first session",
-      "notReady": "Needs more context before the session"
+      "notReady": "Needs more context before the session",
+      "emptyCompany": "Company without a name",
+      "emptyDetail": "Complete the main fields or continue with conversation only.",
+      "emptyChat": "No conversation captured yet.",
+      "notes": "notes",
+      "files": "files",
+      "willSave": "Memories that will be saved",
+      "noMemory": "No memory is ready to save yet."
     }
   }
 }

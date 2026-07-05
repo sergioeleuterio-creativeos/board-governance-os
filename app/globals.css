@@ -670,6 +670,19 @@
     gap: 16px;
   }
 
+  .sb-intake-summary-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .sb-intake-summary-list {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-field);
+    padding: 14px;
+  }
+
   .sb-intake-review pre {
     max-height: 520px;
     overflow: auto;
@@ -1429,7 +1442,8 @@
   }
 
   .sb-advisory-overview,
-  .sb-advisory-steps {
+  .sb-advisory-steps,
+  .sb-intake-summary-grid {
     grid-template-columns: 1fr;
   }
 

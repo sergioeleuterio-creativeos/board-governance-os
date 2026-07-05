@@ -107,15 +107,15 @@ export function DashboardLiveScreen() {
       tone: (readout?.metrics.plan_confidence ?? 0) >= 70 ? 'positive' : 'neutral',
     },
     {
-      label: 'Decisões abertas',
+      label: 'Planos e decisões',
       value: String(readout?.metrics.open_decisions ?? 0),
-      detail: `${readout?.decisions_awaiting.length ?? 0} aguardando voce`,
+      detail: `${readout?.decisions_awaiting.length ?? 0} para revisar`,
       tone: 'neutral',
     },
     {
-      label: 'Follow-ups atrasados',
+      label: 'Ações atrasadas',
       value: String(readout?.metrics.overdue_follow_ups ?? 0),
-      detail: 'criticos se nao forem resolvidos',
+      detail: 'pedem atenção',
       tone: (readout?.metrics.overdue_follow_ups ?? 0) > 0 ? 'caution' : 'positive',
     },
   ] as const), [readout])
@@ -167,7 +167,7 @@ export function DashboardLiveScreen() {
             {readout?.needs_company
               ? 'Conte o que está acontecendo para montar o primeiro contexto da empresa.'
               : readout?.decisions_awaiting.length
-                ? 'Há decisões abertas para revisar, aprovar, adiar ou transformar em tarefas.'
+                ? 'Há planos candidatos ou decisões formais para revisar antes de virar trabalho.'
                 : 'Comece por uma sessão consultiva para diagnosticar o problema, ou leve uma escolha concreta para uma sessão de board.'}
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
@@ -199,7 +199,7 @@ export function DashboardLiveScreen() {
 
       <section className="grid gap-5 xl:grid-cols-[1.35fr_0.9fr]">
         <Panel>
-          <SectionTitle label="Decisões aguardando você" action={<Link href="/decisions" className="sb-text-link">Ver todas</Link>} />
+          <SectionTitle label="Planos e decisões para revisar" action={<Link href="/decisions" className="sb-text-link">Ver todos</Link>} />
           <div className="space-y-3">
             {loading && <p className="sb-muted">Carregando decisoes...</p>}
             {!loading && readout?.decisions_awaiting.map(item => (
@@ -213,7 +213,7 @@ export function DashboardLiveScreen() {
               />
             ))}
             {!loading && !readout?.decisions_awaiting.length && (
-              <p className="sb-muted">Nenhuma decisão aguardando aprovação. Use uma sessão consultiva para formular o problema ou uma sessão de board para revisar uma escolha concreta.</p>
+              <p className="sb-muted">Nenhum plano ou decisão aguardando revisão. Use uma sessão consultiva para formular o problema ou uma sessão de board para revisar uma escolha concreta.</p>
             )}
           </div>
         </Panel>
@@ -236,7 +236,7 @@ export function DashboardLiveScreen() {
           </Panel>
 
           <Panel>
-            <SectionTitle label="Status do Shadow Board" />
+            <SectionTitle label="Advisors recentes" />
             <div className="grid gap-2">
               {(readout?.advisors ?? []).map(adv => (
                 <div key={adv.advisor_key} className="sb-advisor-row">
@@ -255,7 +255,7 @@ export function DashboardLiveScreen() {
           </Panel>
 
           <Panel>
-            <SectionTitle label="Tarefas em aberto" action={<Link href="/follow-ups" className="sb-text-link">Ver todas</Link>} />
+            <SectionTitle label="Ações em aberto" action={<Link href="/follow-ups" className="sb-text-link">Ver todas</Link>} />
             <div className="grid gap-3">
               {(readout?.follow_ups ?? []).slice(0, 3).map(item => (
                 <RowCard
@@ -268,7 +268,7 @@ export function DashboardLiveScreen() {
                 />
               ))}
               {!loading && !(readout?.follow_ups ?? []).length && (
-                <p className="sb-muted">Nenhuma tarefa aberta. A próxima sessão pode gerar plano, decisões e responsáveis.</p>
+                <p className="sb-muted">Nenhuma ação aberta. A próxima sessão pode gerar plano, decisões e responsáveis.</p>
               )}
             </div>
           </Panel>

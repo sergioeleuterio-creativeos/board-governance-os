@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useMemo, useState } from 'react'
 import { DossierSection, PageHeader, Panel, RowCard, SectionTitle, StatusPill } from './ui'
 import { formatClosure, formatStatus } from '@/lib/shadow-board/display-labels'
@@ -79,6 +80,19 @@ function futureImpactFor(decision: DecisionRecord) {
   }
 }
 
+function isAdvisoryPlan(decision: DecisionRecord) {
+  const metadata = asRecord(decision.metadata)
+  return decision.decision === 'advisory_plan'
+    || decision.title.toLowerCase().startsWith('plano consultivo')
+    || metadata.decision_room_session_kind === 'advisory'
+}
+
+function itemKindLabel(decision: DecisionRecord) {
+  if (isAdvisoryPlan(decision)) return 'Plano consultivo'
+  if (decision.status === 'candidate') return 'Candidato'
+  return 'Decisão'
+}
+
 export function DecisionMemoryLiveScreen() {
   const [decisions, setDecisions] = useState<DecisionRecord[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -91,10 +105,11 @@ export function DecisionMemoryLiveScreen() {
   const selected = decisions.find((decision) => decision.id === selectedId) ?? decisions[0] ?? null
   const selectedImpact = selected ? futureImpactFor(selected) : null
   const metrics = useMemo(() => {
+    const plans = decisions.filter((decision) => isAdvisoryPlan(decision)).length
     const approved = decisions.filter((decision) => decision.status === 'approved' || decision.status === 'closed').length
-    const review = decisions.filter((decision) => ['candidate', 'review_due', 'reviewing', 'deferred'].includes(decision.status)).length
+    const review = decisions.filter((decision) => !isAdvisoryPlan(decision) && ['candidate', 'review_due', 'reviewing', 'deferred'].includes(decision.status)).length
     const rejected = decisions.filter((decision) => ['rejected', 'reversed'].includes(decision.status)).length
-    return { approved, review, rejected }
+    return { plans, approved, review, rejected }
   }, [decisions])
 
   async function loadDecisions() {
@@ -134,7 +149,7 @@ export function DecisionMemoryLiveScreen() {
       return
     }
 
-    setNotice('Decisao atualizada.')
+    setNotice('Registro atualizado.')
     setFounderNote('')
     setSavingId(null)
     await loadDecisions()
@@ -156,9 +171,10 @@ export function DecisionMemoryLiveScreen() {
     <div className="grid gap-6 xl:grid-cols-[0.9fr_1.1fr]">
       <div className="space-y-5">
         <PageHeader
-          eyebrow="06 - Memoria de decisoes"
-          title="Livro de decisoes"
-          description="Registros permanentes com racional, tradeoffs, responsaveis e datas de revisao."
+          eyebrow="04 - Planos e decisões"
+          title="Planos, candidatos e decisões"
+          description="Saídas consultivas ficam como planos candidatos. Decisões formais só entram aqui quando você escolhe aprovar, adiar, rejeitar ou pedir mais contexto."
+          action={<Link href="/rooms" className="btn-primary">Abrir sessão</Link>}
         />
 
         {(error || notice) && (
@@ -170,9 +186,10 @@ export function DecisionMemoryLiveScreen() {
 
         <Panel>
           <div className="mb-4 flex flex-wrap gap-2">
-            <StatusPill>Todas {decisions.length}</StatusPill>
-            <StatusPill tone="positive">Aprovadas {metrics.approved}</StatusPill>
-            <StatusPill tone="caution">Revisao {metrics.review}</StatusPill>
+            <StatusPill>Todos {decisions.length}</StatusPill>
+            <StatusPill tone="neutral">Planos {metrics.plans}</StatusPill>
+            <StatusPill tone="positive">Decisões {metrics.approved}</StatusPill>
+            <StatusPill tone="caution">Em revisão {metrics.review}</StatusPill>
             <StatusPill tone="critical">Rejeitadas {metrics.rejected}</StatusPill>
           </div>
           <div className="space-y-3">
@@ -186,15 +203,18 @@ export function DecisionMemoryLiveScreen() {
               >
                 <RowCard
                   code={decision.id.slice(0, 8)}
-                  title={decision.title || 'Decisao sem titulo'}
-                  detail={`${formatStatus(decision.status)} - ${formatClosure(decision.closure_recommendation)} - revisao ${dateLabel(decision.review_date)}`}
-                  tag={formatStatus(decision.risk_level ?? decision.status)}
+                  title={decision.title || 'Registro sem título'}
+                  detail={`${itemKindLabel(decision)} - ${formatStatus(decision.status)} - ${decision.owner_label ?? 'sem responsável'} - revisão ${dateLabel(decision.review_date)}`}
+                  tag={isAdvisoryPlan(decision) ? 'plano' : formatStatus(decision.risk_level ?? decision.status)}
                   tone={toneForStatus(decision.status)}
                 />
               </button>
             ))}
             {!loading && decisions.length === 0 && (
-              <p className="sb-muted">Nenhuma decisao registrada ainda. Rode uma governance run para criar candidatos.</p>
+              <div className="grid gap-3">
+                <p className="sb-muted">Nenhum plano ou decisão registrado ainda. Rode uma sessão consultiva para sair com plano, ou uma sessão de board quando já houver uma escolha concreta.</p>
+                <Link href="/rooms" className="btn-secondary w-fit">Escolher sessão</Link>
+              </div>
             )}
           </div>
         </Panel>
@@ -202,12 +222,13 @@ export function DecisionMemoryLiveScreen() {
 
       <Panel tone="dossier" className="sb-dossier">
         {!selected ? (
-          <p className="sb-muted">Selecione uma decisao para revisar o registro completo.</p>
+          <p className="sb-muted">Selecione um plano ou decisão para revisar o registro completo.</p>
         ) : (
           <>
-            <p className="sb-code">{selected.id.slice(0, 8)} - Registro de decisao</p>
-            <h1>{selected.title || 'Decisao sem titulo'}</h1>
+            <p className="sb-code">{selected.id.slice(0, 8)} - {isAdvisoryPlan(selected) ? 'Plano consultivo' : 'Registro de decisão'}</p>
+            <h1>{selected.title || 'Registro sem título'}</h1>
             <div className="flex flex-wrap gap-2">
+              <StatusPill>{itemKindLabel(selected)}</StatusPill>
               <StatusPill tone={toneForStatus(selected.status)}>{formatStatus(selected.status)}</StatusPill>
               {selected.closure_recommendation && <StatusPill>{formatClosure(selected.closure_recommendation)}</StatusPill>}
             </div>
@@ -226,43 +247,55 @@ export function DecisionMemoryLiveScreen() {
                   ))}
                 </select>
               </label>
-              <button
-                className="btn-primary self-end"
-                type="button"
-                onClick={() => void runDecisionAction('approve')}
-                disabled={savingId === selected.id}
-              >
-                Aprovar
-              </button>
+              {isAdvisoryPlan(selected) ? (
+                <Link href="/rooms" className="btn-primary self-end">Continuar em sessão</Link>
+              ) : (
+                <button
+                  className="btn-primary self-end"
+                  type="button"
+                  onClick={() => void runDecisionAction('approve')}
+                  disabled={savingId === selected.id}
+                >
+                  Aprovar decisão
+                </button>
+              )}
             </div>
 
             <div className="mt-4 grid gap-3">
               <label>
-                <span className="field-label">Nota do founder</span>
+                <span className="field-label">Sua nota</span>
                 <textarea
                   className="field-input min-h-[86px] resize-y"
                   value={founderNote}
                   onChange={(event) => setFounderNote(event.target.value)}
-                  placeholder="Condição, objeção, pedido de dados ou contexto para registrar junto com a decisão..."
+                  placeholder={isAdvisoryPlan(selected)
+                    ? 'O que falta para transformar este plano em decisão, tarefa ou nova sessão?'
+                    : 'Condição, objeção, pedido de dados ou contexto para registrar junto com a decisão...'}
                 />
               </label>
               <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                <button className="btn-secondary" type="button" onClick={() => void runDecisionAction('approve_with_conditions')} disabled={savingId === selected.id}>
-                  Aprovar com condicoes
-                </button>
+                {isAdvisoryPlan(selected) ? (
+                  <Link href="/rooms" className="btn-secondary">
+                    Investigar em nova sessão
+                  </Link>
+                ) : (
+                  <button className="btn-secondary" type="button" onClick={() => void runDecisionAction('approve_with_conditions')} disabled={savingId === selected.id}>
+                    Aprovar com condições
+                  </button>
+                )}
                 <button className="btn-secondary" type="button" onClick={() => void runDecisionAction('request_more_data')} disabled={savingId === selected.id}>
-                  Pedir dados
+                  Pedir mais contexto
                 </button>
                 <button className="btn-secondary" type="button" onClick={() => void runDecisionAction('defer')} disabled={savingId === selected.id}>
                   Adiar
                 </button>
                 <button className="btn-secondary" type="button" onClick={() => void runDecisionAction('reject')} disabled={savingId === selected.id}>
-                  Rejeitar
+                  {isAdvisoryPlan(selected) ? 'Descartar caminho' : 'Rejeitar'}
                 </button>
               </div>
             </div>
 
-            <DossierSection number="Racional" title="Por que esta decisao foi tomada">
+            <DossierSection number={isAdvisoryPlan(selected) ? 'Diagnóstico' : 'Racional'} title={isAdvisoryPlan(selected) ? 'Por que este plano foi sugerido' : 'Por que esta decisão foi tomada'}>
               <p>{selected.rationale || 'Racional ainda nao registrado.'}</p>
             </DossierSection>
             <div className="grid gap-4 sm:grid-cols-2">
@@ -280,13 +313,13 @@ export function DecisionMemoryLiveScreen() {
                 {jsonList(selected.tradeoffs).map((item) => <li key={item}>{item}</li>)}
               </ul>
             </DossierSection>
-            <DossierSection number="Condicoes" title="Condicoes e resultado esperado">
+            <DossierSection number={isAdvisoryPlan(selected) ? 'Plano' : 'Condições'} title={isAdvisoryPlan(selected) ? 'Workstreams, KPIs e próximos passos' : 'Condições e resultado esperado'}>
               <p>{selected.expected_outcome || 'Resultado esperado ainda nao registrado.'}</p>
               <ul className="sb-clean-list mt-3">
                 {jsonList(selected.conditions).map((item) => <li key={item}>{item}</li>)}
               </ul>
             </DossierSection>
-            <DossierSection number="Impacto" title="Dependencias e impacto futuro">
+            <DossierSection number="Impacto" title={isAdvisoryPlan(selected) ? 'Perguntas abertas e dependências' : 'Dependências e impacto futuro'}>
               <p>{selectedImpact?.riskNote}</p>
               {selectedImpact?.reviewNote && <p className="sb-muted mt-2">{selectedImpact.reviewNote}</p>}
               <div className="mt-3 grid gap-2">
@@ -300,7 +333,7 @@ export function DecisionMemoryLiveScreen() {
                   </article>
                 ))}
                 {!(selectedImpact?.related ?? []).length && (
-                  <p className="sb-muted">A proxima acao do founder vai gerar esta checagem automaticamente.</p>
+                  <p className="sb-muted">A próxima ação do founder vai gerar esta checagem automaticamente.</p>
                 )}
               </div>
             </DossierSection>

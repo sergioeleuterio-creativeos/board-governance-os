@@ -440,7 +440,37 @@ export function CompanyBrainIntakeScreen() {
                 <StatusPill tone={quality.readyForGovernanceRun ? 'positive' : 'caution'}>
                   {quality.readyForGovernanceRun ? t('review.ready') : t('review.notReady')}
                 </StatusPill>
-                <pre>{JSON.stringify(result, null, 2)}</pre>
+                <div className="sb-intake-summary-grid">
+                  <ReviewSummaryCard
+                    label={t('tabs.company')}
+                    title={draft.company.name || t('review.emptyCompany')}
+                    detail={[draft.company.industry, draft.company.businessModel, draft.company.stage].filter(Boolean).join(' - ') || t('review.emptyDetail')}
+                  />
+                  <ReviewSummaryCard
+                    label={t('tabs.chat')}
+                    title={`${draft.notes.length} ${t('review.notes')}`}
+                    detail={draft.notes.at(-1)?.content || draft.whatsAppTranscript || t('review.emptyChat')}
+                  />
+                  <ReviewSummaryCard
+                    label={t('tabs.files')}
+                    title={`${draft.files.length} ${t('review.files')}`}
+                    detail={draft.files.map(file => file.name).slice(0, 3).join(' - ') || t('files.noFiles')}
+                  />
+                  <ReviewSummaryCard
+                    label={t('score')}
+                    title={`${quality.total}/100`}
+                    detail={quality.missing.length ? `${t('review.missing')}: ${quality.missing.map(item => t(`tabs.${item}`)).join(', ')}` : t('review.ready')}
+                  />
+                </div>
+                <div className="sb-intake-summary-list">
+                  <p className="sb-code">{t('review.willSave')}</p>
+                  <ul className="sb-clean-list">
+                    {result.memoryCandidates.slice(0, 8).map((item) => (
+                      <li key={`${item.category}-${item.title}`}>{item.title}: {item.content.slice(0, 140)}</li>
+                    ))}
+                    {!result.memoryCandidates.length && <li>{t('review.noMemory')}</li>}
+                  </ul>
+                </div>
               </div>
             </FieldGroup>
           )}
@@ -472,6 +502,16 @@ export function CompanyBrainIntakeScreen() {
         </Panel>
       </section>
     </div>
+  )
+}
+
+function ReviewSummaryCard({ label, title, detail }: { label: string; title: string; detail: string }) {
+  return (
+    <article className="sb-row-card">
+      <p className="sb-code">{label}</p>
+      <h3 className="sb-row-title mt-2">{title}</h3>
+      <p className="sb-muted mt-1">{detail}</p>
+    </article>
   )
 }
 

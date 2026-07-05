@@ -53,8 +53,8 @@ type ExtractDocumentResponse = {
 }
 
 const statCards = [
-  ['Fatos', 'fact'],
-  ['Metas', 'goal'],
+  ['Notas', 'fact'],
+  ['Objetivos', 'goal'],
   ['Financeiro', 'financial'],
   ['Riscos', 'risk'],
   ['Arquivos', 'files'],
@@ -104,7 +104,7 @@ export function CompanyBrainLiveScreen() {
 
     if (!response.ok || !isCompanyBrainReadout(payload)) {
       const errorMessage = payload && 'error' in payload ? payload.error : undefined
-      setError(errorMessage ?? 'Não foi possível carregar a Company Brain.')
+      setError(errorMessage ?? 'Não foi possível carregar o contexto da empresa.')
       setLoading(false)
       return
     }
@@ -159,8 +159,8 @@ export function CompanyBrainLiveScreen() {
     }
 
     setNotice(relevance === 'included'
-      ? 'Documento incluído no contexto de governança.'
-      : 'Documento excluído do contexto de governança.')
+      ? 'Documento incluído no contexto da empresa.'
+      : 'Documento excluído do contexto da empresa.')
     setUpdatingDocumentId(null)
     await loadReadout()
   }
@@ -172,12 +172,12 @@ export function CompanyBrainLiveScreen() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="02 - Company Brain"
-        title="Memória institucional"
+        eyebrow="02 - Contexto"
+        title="Contexto da empresa"
         description={readout?.company
-          ? `Tudo que o board sabe sobre ${readout.company.name} - ${readout.memory_entries.length} memórias ativas`
-          : 'Crie a primeira empresa no intake para iniciar a memória institucional.'}
-        action={<Link href="/company/intake" className="btn-primary">Iniciar intake</Link>}
+          ? `O que o Board OS sabe sobre ${readout.company.name}: conversas, arquivos, perguntas abertas e sinais que sustentam os próximos planos.`
+          : 'Conte o que está acontecendo para criar o primeiro contexto da empresa.'}
+        action={<Link href="/company/intake" className="btn-primary">Adicionar contexto</Link>}
       />
 
       {error && (
@@ -202,9 +202,9 @@ export function CompanyBrainLiveScreen() {
 
       <section className="grid gap-5 xl:grid-cols-[1.3fr_0.8fr]">
         <Panel>
-          <SectionTitle label="Linha do tempo da memória" />
+          <SectionTitle label="O que já sabemos" action={<Link href="/company/intake" className="sb-text-link">Adicionar</Link>} />
           <div className="mb-4 flex flex-wrap gap-2">
-            {['Todos', 'Riscos', 'Financeiro', 'Perguntas'].map(label => <StatusPill key={label}>{label}</StatusPill>)}
+            {['Conversas', 'Arquivos', 'Financeiro', 'Riscos', 'Perguntas'].map(label => <StatusPill key={label}>{label}</StatusPill>)}
           </div>
           <div className="space-y-3">
             {loading && <p className="sb-muted">Carregando memória...</p>}
@@ -221,26 +221,29 @@ export function CompanyBrainLiveScreen() {
               </article>
             ))}
             {!loading && !readout?.memory_entries.length && (
-              <p className="sb-muted">Nenhuma memória ativa ainda. Use o intake para alimentar a Company Brain.</p>
+              <div className="grid gap-3">
+                <p className="sb-muted">Nenhum contexto ativo ainda. Comece com uma conversa, documento ou transcrição de WhatsApp.</p>
+                <Link href="/company/intake" className="btn-secondary w-fit">Contar o que está acontecendo</Link>
+              </div>
             )}
           </div>
         </Panel>
 
         <div className="space-y-5">
           <Panel>
-            <SectionTitle label="Perguntas abertas" />
+            <SectionTitle label="Perguntas que ainda faltam" />
             <p className="sb-big-number">{readout?.unresolved_questions.length ?? 0}</p>
             <div className="mt-3 space-y-3">
               {(readout?.unresolved_questions ?? []).map(question => (
                 <p key={question.id} className="sb-muted">{question.title}: {question.content}</p>
               ))}
               {!loading && !readout?.unresolved_questions.length && (
-                <p className="sb-muted">Nenhuma pergunta aberta registrada.</p>
+                <p className="sb-muted">Nenhuma pergunta aberta registrada. A próxima sessão consultiva pode criar essas perguntas automaticamente.</p>
               )}
             </div>
           </Panel>
           <Panel>
-            <SectionTitle label="Arquivos recentes" />
+            <SectionTitle label="Arquivos e conversas recentes" />
             <div className="space-y-3">
               {(readout?.recent_documents ?? []).map(document => (
                 <div key={document.id} className="sb-file-row">
@@ -249,7 +252,7 @@ export function CompanyBrainLiveScreen() {
                     <p className="font-semibold">{document.original_filename}</p>
                     <p className="sb-muted">
                       {document.status}
-                      {document.metadata?.governance_relevance === 'excluded' ? ' - excluído do contexto' : ' - incluído no contexto'}
+                      {document.metadata?.governance_relevance === 'excluded' ? ' - fora do contexto' : ' - no contexto'}
                       {' - '}
                       {document.summary ?? document.document_type ?? 'sem resumo'}
                     </p>

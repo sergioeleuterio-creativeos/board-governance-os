@@ -3,10 +3,10 @@ import Link from 'next/link'
 import { PRODUCT } from '@/lib/shadow-board/product'
 
 const pillars = [
-  ['Company Brain', 'Contexto, historico, arquivos, riscos, decisoes e desafios em uma memoria viva.'],
-  ['Diagnosis', 'Strategy Core separa o problema declarado do problema real antes da sala abrir.'],
-  ['Decision Rooms', 'Oito agentes instruidos pressionam a decisao com evidencia, dissenso e sintese ao vivo.'],
-  ['Decision Memory', 'Cada decisao preserva racional, opcoes rejeitadas, confianca, dono e follow-up.'],
+  ['Contexto', 'Conte o que esta acontecendo por conversa, documentos, WhatsApp ou dados soltos.'],
+  ['Diagnostico', 'O Board Brain ajuda a formular melhor o problema antes de forcar uma decisao.'],
+  ['Sessoes', 'Escolha consultoria aberta para plano, ou board session quando ja existe uma decisao.'],
+  ['Acoes', 'Saia com plano, workstreams, KPIs, decisoes candidatas, donos e prazos.'],
 ]
 
 export default function HomePage() {
@@ -26,12 +26,12 @@ export default function HomePage() {
 
       <main className="sb-public-hero">
         <section className="sb-public-copy">
-          <p className="sb-code">Decision infrastructure</p>
-          <h1>A sala de decisao que conhece o negocio antes de dar conselho.</h1>
+          <p className="sb-code">Decision and advisory infrastructure</p>
+          <h1>Conte o que esta acontecendo. Saia com plano, decisao ou acao.</h1>
           <p>
-            Board OS ajuda empresas lideradas por founders a transformar ambiguidade em diagnostico,
-            pressao executiva, entregaveis, memoria e follow-up, sem fingir ser um conselheiro,
-            CEO virtual ou substituto de conselho.
+            Board OS ajuda empresas lideradas por founders a transformar contexto confuso em diagnostico,
+            conselho consultivo, planos, decisoes formais e follow-up, sem fingir ser um conselheiro,
+            CEO virtual ou substituto de governanca.
           </p>
           <div className="sb-public-actions">
             <Link href="/login" className="btn-gold">Acessar workspace</Link>
@@ -42,7 +42,7 @@ export default function HomePage() {
         <section className="sb-public-readout" aria-label="Modulos do produto">
           <div className="sb-public-panel">
             <p className="sb-code">Principio</p>
-            <h2>Mais contexto. Melhor desacordo. Decisoes que viram trabalho.</h2>
+            <h2>Primeiro entender. Depois escolher. Sempre sair com trabalho claro.</h2>
           </div>
           <div className="sb-public-grid">
             {pillars.map(([title, description]) => (

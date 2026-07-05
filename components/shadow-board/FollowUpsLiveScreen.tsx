@@ -59,6 +59,17 @@ function dueThisWeek(item: FollowUpRecord) {
   return dueDate >= today && dueDate <= weekAhead
 }
 
+function statusLabel(status: string) {
+  const labels: Record<string, string> = {
+    open: 'Aberta',
+    in_progress: 'Em andamento',
+    done: 'Concluída',
+    blocked: 'Bloqueada',
+    cancelled: 'Cancelada',
+  }
+  return labels[status] ?? status
+}
+
 export function FollowUpsLiveScreen() {
   const [followUps, setFollowUps] = useState<FollowUpRecord[]>([])
   const [loading, setLoading] = useState(true)
@@ -184,9 +195,9 @@ export function FollowUpsLiveScreen() {
   return (
     <div className="space-y-6">
       <PageHeader
-        eyebrow="07 - Follow-ups"
-        title="Cadencia e follow-through"
-        description="Cada decisao carrega responsaveis e datas. Esta tela mantem a memoria operacional viva."
+        eyebrow="05 - Ações"
+        title="Ações abertas"
+        description="Tudo que saiu de uma sessão consultiva ou decisão formal fica aqui: dono, prazo, lembrete e próximo passo."
       />
 
       {(error || notice) && (
@@ -197,15 +208,15 @@ export function FollowUpsLiveScreen() {
       )}
 
       <section className="grid gap-4 md:grid-cols-3">
-        <MetricCard label="Atrasados" value={String(metrics.overdue)} detail="acoes criticas" tone={metrics.overdue ? 'critical' : 'positive'} />
-        <MetricCard label="Esta semana" value={String(metrics.dueWeek)} detail="check-ins de responsavel" tone={metrics.dueWeek ? 'caution' : 'neutral'} />
-        <MetricCard label="No trilho" value={String(metrics.onTrack)} detail="loops ativos" tone="positive" />
+        <MetricCard label="Atrasadas" value={String(metrics.overdue)} detail="pedem atenção" tone={metrics.overdue ? 'critical' : 'positive'} />
+        <MetricCard label="Esta semana" value={String(metrics.dueWeek)} detail="check-ins" tone={metrics.dueWeek ? 'caution' : 'neutral'} />
+        <MetricCard label="Em andamento" value={String(metrics.onTrack)} detail="ações abertas" tone="positive" />
       </section>
       <Panel>
-        <SectionTitle label="Tracker de follow-ups" />
+        <SectionTitle label="Lista de ações" />
         <div className="sb-table sb-followup-table">
           <div className="sb-table-head">
-            <span>Follow-up</span><span>Responsavel</span><span>Prazo</span><span>Status</span>
+            <span>Ação</span><span>Responsável</span><span>Prazo</span><span>Status</span>
           </div>
           {loading && (
             <div className="sb-table-row">
@@ -217,7 +228,7 @@ export function FollowUpsLiveScreen() {
           )}
           {!loading && followUps.length === 0 && (
             <div className="sb-table-row">
-              <span>Nenhum follow-up registrado ainda.</span>
+              <span>Nenhuma ação registrada ainda. Rode uma sessão para sair com responsáveis e prazos.</span>
               <span>-</span>
               <span>-</span>
               <span>-</span>
@@ -244,7 +255,7 @@ export function FollowUpsLiveScreen() {
                   disabled={savingId === item.id}
                 >
                   {followUpStatuses.map((status) => (
-                    <option key={status} value={status}>{status}</option>
+                    <option key={status} value={status}>{statusLabel(status)}</option>
                   ))}
                 </select>
                 <button
@@ -253,7 +264,7 @@ export function FollowUpsLiveScreen() {
                   onClick={() => void requestReferral(item)}
                   disabled={referringId === item.id}
                 >
-                  {referringId === item.id ? 'Registrando' : 'Solicitar conexao'}
+                  {referringId === item.id ? 'Registrando' : 'Solicitar conexão'}
                 </button>
                 <button
                   className="sb-inline-link mt-2 block"
