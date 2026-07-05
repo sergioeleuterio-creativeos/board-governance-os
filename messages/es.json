@@ -21,7 +21,7 @@
     "resetEmailSent": "Si el usuario existe, enviamos un enlace para definir una nueva contrasena.",
     "resetRequestFailed": "No pudimos enviar el enlace de recuperacion.",
     "backToPassword": "Volver al login con contrasena",
-    "loginPrinciple": "Entra para revisar contexto, salas de decision, entregables y follow-ups en un workspace protegido.",
+    "loginPrinciple": "Entra para revisar contexto, sesiones, decisiones y follow-ups en un workspace protegido.",
     "checkEmail": "Revisa tu email",
     "checkEmailBody": "Enviamos un enlace de acceso a {email}.",
     "noEmailNote": "No llego? Revisa spam, o",
@@ -29,10 +29,17 @@
     "inviteOnly": "El acceso esta disponible solo por invitacion.",
     "tagline": "Decision infrastructure",
     "welcomeBack": "Entrar a Board OS",
-    "enterEmail": "Ingresa tu email para continuar."
+    "enterEmail": "Ingresa tu email para continuar.",
+    "proof": {
+      "context": "Contexto",
+      "sessions": "Sesiones",
+      "actions": "Acciones"
+    }
   },
   "nav": {
     "groups": {
+      "ownerWorkspace": "Trabajo",
+      "ownerActions": "Acciones",
       "workspace": "Workspace",
       "governance": "Gobernanza",
       "decisionFlow": "Flujo de decision",
@@ -42,17 +49,19 @@
       "operations": "Operaciones"
     },
     "items": {
-      "dashboard": "Dashboard",
-      "company": "Company Brain",
+      "dashboard": "Inicio",
+      "company": "Contexto",
+      "sessions": "Sesiones",
+      "decisionsAndTasks": "Decisiones y tareas",
       "intake": "Intake",
       "governanceRun": "Governance Run",
       "boardPack": "Board Pack",
       "shadowBoard": "Shadow Board Review",
       "diagnosis": "Diagnostico",
       "briefings": "Briefings",
-      "rooms": "Salas de Decision",
+      "rooms": "Sesiones",
       "outputs": "Entregables",
-      "decisions": "Decision Memory",
+      "decisions": "Decisiones",
       "followUps": "Follow-ups",
       "designSystem": "Design System",
       "mobile": "Mobile",
@@ -70,8 +79,9 @@
     "mobile": {
       "home": "Inicio",
       "brain": "Brain",
+      "context": "Contexto",
       "diagnosis": "Diagnostico",
-      "rooms": "Salas",
+      "rooms": "Sesiones",
       "review": "Review",
       "followUps": "Follow-ups",
       "you": "Tu"
@@ -87,15 +97,15 @@
     "title": "Memoria institucional",
     "addToMemory": "+ Agregar memoria",
     "startIntake": "Iniciar intake",
-    "intakeDescription": "Captura chat, notas de voz, archivos, finanzas, riesgos y contexto de la empresa antes del ciclo de gobernanza."
+    "intakeDescription": "Captura chat, notas de voz, archivos, finanzas, riesgos y contexto de la empresa antes de la primera sesión."
   },
   "intake": {
     "eyebrow": "Intake de Company Brain",
     "title": "Construir el contexto de consejo",
-    "description": "Recolecta hechos, premisas, archivos y preguntas abiertas que Board Brain necesita antes de un Governance Run.",
+    "description": "Recolecta hechos, premisas, archivos y preguntas abiertas que Board Brain necesita antes de una sesión.",
     "saveDraft": "Guardar borrador",
     "sendToBrain": "Enviar a Company Brain",
-    "mockMode": "Modo mock local",
+    "mockMode": "Modo local",
     "liveMode": "Supabase activo",
     "savedLive": "Borrador guardado en Supabase",
     "savedLiveDetail": "{inputs} inputs y {entries} memorias guardados",
@@ -172,6 +182,11 @@
       "description": "No hay servicio de transcripcion conectado aun. Por ahora, pega notas de voz o transcripciones aqui.",
       "placeholder": "Pega transcripcion o resumen de nota de voz..."
     },
+    "whatsapp": {
+      "title": "Conversacion de WhatsApp",
+      "description": "Pega una conversacion exportada, resumen o mensajes relevantes. El webhook futuro usara este mismo camino de memoria.",
+      "placeholder": "Pega la conversacion de WhatsApp, resumen o mensajes importantes..."
+    },
     "files": {
       "title": "Archivos y fuentes",
       "description": "Encola PDFs, decks, planillas, documentos y CSVs para storage y extraccion futura en Supabase.",
@@ -189,8 +204,8 @@
       "title": "Revisar antes del governance run",
       "description": "Revisa el resumen que sera guardado en la memoria de la empresa.",
       "missing": "Contexto faltante",
-      "ready": "Listo para el primer Governance Run",
-      "notReady": "Necesita mas contexto antes del run"
+      "ready": "Listo para la primera sesión",
+      "notReady": "Necesita mas contexto antes de la sesión"
     }
   }
 }

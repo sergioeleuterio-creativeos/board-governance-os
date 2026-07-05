@@ -12,26 +12,18 @@ import { displayNameFromProfile } from '@/lib/display-name'
 
 const navGroups = [
   {
-    key: 'workspace',
+    key: 'ownerWorkspace',
     items: [
       { href: '/dashboard', code: '01', key: 'dashboard' },
       { href: '/company-brain', code: '02', key: 'company' },
+      { href: '/rooms', code: '03', key: 'sessions' },
     ],
   },
   {
-    key: 'decisionFlow',
+    key: 'ownerActions',
     items: [
-      { href: '/diagnosis', code: '03', key: 'diagnosis' },
-      { href: '/briefings', code: '04', key: 'briefings' },
-      { href: '/rooms', code: '05', key: 'rooms' },
-      { href: '/outputs', code: '06', key: 'outputs' },
-    ],
-  },
-  {
-    key: 'memory',
-    items: [
-      { href: '/decisions', code: '07', key: 'decisions' },
-      { href: '/follow-ups', code: '08', key: 'followUps' },
+      { href: '/decisions', code: '04', key: 'decisionsAndTasks' },
+      { href: '/follow-ups', code: '05', key: 'followUps' },
     ],
   },
   {
@@ -53,7 +45,7 @@ const navGroups = [
 
 const mobileItems = [
   { href: '/dashboard', key: 'home' },
-  { href: '/diagnosis', key: 'diagnosis' },
+  { href: '/company-brain', key: 'context' },
   { href: '/rooms', key: 'rooms' },
   { href: '/follow-ups', key: 'followUps' },
 ]

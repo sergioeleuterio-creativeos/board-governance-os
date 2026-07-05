@@ -1,7 +1,5 @@
-import { CompanyBrainDecisionScreen } from '@/components/decision-room/DecisionRoomScreens'
-import { getDecisionRoomReadout } from '@/lib/decision-room/contracts'
+import { CompanyBrainLiveScreen } from '@/components/shadow-board/CompanyBrainLiveScreen'
 
-export default async function CompanyBrainPage() {
-  const readout = await getDecisionRoomReadout()
-  return <CompanyBrainDecisionScreen readout={readout} />
+export default function CompanyBrainPage() {
+  return <CompanyBrainLiveScreen />
 }

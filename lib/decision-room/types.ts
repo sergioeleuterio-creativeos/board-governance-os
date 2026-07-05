@@ -2,6 +2,7 @@ export type AgentCode = 'BB' | 'CEO' | 'CFO' | 'CMO' | 'CRO' | 'PRD' | 'CAT' | '
 export type StudioCode = 'SC' | 'BE' | 'CP' | 'SN' | 'RE' | 'MW' | 'PM'
 export type EvidenceStatus = 'CONFIRMADO' | 'DERIVADO' | 'RISCO ATIVO' | 'FALTANDO' | 'PARCIAL'
 export type SessionTypeId = 'problem' | 'hotseat' | 'prep' | 'reset' | 'campaign' | 'review'
+export type SessionKind = 'advisory' | 'board'
 export type DecisionState = 'approved' | 'deferred'
 export type OutputType = 'memo' | 'strategy' | 'sales' | 'campaign' | 'plan' | 'minutes'
 
@@ -68,11 +69,13 @@ export interface BoardTurn {
 
 export interface SessionType {
   id: SessionTypeId
+  kind?: SessionKind
   code: string
   name: string
   tag: string
   desc: string
   outputs: string[]
+  maxTurns?: number
   primary?: boolean
 }
 
@@ -120,23 +123,27 @@ export interface DecisionRoomReadout {
 export interface TurnRequest {
   sessionId: SessionTypeId
   index: number
+  selectedAgents?: AgentCode[]
 }
 
 export interface InterventionRequest {
   sessionId: SessionTypeId
   kind: 'challenge' | 'evidence' | 'invite'
   log?: BoardTurn[]
+  selectedAgents?: AgentCode[]
 }
 
 export interface DecisionCaptureRequest {
   sessionId: SessionTypeId
   state: DecisionState
+  sessionKind?: SessionKind
   clientRoomId?: string
   activeQuestion?: string
   queue?: string[]
   log?: BoardTurn[]
   requestedData?: string[]
   bypassedData?: string[]
+  selectedAgents?: AgentCode[]
 }
 
 export interface DecisionRoomSessionSaveRequest {
@@ -149,5 +156,7 @@ export interface DecisionRoomSessionSaveRequest {
   bypassedData?: string[]
   baseIdx?: number
   baseComplete?: boolean
+  sessionKind?: SessionKind
+  selectedAgents?: AgentCode[]
   decided?: DecisionState | null
 }

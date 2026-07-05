@@ -58,6 +58,7 @@ export interface CompanyBrainIntakeDraft {
   team: TeamIntake
   notes: IntakeNote[]
   voiceTranscript: string
+  whatsAppTranscript: string
   files: IntakeFileDraft[]
   createdAt: string
   updatedAt: string
@@ -124,6 +125,7 @@ export function createEmptyIntakeDraft(locale: CompanyBrainIntakeDraft['locale']
     },
     notes: [],
     voiceTranscript: '',
+    whatsAppTranscript: '',
     files: [],
     createdAt: now,
     updatedAt: now,
@@ -169,7 +171,7 @@ export function scoreCompanyBrainIntake(draft: CompanyBrainIntakeDraft): IntakeQ
       draft.team.operatingCadence,
       draft.team.talentRisks,
     ], 4),
-    chat: Math.min(100, draft.notes.length * 35),
+    chat: Math.min(100, draft.notes.length * 35 + (filled(draft.whatsAppTranscript ?? '') ? 35 : 0)),
     files: draft.files.length > 0 ? 100 : 35,
     review: 100,
   }
@@ -253,6 +255,15 @@ export function buildMemoryCandidates(draft: CompanyBrainIntakeDraft): IntakeMem
       title: 'Voice transcript',
       content: draft.voiceTranscript,
       sourceType: 'voice',
+    })
+  }
+
+  if (filled(draft.whatsAppTranscript ?? '')) {
+    candidates.push({
+      category: 'fact',
+      title: 'WhatsApp conversation transcript',
+      content: draft.whatsAppTranscript,
+      sourceType: 'chat',
     })
   }
 

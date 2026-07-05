@@ -96,7 +96,9 @@ function friendlyLabel(value: string) {
     defer: 'Adiar',
     decision_room_active_question: 'Pergunta ativa',
     decision_room_bypassed_data: 'Lacunas aceitas',
+    decision_room_selected_agents: 'Advisors selecionados',
     decision_room_requested_data: 'Dados pedidos',
+    decision_room_session_kind: 'Tipo de sessão',
     decision_room_session_type: 'Tipo de sala',
     from_advisor_key: 'De',
     live_facilitated: 'Hot Seat',
@@ -144,6 +146,7 @@ type SessionExportData = {
   followUps: Record<string, unknown>[]
   agentReviews: Record<string, unknown>[]
   conversations: Record<string, unknown>[]
+  businessPlans: Record<string, unknown>[]
 }
 
 function roomLog(session: SessionRow) {
@@ -159,11 +162,25 @@ function bypassedData(session: SessionRow) {
 }
 
 function queuedOutputs(session: SessionRow) {
-  return topTexts(asRecord(session.metadata).decision_room_queue, 12)
+  const metadata = asRecord(session.metadata)
+  return topTexts(metadata.decision_room_output_queue ?? metadata.decision_room_queue, 12)
 }
 
 function activeQuestion(session: SessionRow) {
   return valueText(asRecord(session.metadata).decision_room_active_question)
+}
+
+function sessionKind(session: SessionRow) {
+  return valueText(asRecord(session.metadata).decision_room_session_kind) === 'advisory' ? 'advisory' : 'board'
+}
+
+function exportTitle(session: SessionRow) {
+  if (sessionKind(session) === 'advisory') return 'Advisory Session Readout'
+  return session.metadata?.source === 'decision-room' ? 'Board Session Readout' : 'Board Session Readout'
+}
+
+function selectedAgents(session: SessionRow) {
+  return topTexts(asRecord(session.metadata).decision_room_selected_agents, 12)
 }
 
 function sessionStateLine(session: SessionRow) {
@@ -171,19 +188,26 @@ function sessionStateLine(session: SessionRow) {
   const requestedCount = requestedData(session).length
   const bypassedCount = bypassedData(session).length
   const queueCount = queuedOutputs(session).length
+  const kind = sessionKind(session)
   if (session.closure_recommendation) {
-    return `Sessão fechada com recomendação: ${friendlyLabel(session.closure_recommendation)}. ${logCount} turnos registrados, ${requestedCount} pedidos de dados, ${bypassedCount} lacunas aceitas e ${queueCount} entregáveis na fila.`
+    return kind === 'advisory'
+      ? `Sessão consultiva fechada com plano ou recomendação: ${friendlyLabel(session.closure_recommendation)}. ${logCount} turnos registrados, ${requestedCount} pedidos de dados, ${bypassedCount} lacunas aceitas e ${queueCount} entregáveis na fila.`
+      : `Sessão de board fechada com recomendação: ${friendlyLabel(session.closure_recommendation)}. ${logCount} turnos registrados, ${requestedCount} pedidos de dados, ${bypassedCount} lacunas aceitas e ${queueCount} entregáveis na fila.`
   }
   if (logCount > 0 || requestedCount > 0 || bypassedCount > 0) {
-    return `Sessão em andamento: ${logCount} turnos registrados, ${requestedCount} pedidos de dados, ${bypassedCount} lacunas aceitas e ${queueCount} entregáveis na fila. Capture a decisão ou registre uma recomendação antes de compartilhar como saída final.`
+    return `Sessão em andamento: ${logCount} turnos registrados, ${requestedCount} pedidos de dados, ${bypassedCount} lacunas aceitas e ${queueCount} entregáveis na fila. Encerre com plano, decisão ou pedido de mais contexto antes de compartilhar como saída final.`
   }
-  return 'Sessão criada e salva antes dos turnos do conselho. Use este arquivo como registro de preparação; rode a sala, capture a decisão e exporte novamente para compartilhar uma saída final.'
+  return 'Sessão criada e salva antes dos turnos de advisors. Use este arquivo como registro de preparação; rode a sala, encerre com plano ou decisão e exporte novamente para compartilhar uma saída final.'
 }
 
 function nextStepLine(session: SessionRow) {
-  if (session.closure_recommendation) return 'Revisar Decision Memory, confirmar follow-ups e compartilhar o PDF final com os responsáveis.'
+  if (session.closure_recommendation) {
+    return sessionKind(session) === 'advisory'
+      ? 'Revisar plano, confirmar follow-ups e transformar perguntas abertas em decisões candidatas quando necessário.'
+      : 'Revisar Decision Memory, confirmar follow-ups e compartilhar o PDF final com os responsáveis.'
+  }
   if (roomLog(session).length === 0) return 'Iniciar os turnos da sala e registrar pelo menos uma rodada de advisors antes do envio externo.'
-  if (!session.closure_summary) return 'Ir para decisão, aprovar ou adiar com condições, e gerar um novo PDF com síntese final.'
+  if (!session.closure_summary) return 'Encerrar com plano, aprovar uma decisão ou pedir mais contexto, e gerar um novo PDF com síntese final.'
   return 'Confirmar recomendação, donos, condições e data de revisão antes de enviar ao cliente.'
 }
 
@@ -195,20 +219,26 @@ function exportSummary(data: SessionExportData) {
 }
 
 function exportRows(data: SessionExportData) {
-  const { companyName, session, decisions, followUps, agentReviews, conversations } = data
+  const { companyName, session, decisions, followUps, agentReviews, conversations, businessPlans } = data
   const question = activeQuestion(session)
+  const advisory = sessionKind(session) === 'advisory'
   const rows = [
     { section: 'Empresa', index: 1, content: companyName },
     { section: 'Sessão', index: 1, content: `${friendlyLabel(session.session_type)} · ${friendlyLabel(session.status)} · aberta em ${formatDate(session.opened_at ?? session.created_at)}` },
+    { section: 'Tipo de ajuda', index: 1, content: advisory ? 'Sessão consultiva: diagnóstico, conselho, plano e próximos passos.' : 'Sessão de board: trade-offs, recomendação, decisão e condições.' },
+    ...selectedAgents(session).map((content, index) => ({ section: 'Advisors selecionados', index: index + 1, content })),
     ...(question ? [{ section: 'Pergunta ativa', index: 1, content: question }] : []),
     { section: 'Estado da sala', index: 1, content: sessionStateLine(session) },
     { section: 'Próximo passo', index: 1, content: nextStepLine(session) },
     { section: 'Síntese', index: 1, content: exportSummary(data) },
     { section: 'Recomendação', index: 1, content: session.closure_recommendation ? friendlyLabel(session.closure_recommendation) : 'Ainda sem recomendação final registrada.' },
-    ...roomLog(session).map((content, index) => ({ section: 'Hot Seat - turnos', index: index + 1, content })),
+    ...roomLog(session).map((content, index) => ({ section: advisory ? 'Conversa consultiva' : 'Board session - turnos', index: index + 1, content })),
     ...requestedData(session).map((content, index) => ({ section: 'Dados pedidos', index: index + 1, content })),
     ...bypassedData(session).map((content, index) => ({ section: 'Lacunas aceitas', index: index + 1, content })),
     ...queuedOutputs(session).map((content, index) => ({ section: 'Entregáveis na fila', index: index + 1, content })),
+    ...businessPlans.map((plan, index) => ({ section: advisory ? 'Plano consultivo' : 'Plano', index: index + 1, content: valueText(plan) })),
+    ...(advisory ? followUps.map((followUp, index) => ({ section: 'Workstreams e KPIs', index: index + 1, content: valueText(followUp) })) : []),
+    ...(advisory ? decisions.map((decision, index) => ({ section: 'Próximas decisões sugeridas', index: index + 1, content: valueText(decision) })) : []),
     ...decisions.map((decision, index) => ({ section: 'Decisões', index: index + 1, content: valueText(decision) })),
     ...agentReviews.map((review, index) => ({ section: 'Advisor reviews', index: index + 1, content: valueText(review) })),
     ...conversations.map((conversation, index) => ({ section: 'Board round', index: index + 1, content: valueText(conversation) })),
@@ -224,7 +254,7 @@ function renderHtml(data: SessionExportData) {
     acc[row.section].push(row)
     return acc
   }, {})
-  const title = data.session.metadata?.source === 'decision-room' ? 'Hot Seat Readout' : 'Board Session Readout'
+  const title = exportTitle(data.session)
 
   return `<!doctype html>
 <html lang="pt-BR">
@@ -273,7 +303,7 @@ function renderCsv(data: SessionExportData) {
 }
 
 function renderPdf(data: SessionExportData): Buffer {
-  const title = data.session.metadata?.source === 'decision-room' ? 'Hot Seat Readout' : 'Board Session Readout'
+  const title = exportTitle(data.session)
   const rows = exportRows(data)
   const summary = exportSummary(data)
   return renderExecutivePdf({
@@ -332,7 +362,7 @@ export async function POST(request: NextRequest) {
   const access = await requireCompanyAdmin(typedSession.company_id)
   if (isAuthError(access)) return access
 
-  const [{ data: company }, { data: decisions }, { data: agentReviews }, { data: conversations }] = await Promise.all([
+  const [{ data: company }, { data: decisions }, { data: agentReviews }, { data: conversations }, { data: businessPlans }] = await Promise.all([
     service.from('companies').select('name').eq('id', typedSession.company_id).maybeSingle(),
     service
       .from('decisions')
@@ -349,6 +379,12 @@ export async function POST(request: NextRequest) {
       .select('id, from_advisor_key, to_advisor_key, relationship, transcript, summary, conflicts, agreements')
       .eq('board_session_id', typedSession.id)
       .order('created_at', { ascending: true }),
+    service
+      .from('business_plans')
+      .select('id, status, diagnosis, priorities, kpis, workstreams, timeline, risks, assumptions, completeness_score, quality_score, metadata')
+      .eq('governance_cycle_id', typedSession.governance_cycle_id)
+      .order('updated_at', { ascending: false })
+      .limit(3),
   ])
 
   const decisionIds = (decisions ?? []).map(decision => String((decision as Record<string, unknown>).id)).filter(Boolean)
@@ -367,6 +403,7 @@ export async function POST(request: NextRequest) {
     followUps: (followUps ?? []) as Record<string, unknown>[],
     agentReviews: (agentReviews ?? []) as Record<string, unknown>[],
     conversations: (conversations ?? []) as Record<string, unknown>[],
+    businessPlans: (businessPlans ?? []) as Record<string, unknown>[],
   }, exportType)
 
   const signedUrlTtl = signedUrlTtlSeconds()

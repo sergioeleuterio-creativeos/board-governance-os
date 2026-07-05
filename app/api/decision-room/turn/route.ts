@@ -1,16 +1,23 @@
 import { NextResponse } from 'next/server'
 import { getSessionUser } from '@/lib/auth-server'
 import { nextBoardTurn } from '@/lib/decision-room/contracts'
-import type { SessionTypeId } from '@/lib/decision-room/types'
+import { maxTurnsForSession, normalizeSelectedAgents, sessionIds } from '@/lib/decision-room/session-config'
+import type { SessionTypeId, TurnRequest } from '@/lib/decision-room/types'
 
-const sessionIds = new Set(['problem', 'hotseat', 'prep', 'reset', 'campaign', 'review'])
+const validSessionIds = sessionIds()
 
-function parseBody(value: unknown): { sessionId: SessionTypeId; index: number } | null {
+function parseBody(value: unknown): TurnRequest | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const body = value as Record<string, unknown>
-  if (typeof body.sessionId !== 'string' || !sessionIds.has(body.sessionId)) return null
+  if (typeof body.sessionId !== 'string' || !validSessionIds.has(body.sessionId as SessionTypeId)) return null
   if (typeof body.index !== 'number' || !Number.isInteger(body.index) || body.index < 0) return null
-  return { sessionId: body.sessionId as SessionTypeId, index: body.index }
+  const sessionId = body.sessionId as SessionTypeId
+  if (body.index >= maxTurnsForSession(sessionId)) return null
+  return {
+    sessionId,
+    index: body.index,
+    selectedAgents: normalizeSelectedAgents(body.selectedAgents),
+  }
 }
 
 export async function POST(req: Request) {

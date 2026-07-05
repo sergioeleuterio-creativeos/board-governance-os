@@ -21,7 +21,7 @@
     "resetEmailSent": "If the user exists, we sent a link to set a new password.",
     "resetRequestFailed": "We could not send the password reset link.",
     "backToPassword": "Back to password login",
-    "loginPrinciple": "Sign in to review context, decision rooms, outputs, and follow-ups in a protected workspace.",
+    "loginPrinciple": "Sign in to review context, sessions, decisions, and follow-ups in a protected workspace.",
     "checkEmail": "Check your email",
     "checkEmailBody": "We sent a sign-in link to {email}. Click it to continue.",
     "noEmailNote": "Didn't get it? Check your spam folder, or",
@@ -29,10 +29,17 @@
     "inviteOnly": "Access is currently invite-only.",
     "tagline": "Decision infrastructure",
     "welcomeBack": "Sign in to Board OS",
-    "enterEmail": "Enter your email to continue."
+    "enterEmail": "Enter your email to continue.",
+    "proof": {
+      "context": "Context",
+      "sessions": "Sessions",
+      "actions": "Actions"
+    }
   },
   "nav": {
     "groups": {
+      "ownerWorkspace": "Work",
+      "ownerActions": "Actions",
       "workspace": "Workspace",
       "governance": "Governance",
       "decisionFlow": "Decision flow",
@@ -42,17 +49,19 @@
       "operations": "Operations"
     },
     "items": {
-      "dashboard": "Dashboard",
-      "company": "Company Brain",
+      "dashboard": "Home",
+      "company": "Context",
+      "sessions": "Sessions",
+      "decisionsAndTasks": "Decisions & tasks",
       "intake": "Intake",
       "governanceRun": "Governance Run",
       "boardPack": "Board Pack",
       "shadowBoard": "Shadow Board Review",
       "diagnosis": "Diagnosis",
       "briefings": "Briefings",
-      "rooms": "Decision Rooms",
+      "rooms": "Sessions",
       "outputs": "Outputs",
-      "decisions": "Decision Memory",
+      "decisions": "Decisions",
       "followUps": "Follow-ups",
       "designSystem": "Design System",
       "mobile": "Mobile Behavior",
@@ -70,8 +79,9 @@
     "mobile": {
       "home": "Home",
       "brain": "Brain",
+      "context": "Context",
       "diagnosis": "Diagnosis",
-      "rooms": "Rooms",
+      "rooms": "Sessions",
       "review": "Review",
       "followUps": "Follow-ups",
       "you": "You"
@@ -87,15 +97,15 @@
     "title": "Institutional memory",
     "addToMemory": "+ Add to memory",
     "startIntake": "Start intake",
-    "intakeDescription": "Capture chat, voice-ready notes, files, financials, risks, and company context before the governance cycle starts."
+    "intakeDescription": "Capture chat, voice-ready notes, files, financials, risks, and company context before the first session."
   },
   "intake": {
     "eyebrow": "Company Brain intake",
     "title": "Build the board-level context",
-    "description": "Collect the facts, assumptions, files, and open questions that the Board Brain needs before a Governance Run.",
+    "description": "Collect the facts, assumptions, files, and open questions that Board Brain needs before a session.",
     "saveDraft": "Save draft",
     "sendToBrain": "Send to Company Brain",
-    "mockMode": "Local mock mode",
+    "mockMode": "Local mode",
     "liveMode": "Supabase live",
     "savedLive": "Draft saved to Supabase",
     "savedLiveDetail": "{inputs} inputs and {entries} memories saved",
@@ -172,6 +182,11 @@
       "description": "No transcription service is connected yet. For now, paste voice notes or transcript text here.",
       "placeholder": "Paste transcript or voice note summary..."
     },
+    "whatsapp": {
+      "title": "WhatsApp conversation",
+      "description": "Paste an exported conversation, summary, or relevant messages. The future webhook will use this same memory path.",
+      "placeholder": "Paste the WhatsApp conversation, summary, or important messages..."
+    },
     "files": {
       "title": "Files and source material",
       "description": "Queue PDFs, decks, spreadsheets, documents, and CSVs for later Supabase storage and extraction.",
@@ -189,8 +204,8 @@
       "title": "Review before governance run",
       "description": "Review the summary that will be saved to company memory.",
       "missing": "Missing context",
-      "ready": "Ready for first Governance Run",
-      "notReady": "Needs more context before the run"
+      "ready": "Ready for the first session",
+      "notReady": "Needs more context before the session"
     }
   }
 }

@@ -1,7 +1,5 @@
-import { DecisionMemoryScreen } from '@/components/decision-room/DecisionRoomScreens'
-import { getDecisionRoomReadoutWithMemory } from '@/lib/decision-room/table-readout'
+import { DecisionMemoryLiveScreen } from '@/components/shadow-board/DecisionMemoryLiveScreen'
 
-export default async function DecisionsPage() {
-  const readout = await getDecisionRoomReadoutWithMemory()
-  return <DecisionMemoryScreen readout={readout} />
+export default function DecisionsPage() {
+  return <DecisionMemoryLiveScreen />
 }

@@ -46,6 +46,15 @@ type DashboardReadout = {
     overdue_follow_ups: number
   }
   decisions_awaiting: DashboardDecision[]
+  follow_ups?: Array<{
+    id: string
+    title: string
+    action: string | null
+    status: string
+    priority: string
+    due_date: string | null
+    owner_label: string | null
+  }>
   cadence: {
     closed_decisions_90d: number
     memory_updates_90d: number
@@ -86,19 +95,19 @@ export function DashboardLiveScreen() {
 
   const metrics = useMemo(() => ([
     {
-      label: 'Indice de risco',
+      label: 'Risco ativo',
       value: metricValue(readout?.metrics.risk_index ?? null, '0'),
       detail: readout?.metrics.risk_index === null ? '/ 100 - sem leitura' : '/ 100',
       tone: (readout?.metrics.risk_index ?? 0) >= 70 ? 'critical' : 'caution',
     },
     {
-      label: 'Confianca do plano',
+      label: 'Confiança do contexto',
       value: metricValue(readout?.metrics.plan_confidence ?? null, '0'),
       detail: readout?.metrics.plan_confidence === null ? '/ 100 - pendente' : '/ 100',
       tone: (readout?.metrics.plan_confidence ?? 0) >= 70 ? 'positive' : 'neutral',
     },
     {
-      label: 'Decisoes abertas',
+      label: 'Decisões abertas',
       value: String(readout?.metrics.open_decisions ?? 0),
       detail: `${readout?.decisions_awaiting.length ?? 0} aguardando voce`,
       tone: 'neutral',
@@ -151,10 +160,36 @@ export function DashboardLiveScreen() {
         </Panel>
       )}
 
-      <Panel className="sb-principle">
-        <p className="sb-eyebrow">Principio</p>
-        <p>Input consultivo vira decisao, responsavel, memoria e follow-up. Nao mais conselho solto para ser esquecido.</p>
-      </Panel>
+      <section className="grid gap-4 lg:grid-cols-[1.15fr_0.85fr]">
+        <Panel className="sb-principle">
+          <p className="sb-eyebrow">Próxima ação</p>
+          <p>
+            {readout?.needs_company
+              ? 'Conte o que está acontecendo para montar o primeiro contexto da empresa.'
+              : readout?.decisions_awaiting.length
+                ? 'Há decisões abertas para revisar, aprovar, adiar ou transformar em tarefas.'
+                : 'Comece por uma sessão consultiva para diagnosticar o problema, ou leve uma escolha concreta para uma sessão de board.'}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link href="/company/intake" className="btn-primary">Contar o que está acontecendo</Link>
+            <Link href="/rooms" className="btn-secondary">Escolher sessão</Link>
+          </div>
+        </Panel>
+
+        <Panel>
+          <SectionTitle label="Tipo de ajuda" />
+          <div className="grid gap-3">
+            <Link href="/rooms" className="sb-help-choice">
+              <strong>Preciso entender o problema</strong>
+              <span>Diagnóstico, conselho consultivo, plano, workstreams e KPIs.</span>
+            </Link>
+            <Link href="/rooms" className="sb-help-choice">
+              <strong>Preciso decidir</strong>
+              <span>Board pack, trade-offs, recomendação, decisão, memória e follow-ups.</span>
+            </Link>
+          </div>
+        </Panel>
+      </section>
 
       <section className="grid gap-4 lg:grid-cols-4 sm:grid-cols-2">
         {metrics.map(metric => (
@@ -164,7 +199,7 @@ export function DashboardLiveScreen() {
 
       <section className="grid gap-5 xl:grid-cols-[1.35fr_0.9fr]">
         <Panel>
-          <SectionTitle label="Decisoes aguardando voce" action={<Link href="/decisions" className="sb-text-link">Ver todas</Link>} />
+          <SectionTitle label="Decisões aguardando você" action={<Link href="/decisions" className="sb-text-link">Ver todas</Link>} />
           <div className="space-y-3">
             {loading && <p className="sb-muted">Carregando decisoes...</p>}
             {!loading && readout?.decisions_awaiting.map(item => (
@@ -178,24 +213,24 @@ export function DashboardLiveScreen() {
               />
             ))}
             {!loading && !readout?.decisions_awaiting.length && (
-              <p className="sb-muted">Nenhuma decisao aguardando aprovacao. Rode uma governance run para gerar candidatos.</p>
+              <p className="sb-muted">Nenhuma decisão aguardando aprovação. Use uma sessão consultiva para formular o problema ou uma sessão de board para revisar uma escolha concreta.</p>
             )}
           </div>
         </Panel>
 
         <div className="space-y-5">
           <Panel>
-            <SectionTitle label="Cadencia de governanca" />
+            <SectionTitle label="Memória recente" />
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <p className="sb-code">ULTIMOS 90 DIAS</p>
                 <p className="sb-big-number">{readout?.cadence.closed_decisions_90d ?? 0}</p>
-                <p className="sb-muted">Decisoes encerradas</p>
+                <p className="sb-muted">Decisões encerradas</p>
               </div>
               <div>
-                <p className="sb-code">INPUTS REGISTRADOS</p>
+                <p className="sb-code">CONTEXTO REGISTRADO</p>
                 <p className="sb-big-number">{readout?.cadence.memory_updates_90d ?? 0}</p>
-                <p className="sb-muted">Atualizacoes de memoria</p>
+                <p className="sb-muted">Memórias e documentos</p>
               </div>
             </div>
           </Panel>
@@ -220,11 +255,22 @@ export function DashboardLiveScreen() {
           </Panel>
 
           <Panel>
-            <SectionTitle label="Marketplace de follow-up" />
-            <p className="sb-muted">
-              Pedidos para fornecedores avaliados e referencias Creative OS serao disparados a partir dos follow-ups com contexto completo da decisao.
-            </p>
-            <button className="btn-secondary mt-4" type="button">Preparar pedido</button>
+            <SectionTitle label="Tarefas em aberto" action={<Link href="/follow-ups" className="sb-text-link">Ver todas</Link>} />
+            <div className="grid gap-3">
+              {(readout?.follow_ups ?? []).slice(0, 3).map(item => (
+                <RowCard
+                  key={item.id}
+                  code={item.priority}
+                  title={item.title}
+                  detail={`${item.owner_label ?? 'sem responsável'} - ${item.due_date ?? 'sem prazo'}`}
+                  tag={formatStatus(item.status)}
+                  tone={item.priority === 'critical' || item.priority === 'high' ? 'caution' : 'neutral'}
+                />
+              ))}
+              {!loading && !(readout?.follow_ups ?? []).length && (
+                <p className="sb-muted">Nenhuma tarefa aberta. A próxima sessão pode gerar plano, decisões e responsáveis.</p>
+              )}
+            </div>
           </Panel>
         </div>
       </section>

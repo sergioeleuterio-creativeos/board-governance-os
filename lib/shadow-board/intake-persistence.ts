@@ -66,6 +66,7 @@ async function ensureCompany(
     finance: draft.finance,
     team: draft.team,
     notes_count: draft.notes.length,
+    whatsapp_transcript_present: Boolean(draft.whatsAppTranscript?.trim()),
   }
 
   const payload = {
@@ -269,6 +270,18 @@ function buildGovernanceInputs(
           prompt: 'Voice transcript draft',
           content: draft.voiceTranscript,
           structured_data: { transcript: draft.voiceTranscript },
+        }]
+      : []),
+    ...(draft.whatsAppTranscript?.trim()
+      ? [{
+          ...base,
+          mode: 'chat',
+          prompt: 'WhatsApp conversation transcript',
+          content: draft.whatsAppTranscript,
+          structured_data: {
+            source: 'whatsapp',
+            transcript: draft.whatsAppTranscript,
+          },
         }]
       : []),
     ...(draft.files.length

@@ -1503,8 +1503,67 @@
   line-height: 1.5;
 }
 
+.sb-help-choice {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-field);
+  padding: 14px;
+  transition: border-color 140ms ease, background-color 140ms ease;
+}
+
+.sb-help-choice:hover {
+  border-color: rgba(196, 146, 47, 0.55);
+  background: #fffaf0;
+}
+
+.sb-help-choice strong,
+.sb-help-choice span {
+  display: block;
+}
+
+.sb-help-choice strong {
+  color: var(--ink-900);
+  font-size: 13px;
+}
+
+.sb-help-choice span {
+  margin-top: 4px;
+  color: var(--ink-600);
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.sb-agent-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.sb-agent-picker button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-field);
+  padding: 6px 10px;
+  color: var(--ink-600);
+  font-size: 12px;
+  font-weight: 700;
+  transition: border-color 140ms ease, background-color 140ms ease, color 140ms ease;
+}
+
+.sb-agent-picker button:hover,
+.sb-agent-picker button.is-selected {
+  border-color: rgba(196, 146, 47, 0.55);
+  background: #fffaf0;
+  color: var(--ink-900);
+}
+
 .sb-session-card {
-  min-height: 244px;
+  min-height: 208px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;

@@ -1,7 +1,5 @@
-import { DiagnosisScreen } from '@/components/decision-room/DecisionRoomScreens'
-import { getDecisionRoomReadout } from '@/lib/decision-room/contracts'
+import { redirect } from 'next/navigation'
 
-export default async function DiagnosisPage() {
-  const readout = await getDecisionRoomReadout()
-  return <DiagnosisScreen readout={readout} />
+export default function DiagnosisPage() {
+  redirect('/rooms')
 }

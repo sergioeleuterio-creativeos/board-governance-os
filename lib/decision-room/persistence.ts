@@ -18,6 +18,8 @@ type GovernanceCycleRow = {
   company_id: string
 }
 
+type ServiceClient = ReturnType<typeof serviceClient>
+
 function addDays(days: number): string {
   const date = new Date()
   date.setDate(date.getDate() + days)
@@ -48,6 +50,8 @@ function dueDate(value: string | null | undefined) {
 type RoomMetadataInput = {
   clientRoomId?: string
   sessionId: string
+  sessionKind?: string
+  selectedAgents?: string[]
   activeQuestion?: string
   requestedData?: string[]
   bypassedData?: string[]
@@ -72,6 +76,8 @@ function roomMetadata(request: RoomMetadataInput) {
   return {
     decision_room_client_id: request.clientRoomId ?? null,
     decision_room_session_type: request.sessionId,
+    decision_room_session_kind: request.sessionKind ?? 'board',
+    decision_room_selected_agents: request.selectedAgents ?? ['BB'],
     decision_room_active_question: request.activeQuestion ?? null,
     decision_room_requested_data: request.requestedData ?? [],
     decision_room_bypassed_data: request.bypassedData ?? [],
@@ -87,6 +93,101 @@ function roomMetadata(request: RoomMetadataInput) {
 function closureSummaryFromLog(log: BoardTurn[] | undefined) {
   const lastTurn = log?.filter(turn => turn.text.trim()).at(-1)
   return lastTurn?.text.slice(0, 800) ?? 'Sessão do Decision Room salva em andamento.'
+}
+
+async function persistAdvisoryBusinessPlan(
+  service: ServiceClient,
+  input: {
+    company: CurrentCompany
+    cycle: GovernanceCycleRow
+    userId: string
+    request: DecisionCaptureRequest
+    decision: DecisionRecord
+    followUps: FollowUp[]
+  }
+) {
+  const { company, cycle, userId, request, decision, followUps } = input
+  const metadata = {
+    source: 'advisory-session',
+    adapter: process.env.DECISION_ROOM_ADAPTER ?? 'mock',
+    decision_room_client_id: request.clientRoomId ?? null,
+    active_question: request.activeQuestion ?? null,
+    selected_agents: request.selectedAgents ?? ['BB'],
+    requested_data: request.requestedData ?? [],
+    bypassed_data: request.bypassedData ?? [],
+    output_queue: request.queue ?? [],
+    created_by: userId,
+  }
+  const payload = {
+    organization_id: company.organization_id,
+    company_id: company.id,
+    governance_cycle_id: cycle.id,
+    status: 'ready_for_review',
+    diagnosis: decision.rationale,
+    priorities: decision.conditions.map((condition, index) => ({
+      title: condition,
+      priority: index === 0 ? 'high' : 'medium',
+    })),
+    kpis: followUps.map((item) => ({
+      metric: item.title,
+      owner: item.owner,
+      due: item.due,
+      status: item.status,
+    })),
+    workstreams: followUps.map((item) => ({
+      title: item.title,
+      owner: item.owner,
+      due: item.due,
+      dependency: item.dependency,
+      escalation: item.escalation,
+    })),
+    timeline: {
+      reviewDate: decision.reviewDate,
+      sessionClosedAt: new Date().toISOString(),
+    },
+    risks: decision.rejectedOptions.map(option => ({ title: option })),
+    assumptions: [
+      ...(request.requestedData ?? []).map(item => ({ type: 'requested_data', detail: item })),
+      ...(request.bypassedData ?? []).map(item => ({ type: 'accepted_gap', detail: item })),
+    ],
+    completeness_score: decision.confidence,
+    quality_score: decision.confidence,
+    metadata,
+  }
+
+  const { data: existing, error: lookupError } = request.clientRoomId
+    ? await service
+      .from('business_plans')
+      .select('id')
+      .eq('company_id', company.id)
+      .eq('metadata->>decision_room_client_id', request.clientRoomId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    : { data: null, error: null }
+
+  if (lookupError) throw new Error(lookupError.message)
+
+  if (existing?.id) {
+    const { error: updateError } = await service
+      .from('business_plans')
+      .update(payload)
+      .eq('id', existing.id)
+    if (updateError) throw new Error(updateError.message)
+    return existing.id as string
+  }
+
+  const { data: created, error: createError } = await service
+    .from('business_plans')
+    .insert(payload)
+    .select('id')
+    .single()
+
+  if (createError || !created) {
+    throw new Error(createError?.message || 'Não foi possível salvar o plano consultivo')
+  }
+
+  return created.id as string
 }
 
 async function ensureDecisionRoomCycle(company: CurrentCompany): Promise<GovernanceCycleRow> {
@@ -131,21 +232,40 @@ export async function persistDecisionRoomCapture(input: PersistDecisionRoomCaptu
   const { company, userId, request, decision, followUps } = input
   const cycle = await ensureDecisionRoomCycle(company)
   const now = new Date().toISOString()
-  const closureRecommendation = request.state === 'approved' ? 'commit_with_conditions' : 'defer'
-  const decisionStatus = request.state === 'approved' ? 'approved' : 'deferred'
+  const isAdvisory = request.sessionKind === 'advisory'
+  const closureRecommendation = request.state === 'approved'
+    ? 'commit_with_conditions'
+    : isAdvisory ? 'request_more_data' : 'defer'
+  const decisionStatus = isAdvisory
+    ? request.state === 'approved' ? 'candidate' : 'deferred'
+    : request.state === 'approved' ? 'approved' : 'deferred'
 
   const { data: existingDecision, error: existingDecisionError } = await service
     .from('decisions')
     .select('id, board_session_id')
     .eq('company_id', company.id)
     .eq('metadata->>decision_room_source_id', decision.id)
+    .eq('metadata->>decision_room_session_kind', request.sessionKind ?? 'board')
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle()
 
   if (existingDecisionError) throw new Error(existingDecisionError.message)
 
-  let boardSessionId = existingDecision?.board_session_id ?? null
+  const { data: existingSession, error: existingSessionError } = request.clientRoomId
+    ? await service
+      .from('board_sessions')
+      .select('id')
+      .eq('company_id', company.id)
+      .eq('metadata->>decision_room_client_id', request.clientRoomId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    : { data: null, error: null }
+
+  if (existingSessionError) throw new Error(existingSessionError.message)
+
+  let boardSessionId = existingDecision?.board_session_id ?? existingSession?.id ?? null
   if (!boardSessionId) {
     const { data: boardSession, error: boardSessionError } = await service
       .from('board_sessions')
@@ -154,7 +274,7 @@ export async function persistDecisionRoomCapture(input: PersistDecisionRoomCaptu
         company_id: company.id,
         governance_cycle_id: cycle.id,
         started_by: userId,
-        session_type: 'virtual_review',
+        session_type: isAdvisory ? 'diagnostic' : 'virtual_review',
         status: 'awaiting_founder',
         opened_at: now,
         closure_recommendation: closureRecommendation,
@@ -197,8 +317,8 @@ export async function persistDecisionRoomCapture(input: PersistDecisionRoomCaptu
     board_session_id: boardSessionId,
     created_by: userId,
     user_id: userId,
-    title: decision.statement,
-    decision: request.state,
+    title: isAdvisory ? `Plano consultivo: ${decision.statement}` : decision.statement,
+    decision: isAdvisory ? 'advisory_plan' : request.state,
     status: decisionStatus,
     closure_recommendation: closureRecommendation,
     rationale: decision.rationale,
@@ -270,11 +390,23 @@ export async function persistDecisionRoomCapture(input: PersistDecisionRoomCaptu
     if (followUpError) throw new Error(followUpError.message)
   }
 
+  const businessPlanId = isAdvisory
+    ? await persistAdvisoryBusinessPlan(service, {
+      company,
+      cycle,
+      userId,
+      request,
+      decision,
+      followUps,
+    })
+    : null
+
   return {
     persisted: true,
     governanceCycleId: cycle.id,
     boardSessionId,
     decisionId,
+    businessPlanId,
     followUpsCount: followUpRows.length,
   }
 }
@@ -310,7 +442,7 @@ export async function persistDecisionRoomSession(input: {
     company_id: company.id,
     governance_cycle_id: cycle.id,
     started_by: userId,
-    session_type: 'live_facilitated',
+    session_type: state.sessionKind === 'advisory' ? 'diagnostic' : 'live_facilitated',
     status: state.decided ? 'awaiting_founder' : 'open',
     opened_at: now,
     closure_summary: closureSummaryFromLog(state.log),

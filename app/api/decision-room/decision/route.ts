@@ -3,9 +3,10 @@ import { getSessionUser, isAuthError, requireCompanyAdmin } from '@/lib/auth-ser
 import { captureRoomDecision } from '@/lib/decision-room/contracts'
 import { persistDecisionRoomCapture } from '@/lib/decision-room/persistence'
 import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
+import { normalizeSelectedAgents, sessionIds, sessionKindFor } from '@/lib/decision-room/session-config'
 import type { BoardTurn, DecisionCaptureRequest, DecisionState, SessionTypeId } from '@/lib/decision-room/types'
 
-const sessionIds = new Set(['problem', 'hotseat', 'prep', 'reset', 'campaign', 'review'])
+const validSessionIds = sessionIds()
 const states = new Set(['approved', 'deferred'])
 
 function stringArray(value: unknown) {
@@ -21,17 +22,20 @@ function roomLog(value: unknown) {
 function parseBody(value: unknown): DecisionCaptureRequest | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const body = value as Record<string, unknown>
-  if (typeof body.sessionId !== 'string' || !sessionIds.has(body.sessionId)) return null
+  if (typeof body.sessionId !== 'string' || !validSessionIds.has(body.sessionId as SessionTypeId)) return null
   if (typeof body.state !== 'string' || !states.has(body.state)) return null
+  const sessionId = body.sessionId as SessionTypeId
   return {
-    sessionId: body.sessionId as SessionTypeId,
+    sessionId,
     state: body.state as DecisionState,
+    sessionKind: sessionKindFor(sessionId),
     clientRoomId: typeof body.clientRoomId === 'string' ? body.clientRoomId : undefined,
     activeQuestion: typeof body.activeQuestion === 'string' ? body.activeQuestion : undefined,
     queue: stringArray(body.queue),
     log: roomLog(body.log),
     requestedData: stringArray(body.requestedData),
     bypassedData: stringArray(body.bypassedData),
+    selectedAgents: normalizeSelectedAgents(body.selectedAgents),
   }
 }
 

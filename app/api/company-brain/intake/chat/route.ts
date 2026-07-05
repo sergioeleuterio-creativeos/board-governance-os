@@ -29,7 +29,7 @@ const sectionQuestions: Record<IntakeSectionKey, string[]> = {
   ],
   files: [
     'Existe algum PDF, planilha, deck ou relatorio que prove ou contradiga essa narrativa?',
-    'Que arquivo financeiro deveria entrar no proximo Board Pack?',
+    'Que arquivo financeiro deveria entrar no contexto antes da proxima sessao?',
   ],
   review: [
     'Qual trade-off voce quer ver explicitado antes de aprovar o plano?',
@@ -67,8 +67,8 @@ function replyFor(draft: CompanyBrainIntakeDraft, message: string) {
   const companyName = compact(draft.company.name) || 'a empresa'
   const oneLine = compact(message).slice(0, 260)
   const qualityNote = result.quality.readyForGovernanceRun
-    ? 'A qualidade do intake ja permite preparar uma Governance Run inicial.'
-    : `A qualidade do intake esta em ${result.quality.total}/100; eu ainda seguraria a Governance Run ate fechar os pontos abaixo.`
+    ? 'A qualidade do intake ja permite preparar uma primeira sessao.'
+    : `A qualidade do intake esta em ${result.quality.total}/100; eu ainda seguraria a sessao ate fechar os pontos abaixo.`
 
   return [
     `Registrei isso como contexto para ${companyName}: ${oneLine}`,

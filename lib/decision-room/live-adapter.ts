@@ -3,6 +3,7 @@ import 'server-only'
 import { callJSONAI } from '@/lib/board/model-router'
 import { buildGenericDecisionRoomPack } from './generic-data'
 import type {
+  AgentCode,
   BoardTurn,
   DecisionCaptureRequest,
   DecisionRecord,
@@ -69,8 +70,28 @@ function sanitizeTurn(output: LiveTurnOutput, readout: DecisionRoomReadout, fall
   }
 }
 
+function selectedBoardAgents(readout: DecisionRoomReadout, selectedAgents: AgentCode[] | undefined) {
+  const selected = new Set(selectedAgents?.length ? selectedAgents : ['BB'])
+  const filtered = readout.boardAgents.filter(agent => selected.has(agent.code))
+  return filtered.length ? filtered : readout.boardAgents
+}
+
+function selectedTranscript(transcript: BoardTurn[], selectedAgents: AgentCode[] | undefined) {
+  const selected = new Set(selectedAgents?.length ? selectedAgents : ['BB'])
+  const filtered = transcript.filter(turn => turn.studio || selected.has(turn.code as AgentCode))
+  return filtered.length ? filtered : transcript
+}
+
 function decisionFallbackQueue(input: DecisionCaptureRequest, fallbackOutputs: ExecutionOutput[]) {
   if (input.state !== 'approved') return input.queue ?? []
+  if (input.sessionKind === 'advisory') {
+    return Array.from(new Set([
+      ...(input.queue ?? []),
+      'Resumo executivo consultivo',
+      fallbackOutputs.find(output => output.title.toLowerCase().includes('plano consultivo'))?.title ?? 'Plano consultivo',
+      'Workstreams e KPIs',
+    ]))
+  }
   return Array.from(new Set([
     ...(input.queue ?? []),
     fallbackOutputs.find(output => output.type === 'memo')?.title ?? 'Memo da decisão',
@@ -123,7 +144,8 @@ export const liveDecisionRoomAdapter = {
 
   async nextTurn(input: TurnRequest) {
     const pack = await buildGenericDecisionRoomPack()
-    const fallback = pack.transcript[input.index] ?? null
+    const transcript = selectedTranscript(pack.transcript, input.selectedAgents)
+    const fallback = transcript[input.index] ?? null
     if (!fallback) return null
 
     const agent = pack.readout.boardAgents.find(item => item.code === fallback.code)
@@ -137,6 +159,7 @@ export const liveDecisionRoomAdapter = {
         sessionId: input.sessionId,
         turnIndex: input.index,
         advisor: agent,
+        selectedAdvisors: selectedBoardAgents(pack.readout, input.selectedAgents),
         diagnosis: pack.readout.diagnosis,
         boardBrief: pack.readout.boardBrief,
         expectedShape: {
@@ -168,7 +191,7 @@ export const liveDecisionRoomAdapter = {
         task: 'Generate a live room intervention grounded in the current decision-room log.',
         interventionKind: input.kind,
         diagnosis: pack.readout.diagnosis,
-        boardAgents: pack.readout.boardAgents,
+        boardAgents: selectedBoardAgents(pack.readout, input.selectedAgents),
         recentLog: compactTurnLog(input.log),
         expectedShape: {
           code: input.kind === 'evidence' ? 'RE' : 'CAT',
@@ -202,6 +225,8 @@ export const liveDecisionRoomAdapter = {
         state: input.state,
         sessionId: input.sessionId,
         activeQuestion: input.activeQuestion,
+        sessionKind: input.sessionKind,
+        selectedAdvisors: selectedBoardAgents(pack.readout, input.selectedAgents),
         requestedData: input.requestedData,
         bypassedData: input.bypassedData,
         outputQueue: input.queue,

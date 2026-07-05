@@ -1,5 +1,4 @@
 const adapter = process.env.DECISION_ROOM_ADAPTER || 'mock'
-const seed = process.env.DECISION_ROOM_SEED || ''
 const vercelEnv = process.env.VERCEL_ENV || ''
 const aiProvider = (process.env.AI_PROVIDER || '').toLowerCase()
 const hasOpenAIKey = Boolean(process.env.OPENAI_API_KEY)
@@ -18,12 +17,8 @@ if (!['mock', 'http', 'worker'].includes(creativeOSMode)) {
   errors.push(`CREATIVE_OS_MODE must be "mock", "http", or "worker"; received "${creativeOSMode}".`)
 }
 
-if (vercelEnv === 'production' && seed === 'lance') {
-  errors.push('DECISION_ROOM_SEED="lance" is disabled in production.')
-}
-
-if (seed && seed !== 'lance') {
-  errors.push(`DECISION_ROOM_SEED supports only "lance" or blank; received "${seed}".`)
+if (process.env.DECISION_ROOM_SEED) {
+  errors.push('DECISION_ROOM_SEED is no longer supported. Use current-company data or training packs instead.')
 }
 
 if (adapter === 'live') {
@@ -60,4 +55,4 @@ if (errors.length) {
   process.exit(1)
 }
 
-console.log(`OK Decision Room readiness: adapter=${adapter}, creative_os=${creativeOSMode}, seed=${seed || 'blank'}, env=${vercelEnv || 'local'}`)
+console.log(`OK Decision Room readiness: adapter=${adapter}, creative_os=${creativeOSMode}, env=${vercelEnv || 'local'}`)

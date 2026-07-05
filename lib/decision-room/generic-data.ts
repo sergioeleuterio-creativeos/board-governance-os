@@ -14,6 +14,7 @@ import type {
   StrategyDiagnosis,
   StudioAgent,
 } from './types'
+import { maxTurnsForSession } from './session-config'
 
 type MemoryEntry = {
   id: string
@@ -139,12 +140,12 @@ const genericStudioAgents: StudioAgent[] = [
 ]
 
 const genericSessionTypes: SessionType[] = [
-  { id: 'problem', code: 'PB', name: 'Problem Build', tag: 'Nomear o problema real', desc: 'Quando o desafio ainda está amplo demais para virar decisão.', outputs: ['Problema declarado vs. inferido', 'Tensões', 'Perguntas de decisão'] },
-  { id: 'hotseat', code: 'HS', name: 'Hot Seat', tag: 'Pressão executiva sobre a escolha', desc: 'Coloque uma decisão sob pressão de marca, receita, finanças, produto, cliente e categoria.', outputs: ['Concordâncias e divergências', 'Pedidos de dados', 'Caminho recomendado'], primary: true },
-  { id: 'prep', code: 'BP', name: 'Board Prep', tag: 'Antes de uma reunião real', desc: 'Prepare a conversa com conselho, sócios, liderança ou parceiros-chave.', outputs: ['Memo do conselho', 'Perguntas prováveis', 'Pontos frágeis'] },
-  { id: 'reset', code: 'SR', name: 'Strategy Reset', tag: 'Reposicionar o jogo', desc: 'Reposicionamento, oferta, modelo operacional, narrativa e dados.', outputs: ['Diagnóstico', 'Opções estratégicas', 'Plano operacional'] },
-  { id: 'campaign', code: 'CT', name: 'Teste de campanha', tag: 'Depois que há uma direção', desc: 'Estresse uma campanha, narrativa comercial ou movimento de mercado.', outputs: ['Crítica da campanha', 'Riscos de mensagem', 'Territórios aprimorados'] },
-  { id: 'review', code: 'DR', name: 'Revisão de decisão', tag: 'Depois de executar', desc: 'Revisite uma decisão para separar o que se sustentou do que precisa mudar.', outputs: ['O que mudou', 'Evidências novas', 'Continuar / ajustar / parar'] },
+  { id: 'problem', kind: 'advisory', code: 'DG', name: 'Diagnosticar o problema', tag: 'Quando a questão ainda está nebulosa', desc: 'Transforme contexto solto, documentos e perguntas abertas em diagnóstico, tensões e próximos caminhos.', outputs: ['Diagnóstico', 'Perguntas melhores', 'Próximas decisões'], maxTurns: maxTurnsForSession('problem') },
+  { id: 'reset', kind: 'advisory', code: 'ST', name: 'Plano estratégico', tag: 'Quando o cliente quer direção', desc: 'Construa uma recomendação consultiva com plano, workstreams, KPIs, riscos e premissas.', outputs: ['Análise executiva', 'Plano', 'Workstreams e KPIs'], maxTurns: maxTurnsForSession('reset') },
+  { id: 'campaign', kind: 'advisory', code: 'MK', name: 'Marketing e marca', tag: 'CMO, GTM e Creative OS', desc: 'Use advisors de marca, receita e mercado para posicionamento, narrativa, campanha ou plano comercial.', outputs: ['Diagnóstico de marca', 'Narrativa', 'Plano de mercado'], maxTurns: maxTurnsForSession('campaign') },
+  { id: 'hotseat', kind: 'board', code: 'BD', name: 'Revisar uma decisão', tag: 'Pressão executiva sobre uma escolha', desc: 'Coloque uma decisão concreta sob pressão de marca, receita, finanças, produto, cliente e categoria.', outputs: ['Trade-offs', 'Recomendação', 'Decisão e condições'], maxTurns: maxTurnsForSession('hotseat'), primary: true },
+  { id: 'prep', kind: 'board', code: 'BP', name: 'Preparar board pack', tag: 'Antes de conselho, sócios ou liderança', desc: 'Prepare a conversa formal com evidências, perguntas prováveis, pontos frágeis e narrativa executiva.', outputs: ['Board pack', 'Perguntas prováveis', 'Pontos frágeis'], maxTurns: maxTurnsForSession('prep') },
+  { id: 'review', kind: 'board', code: 'RV', name: 'Revisar execução', tag: 'Depois de executar', desc: 'Revisite uma decisão para separar o que se sustentou do que precisa mudar.', outputs: ['O que mudou', 'Evidências novas', 'Continuar / ajustar / parar'], maxTurns: maxTurnsForSession('review') },
 ]
 
 function addDays(days: number): string {
@@ -388,6 +389,7 @@ function buildDecision(company: CurrentCompany | null, diagnosis: StrategyDiagno
 function buildOutputs(company: CurrentCompany | null): ExecutionOutput[] {
   const name = companyLabel(company)
   return [
+    { type: 'plan', title: `Plano consultivo - ${name}`, body: 'Diagnóstico, análise executiva, recomendação, workstreams, KPIs, riscos, premissas e perguntas que precisam virar decisão.', sources: ['Advisory Session', 'Company Brain'], pages: 7 },
     { type: 'memo', title: `Memo da decisão - ${name}`, body: 'Decisão, racional, opções rejeitadas, condições, evidências e perguntas abertas para revisão.', sources: ['Decision Room', 'Company Brain'], pages: 4 },
     { type: 'strategy', title: 'Brief de estratégia', body: 'Tese central, opções, riscos, condições, implicações para operação e mercado.', sources: ['Strategy Core', 'Company Brain'], pages: 5 },
     { type: 'sales', title: 'Narrativa comercial', body: 'Nova abertura comercial, objeções, proposta de valor e sinais de validação.', sources: ['CRO', 'CMO', 'Go-to-market'], pages: 4 },

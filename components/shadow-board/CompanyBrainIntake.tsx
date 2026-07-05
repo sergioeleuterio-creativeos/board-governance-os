@@ -403,6 +403,13 @@ export function CompanyBrainIntakeScreen() {
               <TextArea label={t('voice.title')} value={draft.voiceTranscript} placeholder={t('voice.placeholder')} onChange={value => setDraft(current => ({ ...current, voiceTranscript: value }))} />
               <p className="sb-muted">{t('voice.description')}</p>
               <button type="button" className="btn-secondary" onClick={() => addChatNote('voice')}>{t('chat.add')}</button>
+              <TextArea
+                label={t('whatsapp.title')}
+                value={draft.whatsAppTranscript ?? ''}
+                placeholder={t('whatsapp.placeholder')}
+                onChange={value => setDraft(current => ({ ...current, whatsAppTranscript: value, updatedAt: new Date().toISOString() }))}
+              />
+              <p className="sb-muted">{t('whatsapp.description')}</p>
             </FieldGroup>
           )}
 

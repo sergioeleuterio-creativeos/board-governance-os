@@ -262,9 +262,9 @@ export default function LoginPage() {
         <h1>{t('welcomeBack')}</h1>
         <p>{t('loginPrinciple')}</p>
         <div className="sb-login-proof">
-          <span>Company Brain</span>
-          <span>Decision Rooms</span>
-          <span>Decision Memory</span>
+          <span>{t('proof.context')}</span>
+          <span>{t('proof.sessions')}</span>
+          <span>{t('proof.actions')}</span>
         </div>
       </section>
 

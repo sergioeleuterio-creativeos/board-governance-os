@@ -18,7 +18,6 @@ const protectedRoutes = [
   '/admin',
   '/admin/training-packs',
   '/admin/ai',
-  '/demo/lance',
 ]
 
 async function checkPublic(route) {

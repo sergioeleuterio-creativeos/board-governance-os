@@ -1,7 +1,5 @@
-import { DecisionDashboardScreen } from '@/components/decision-room/DecisionRoomScreens'
-import { getDecisionRoomReadout } from '@/lib/decision-room/contracts'
+import { DashboardLiveScreen } from '@/components/shadow-board/DashboardLiveScreen'
 
-export default async function DashboardPage() {
-  const readout = await getDecisionRoomReadout()
-  return <DecisionDashboardScreen readout={readout} />
+export default function DashboardPage() {
+  return <DashboardLiveScreen />
 }

@@ -46,6 +46,10 @@ function lowContext(diagnosis: DecisionRoomReadout['diagnosis']) {
   return diagnosis.confidence < 58 || diagnosis.evidenceMap.some(item => item.status === 'FALTANDO')
 }
 
+function advisorTurnCount(log: BoardTurn[]) {
+  return log.filter(turn => !turn.studio).length
+}
+
 function EvidenceList({ diagnosis }: { diagnosis: DecisionRoomReadout['diagnosis'] }) {
   return (
     <div className="grid gap-3">
@@ -321,6 +325,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
   const { boardAgents, diagnosis, sessionTypes } = readout
   const [clientRoomId, setClientRoomId] = useState(() => newRoomId())
   const [activeSession, setActiveSession] = useState<string | null>(null)
+  const [selectedAgents, setSelectedAgents] = useState<string[]>(['BB', 'CMO', 'CFO', 'CRO'])
   const [log, setLog] = useState<BoardTurn[]>([])
   const [baseIdx, setBaseIdx] = useState(0)
   const [baseComplete, setBaseComplete] = useState(false)
@@ -344,6 +349,12 @@ export function RoomsScreen({ readout }: ScreenProps) {
   const active = sessionTypes.find(item => item.id === activeSession)
   const decisionQuestions = diagnosis.decisionQuestions?.length ? diagnosis.decisionQuestions : [diagnosis.recommendedQuestion]
   const needsIntake = lowContext(diagnosis)
+  const advisorySessions = sessionTypes.filter(session => session.kind === 'advisory')
+  const boardSessions = sessionTypes.filter(session => session.kind !== 'advisory')
+  const activeKind = sessionTypes.find(session => session.id === activeSession)?.kind ?? 'board'
+  const turnLimit = active?.maxTurns ?? (activeKind === 'advisory' ? 6 : 8)
+  const usedAdvisorTurns = advisorTurnCount(log)
+  const turnLimitReached = usedAdvisorTurns >= turnLimit
   const logView = isolate
     ? log.filter(turn => /DISCORDA|ATACA|PARCIAL|PRESSIONA|CONDICIONA|DADOS|RISCO/.test(turn.tag))
     : log
@@ -369,6 +380,15 @@ export function RoomsScreen({ readout }: ScreenProps) {
     setExporting(false)
     setExportUrl(null)
     setExportError('')
+  }
+
+  function toggleAgent(code: string) {
+    setSelectedAgents(current => {
+      if (code === 'BB') return current.includes('BB') ? current : ['BB', ...current]
+      return current.includes(code)
+        ? current.filter(item => item !== code)
+        : [...current, code]
+    })
   }
 
   function pushTurn(turn: BoardTurn) {
@@ -405,6 +425,8 @@ export function RoomsScreen({ readout }: ScreenProps) {
           bypassedData: snapshot?.bypassedData ?? bypassedData,
           baseIdx: snapshot?.baseIdx ?? baseIdx,
           baseComplete: snapshot?.baseComplete ?? baseComplete,
+          sessionKind: activeKind,
+          selectedAgents,
           decided: snapshot?.decided ?? decided,
         }),
       })
@@ -447,13 +469,19 @@ export function RoomsScreen({ readout }: ScreenProps) {
 
   async function nextTurn() {
     if (!activeSession || thinking) return
+    if (turnLimitReached) {
+      setBaseComplete(true)
+      setRoomError(`Limite desta sessão atingido: ${turnLimit} turnos de advisor. Encerre com plano, decisão ou pedido de mais contexto.`)
+      void saveSession({ baseComplete: true })
+      return
+    }
     setThinking(true)
     setRoomError('')
     try {
       const response = await fetch('/api/decision-room/turn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: activeSession, index: baseIdx }),
+        body: JSON.stringify({ sessionId: activeSession, index: baseIdx, selectedAgents }),
       })
       const payload = await response.json().catch(() => null) as { turn?: BoardTurn | null; error?: string } | null
       if (!response.ok) throw new Error(payload?.error ?? 'Turno falhou.')
@@ -476,13 +504,17 @@ export function RoomsScreen({ readout }: ScreenProps) {
 
   async function requestIntervention(kind: 'challenge' | 'evidence' | 'invite') {
     if (!activeSession || thinking) return
+    if (turnLimitReached) {
+      setRoomError(`Limite desta sessão atingido: ${turnLimit} turnos de advisor. Encerre com plano, decisão ou pedido de mais contexto.`)
+      return
+    }
     setThinking(true)
     setRoomError('')
     try {
       const response = await fetch('/api/decision-room/intervention', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: activeSession, kind, log }),
+        body: JSON.stringify({ sessionId: activeSession, kind, log, selectedAgents }),
       })
       const payload = await response.json().catch(() => null) as { turn?: BoardTurn; error?: string } | null
       if (!response.ok || !payload?.turn) throw new Error(payload?.error ?? 'Intervenção falhou.')
@@ -513,12 +545,18 @@ export function RoomsScreen({ readout }: ScreenProps) {
           log,
           requestedData,
           bypassedData,
+          selectedAgents,
         }),
       })
-      const payload = await response.json().catch(() => null) as { queue?: string[]; error?: string } | null
+      const payload = await response.json().catch(() => null) as {
+        queue?: string[]
+        error?: string
+        persistence?: { boardSessionId?: string }
+      } | null
       if (!response.ok) throw new Error(payload?.error ?? 'Não foi possível registrar a decisão.')
       setDecided(state)
       setDecisionOpen(false)
+      if (payload?.persistence?.boardSessionId) setBoardSessionId(payload.persistence.boardSessionId)
       if (payload?.queue) setQueue(payload.queue)
       void saveSession({ queue: payload?.queue ?? queue, decided: state })
     } catch (error) {
@@ -573,49 +611,61 @@ export function RoomsScreen({ readout }: ScreenProps) {
     return (
       <div className="space-y-6">
         <PageHeader
-          eyebrow="05 - Salas de decisão"
-          title="Escolha a sala certa para esta decisão"
-          description="Board OS não abre um chat vazio. Cada sala começa com finalidade, materiais de origem, perguntas e agentes já instruídos."
+          eyebrow="Sessões"
+          title="Escolha que tipo de ajuda você precisa"
+          description="Comece por diagnóstico e conselho quando o problema ainda está aberto. Use uma sessão de board quando já existe uma decisão para revisar."
         />
         <section className="grid gap-4 lg:grid-cols-[1fr_0.7fr]">
           <Panel>
-            <SectionTitle label="Estado da sala" />
+            <SectionTitle label="Estado do contexto" />
             <div className="flex flex-wrap gap-2">
-              <StatusPill tone={readout.mode === 'live' ? 'positive' : 'neutral'}>
-                {readout.mode === 'live' ? 'OpenAI ao vivo' : 'Modo determinístico'}
-              </StatusPill>
               <StatusPill tone={needsIntake ? 'critical' : 'positive'}>
                 {diagnosis.confidence}% confiança
               </StatusPill>
             </div>
             <p className="sb-muted mt-3">
               {needsIntake
-                ? 'A sala pode rodar agora, mas deve tratar a recomendação como condicional até fechar as evidências pedidas.'
-                : 'A Company Brain tem contexto suficiente para uma rodada de decisão com boa confiança inicial.'}
+                ? 'A sessão pode começar, mas a recomendação deve registrar lacunas e perguntas abertas.'
+                : 'O contexto atual já sustenta uma conversa útil com advisors e próximos passos claros.'}
             </p>
           </Panel>
           <Panel>
             <SectionTitle label="Melhor próximo passo" />
             <p className="sb-muted">
               {needsIntake
-                ? 'Adicione contexto ou rode Hot Seat e deixe os advisors registrarem os dados ausentes.'
-                : 'Abra Hot Seat, capture a decisão e deixe a sessão registrada na memória.'}
+                ? 'Conte mais sobre a empresa, envie arquivos ou rode uma sessão consultiva para nomear o problema.'
+                : 'Escolha uma sessão consultiva para transformar contexto em plano, ou uma sessão de board para pressionar uma decisão.'}
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/company/intake" className="btn-secondary">Adicionar contexto</Link>
+              <Link href="/company/intake" className="btn-secondary">Contar o que está acontecendo</Link>
             </div>
           </Panel>
         </section>
-        <section className="grid gap-4 lg:grid-cols-3">
-          {sessionTypes.map(session => (
-            <button key={session.id} type="button" className={`sb-session-card ${session.primary ? 'is-primary' : ''}`} onClick={() => startSession(session.id)}>
-              <span>{session.code}</span>
-              <strong>{session.name}</strong>
-              <em>{session.tag}</em>
-              <p>{session.desc}</p>
-              <small>{session.outputs.join(' · ')}</small>
-            </button>
-          ))}
+        <Panel>
+          <SectionTitle label="Advisors desta conversa" />
+          <div className="sb-agent-picker">
+            {boardAgents.map(agent => (
+              <button
+                key={agent.code}
+                type="button"
+                className={selectedAgents.includes(agent.code) ? 'is-selected' : ''}
+                onClick={() => toggleAgent(agent.code)}
+              >
+                <AdvisorMark code={agent.code} color={agent.color} size="sm" />
+                <span>{agent.short}</span>
+              </button>
+            ))}
+          </div>
+        </Panel>
+        <section className="grid gap-5 xl:grid-cols-2">
+          <Panel>
+            <SectionTitle label="Preciso entender o problema" />
+            <SessionGrid sessions={advisorySessions} onStart={startSession} />
+          </Panel>
+          <Panel>
+            <SectionTitle label="Preciso decidir" />
+            <SessionGrid sessions={boardSessions} onStart={startSession} />
+          </Panel>
         </section>
       </div>
     )
@@ -625,7 +675,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
     <div className="sb-room-shell">
       <header className="sb-room-header">
         <div>
-          <p className="sb-code">{active?.code} · {active?.name} · {decided ? decided.toUpperCase() : 'AO VIVO'} · {readout.mode === 'live' ? 'OPENAI' : 'DETERMINÍSTICO'}</p>
+          <p className="sb-code">{active?.code} · {active?.name} · {activeKind === 'advisory' ? 'CONSULTIVA' : 'BOARD'} · {decided ? decided.toUpperCase() : 'AO VIVO'}</p>
           <h1>{activeQuestion}</h1>
           <div className="sb-room-question-switcher">
             {decisionQuestions.map((question, index) => (
@@ -649,7 +699,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
             {exporting ? 'Exportando...' : 'Exportar PDF'}
           </button>
           <p className="max-w-[220px] text-right text-xs text-[#B9AD98]">
-            {decided ? 'Exporta o readout final da sala.' : log.length ? 'Exporta um registro em andamento.' : 'Rode turnos antes do PDF final.'}
+                {decided ? 'Exporta o readout final da sessão.' : log.length ? 'Exporta um registro em andamento.' : 'Rode turnos antes do PDF final.'}
           </p>
           {exportUrl && <a className="btn-gold" href={exportUrl} target="_blank" rel="noreferrer">Abrir PDF</a>}
           <button type="button" className="btn-chamber-muted" onClick={() => { void saveSession(); setActiveSession(null) }}>Sair da sala</button>
@@ -662,18 +712,22 @@ export function RoomsScreen({ readout }: ScreenProps) {
             <div>
               <p className="sb-code">PRÓXIMO PASSO</p>
               <h2 className="sb-row-title mt-2">
-                {decided === 'approved' ? 'Decisão registrada. Feche o ciclo.' : 'Decisão adiada. Feche as evidências antes de voltar.'}
+                {activeKind === 'advisory'
+                  ? 'Sessão registrada. Transforme a análise em plano e próximos passos.'
+                  : decided === 'approved' ? 'Decisão registrada. Feche o ciclo.' : 'Decisão adiada. Feche as evidências antes de voltar.'}
               </h2>
               <p className="sb-muted mt-2">
                 {decided === 'approved'
-                  ? 'Exporte o PDF, revise a Decision Memory e confirme os follow-ups antes de compartilhar a saída com o founder ou CEO.'
+                  ? activeKind === 'advisory'
+                    ? 'Exporte o PDF, revise as tarefas e transforme perguntas abertas em decisões futuras quando necessário.'
+                    : 'Exporte o PDF, revise a Decision Memory e confirme os follow-ups antes de compartilhar a saída com o founder ou CEO.'
                   : 'Exporte o registro da sala, confirme os dados pedidos e use os follow-ups como condição para uma nova rodada.'}
               </p>
             </div>
             <div className="grid gap-2 sm:grid-cols-3">
               <Link href="/decisions" className="btn-secondary">Decision Memory</Link>
               <Link href="/follow-ups" className="btn-secondary">Follow-ups</Link>
-              <Link href="/board-pack" className="btn-secondary">Board Pack</Link>
+              <Link href={activeKind === 'advisory' ? '/company-brain' : '/board-pack'} className="btn-secondary">{activeKind === 'advisory' ? 'Contexto' : 'Board Pack'}</Link>
             </div>
           </div>
         </Panel>
@@ -729,12 +783,13 @@ export function RoomsScreen({ readout }: ScreenProps) {
 
         <main className="sb-room-center">
           <div className="sb-room-transport">
-            <button type="button" className="btn-gold" onClick={() => void nextTurn()} disabled={thinking || baseComplete}>{thinking ? 'Rodando...' : baseComplete ? 'Turnos completos' : 'Próximo turno'}</button>
-            <button type="button" className="btn-chamber" disabled={thinking} onClick={() => void requestIntervention('challenge')}>Pressionar mais</button>
-            <button type="button" className="btn-chamber" disabled={thinking} onClick={() => void requestIntervention('evidence')}>Pedir evidência</button>
-            <button type="button" className="btn-chamber" disabled={thinking} onClick={() => void requestIntervention('invite')}>Convidar papel</button>
+            <button type="button" className="btn-gold" onClick={() => void nextTurn()} disabled={thinking || baseComplete || turnLimitReached}>{thinking ? 'Rodando...' : baseComplete || turnLimitReached ? 'Limite atingido' : 'Próximo turno'}</button>
+            <button type="button" className="btn-chamber" disabled={thinking || turnLimitReached} onClick={() => void requestIntervention('challenge')}>Pressionar mais</button>
+            <button type="button" className="btn-chamber" disabled={thinking || turnLimitReached} onClick={() => void requestIntervention('evidence')}>Pedir evidência</button>
+            <button type="button" className="btn-chamber" disabled={thinking || turnLimitReached} onClick={() => void requestIntervention('invite')}>Convidar papel</button>
             <button type="button" className="btn-chamber" onClick={() => setIsolate(value => !value)}>{isolate ? 'Ver todos' : 'Isolar divergência'}</button>
           </div>
+          <p className="sb-code mt-3">{usedAdvisorTurns}/{turnLimit} turnos de advisor</p>
 
           {thinking && (
             <div className="sb-room-loading">
@@ -787,9 +842,9 @@ export function RoomsScreen({ readout }: ScreenProps) {
           <SynthesisBlock title="Discorda" items={synth.disagreements} />
           <SynthesisBlock title="Riscos" items={synth.risks} />
           <div className="mt-5 grid gap-2">
-            <button type="button" className="btn-gold" onClick={() => setDecisionOpen(true)}>Ir para decisão</button>
-            <button type="button" className="btn-chamber" onClick={() => enqueue('Brief de estratégia')}>+ Brief</button>
-            <button type="button" className="btn-chamber" onClick={() => enqueue('Memo do conselho')}>+ Memo</button>
+            <button type="button" className="btn-gold" onClick={() => setDecisionOpen(true)}>{activeKind === 'advisory' ? 'Encerrar com plano' : 'Ir para decisão'}</button>
+            <button type="button" className="btn-chamber" onClick={() => enqueue(activeKind === 'advisory' ? 'Plano consultivo' : 'Brief de estratégia')}>{activeKind === 'advisory' ? '+ Plano' : '+ Brief'}</button>
+            <button type="button" className="btn-chamber" onClick={() => enqueue(activeKind === 'advisory' ? 'Resumo executivo' : 'Memo do conselho')}>{activeKind === 'advisory' ? '+ Resumo' : '+ Memo'}</button>
           </div>
           <div className="mt-5">
             <p className="sb-code">Fila de entregáveis</p>
@@ -804,9 +859,13 @@ export function RoomsScreen({ readout }: ScreenProps) {
       {decisionOpen && (
         <div className="sb-modal-backdrop">
           <div className="sb-decision-modal">
-            <p className="sb-code">DECISÃO</p>
+            <p className="sb-code">{activeKind === 'advisory' ? 'PLANO' : 'DECISÃO'}</p>
             <h2>{activeQuestion}</h2>
-            <p>Registrar decisão com racional, opções rejeitadas, dono, condições, lacunas aceitas e data de revisão.</p>
+            <p>
+              {activeKind === 'advisory'
+                ? 'Registrar diagnóstico, recomendação, workstreams, KPIs, riscos, perguntas abertas e próximas decisões sugeridas.'
+                : 'Registrar decisão com racional, opções rejeitadas, dono, condições, lacunas aceitas e data de revisão.'}
+            </p>
             <div className="mt-5 flex flex-wrap gap-2">
               <button
                 type="button"
@@ -814,14 +873,30 @@ export function RoomsScreen({ readout }: ScreenProps) {
                 disabled={thinking}
                 onClick={() => void captureDecision('approved')}
               >
-                Aprovar
+                {activeKind === 'advisory' ? 'Fechar plano' : 'Aprovar'}
               </button>
-              <button type="button" className="btn-secondary" disabled={thinking} onClick={() => void captureDecision('deferred')}>Adiar</button>
+              <button type="button" className="btn-secondary" disabled={thinking} onClick={() => void captureDecision('deferred')}>{activeKind === 'advisory' ? 'Pedir mais contexto' : 'Adiar'}</button>
               <button type="button" className="btn-secondary" onClick={() => setDecisionOpen(false)}>Voltar</button>
             </div>
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function SessionGrid({ sessions, onStart }: { sessions: ScreenProps['readout']['sessionTypes']; onStart: (id: ScreenProps['readout']['sessionTypes'][number]['id']) => void }) {
+  return (
+    <div className="mt-4 grid gap-3">
+      {sessions.map(session => (
+        <button key={session.id} type="button" className={`sb-session-card ${session.primary ? 'is-primary' : ''}`} onClick={() => onStart(session.id)}>
+          <span>{session.code}</span>
+          <strong>{session.name}</strong>
+          <em>{session.tag}</em>
+          <p>{session.desc}</p>
+          <small>{session.outputs.join(' · ')}</small>
+        </button>
+      ))}
     </div>
   )
 }

@@ -21,7 +21,7 @@
     "resetEmailSent": "Se o usuário existir, enviamos um link para definir uma nova senha.",
     "resetRequestFailed": "Não foi possível enviar o link de recuperação.",
     "backToPassword": "Voltar ao login com senha",
-    "loginPrinciple": "Entre para revisar contexto, salas de decisão, entregáveis e follow-ups em um ambiente protegido.",
+    "loginPrinciple": "Entre para revisar contexto, sessões, decisões e follow-ups em um ambiente protegido.",
     "checkEmail": "Verifique seu email",
     "checkEmailBody": "Enviamos um link de acesso para {email}.",
     "noEmailNote": "Não recebeu? Verifique o spam, ou",
@@ -29,10 +29,17 @@
     "inviteOnly": "O acesso está disponível apenas por convite.",
     "tagline": "Decision infrastructure",
     "welcomeBack": "Entrar no Board OS",
-    "enterEmail": "Digite seu email para continuar."
+    "enterEmail": "Digite seu email para continuar.",
+    "proof": {
+      "context": "Contexto",
+      "sessions": "Sessões",
+      "actions": "Ações"
+    }
   },
   "nav": {
     "groups": {
+      "ownerWorkspace": "Trabalho",
+      "ownerActions": "Ações",
       "workspace": "Workspace",
       "governance": "Governança",
       "decisionFlow": "Fluxo de decisão",
@@ -43,16 +50,18 @@
     },
     "items": {
       "dashboard": "Painel",
-      "company": "Company Brain",
+      "company": "Contexto",
+      "sessions": "Sessões",
+      "decisionsAndTasks": "Decisões e tarefas",
       "intake": "Intake",
       "governanceRun": "Governance Run",
       "boardPack": "Board Pack",
       "shadowBoard": "Shadow Board Review",
       "diagnosis": "Diagnóstico",
       "briefings": "Briefings",
-      "rooms": "Salas de decisão",
+      "rooms": "Sessões",
       "outputs": "Entregáveis",
-      "decisions": "Decision Memory",
+      "decisions": "Decisões",
       "followUps": "Follow-ups",
       "designSystem": "Design System",
       "mobile": "Mobile",
@@ -70,8 +79,9 @@
     "mobile": {
       "home": "Início",
       "brain": "Brain",
+      "context": "Contexto",
       "diagnosis": "Diagnóstico",
-      "rooms": "Salas",
+      "rooms": "Sessões",
       "review": "Review",
       "followUps": "Follow-ups",
       "you": "Você"
@@ -95,7 +105,7 @@
     "description": "Colete fatos, premissas, arquivos e perguntas abertas que o Board Brain precisa antes de uma sala.",
     "saveDraft": "Salvar rascunho",
     "sendToBrain": "Enviar para Company Brain",
-    "mockMode": "Modo mock local",
+    "mockMode": "Modo local",
     "liveMode": "Supabase ativo",
     "savedLive": "Rascunho salvo no Supabase",
     "savedLiveDetail": "{inputs} inputs e {entries} memórias salvos",
@@ -172,6 +182,11 @@
       "description": "Nenhum serviço de transcrição está conectado ainda. Por enquanto, cole notas de voz ou transcrições aqui.",
       "placeholder": "Cole transcrição ou resumo da nota de voz..."
     },
+    "whatsapp": {
+      "title": "Conversa de WhatsApp",
+      "description": "Cole uma conversa exportada, resumo ou trechos relevantes. O webhook entra depois usando este mesmo caminho de memória.",
+      "placeholder": "Cole aqui a conversa, resumo ou mensagens importantes do WhatsApp..."
+    },
     "files": {
       "title": "Arquivos e fontes",
       "description": "Enfileire PDFs, decks, planilhas, documentos e CSVs para storage e extração futura no Supabase.",
@@ -190,7 +205,7 @@
       "description": "Revise o resumo que será salvo na memória da empresa.",
       "missing": "Contexto faltante",
       "ready": "Pronto para a primeira sala",
-      "notReady": "Precisa de mais contexto antes do run"
+      "notReady": "Precisa de mais contexto antes da sessão"
     }
   }
 }
