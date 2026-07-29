@@ -74,6 +74,42 @@ type BoardReadout = {
   error?: string
 }
 
+type StrategicSourceReadout = {
+  persisted: boolean
+  document: {
+    id: string
+    version: number
+    title: string
+    status: 'ready' | 'handed_off' | 'superseded'
+    immutable_hash: string
+    board_pack_hash: string
+    handed_off_at: string | null
+    content: {
+      decisionInQuestion?: string
+      chairSynthesis?: string | null
+      approvedDirection?: {
+        title?: string
+        decision?: string | null
+      } | null
+      sourceReferences?: string[]
+    }
+  } | null
+  handoff: {
+    id: string
+    status: string
+    creative_os_artifact_id: string | null
+    creative_os_url: string | null
+    accepted_at: string | null
+    last_error: string | null
+  } | null
+  connector: {
+    enabled: boolean
+    status: string
+    contractVersion: string
+  }
+  can_generate: boolean
+}
+
 type BoardPhase =
   | 'pack_review'
   | 'independent_analysis'
@@ -171,6 +207,19 @@ export function AsyncBoardScreen() {
   const [inviteName, setInviteName] = useState('')
   const [inviteRole, setInviteRole] = useState('Board member')
   const [invitationUrl, setInvitationUrl] = useState('')
+  const [sourceReadout, setSourceReadout] = useState<StrategicSourceReadout | null>(null)
+  const [sourceLoading, setSourceLoading] = useState(false)
+
+  async function loadStrategicSource(sessionId: string) {
+    setSourceLoading(true)
+    const response = await fetch(
+      `/api/board/strategic-source?board_session_id=${encodeURIComponent(sessionId)}`,
+      { cache: 'no-store' },
+    )
+    const payload = await response.json().catch(() => null) as StrategicSourceReadout | null
+    if (response.ok && payload) setSourceReadout(payload)
+    setSourceLoading(false)
+  }
 
   async function loadBoard() {
     setLoading(true)
@@ -184,6 +233,14 @@ export function AsyncBoardScreen() {
     }
     setReadout(payload)
     if (!question) setQuestion(firstQuestion(payload.available_pack?.strategic_questions))
+    if (
+      payload.active?.can_manage
+      && payload.active.meeting.current_phase === 'closed'
+    ) {
+      await loadStrategicSource(payload.active.meeting.id)
+    } else {
+      setSourceReadout(null)
+    }
     setLoading(false)
   }
 
@@ -326,6 +383,59 @@ export function AsyncBoardScreen() {
     else {
       setNotice('Assento revogado. O acesso à reunião foi encerrado.')
       await loadBoard()
+    }
+    setWorking(false)
+  }
+
+  async function generateStrategicSource() {
+    if (!active) return
+    setWorking(true)
+    setError('')
+    setNotice('')
+    const response = await fetch('/api/board/strategic-source', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ board_session_id: active.meeting.id }),
+    })
+    const payload = await response.json().catch(() => null) as {
+      error?: string
+      strategic_source_document_id?: string
+    } | null
+    if (!response.ok || !payload?.strategic_source_document_id) {
+      setError(payload?.error ?? 'Não foi possível criar a Fonte Estratégica.')
+    } else {
+      setNotice('Fonte Estratégica criada e travada. Ela já pode ser baixada ou entregue ao Creative OS.')
+      await loadStrategicSource(active.meeting.id)
+    }
+    setWorking(false)
+  }
+
+  async function handoffToCreativeOS() {
+    if (!active || !sourceReadout?.document) return
+    const confirmed = window.confirm(
+      'Enviar esta versão imutável ao Creative OS? O Creative OS poderá criar briefings e campanhas, mas não poderá alterar a memória do Board OS.',
+    )
+    if (!confirmed) return
+    setWorking(true)
+    setError('')
+    setNotice('')
+    const response = await fetch('/api/board/creative-os-handoff', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        strategic_source_document_id: sourceReadout.document.id,
+        confirm_handoff: true,
+      }),
+    })
+    const payload = await response.json().catch(() => null) as {
+      error?: string
+      handed_off?: boolean
+    } | null
+    if (!response.ok || !payload?.handed_off) {
+      setError(payload?.error ?? 'O Creative OS não aceitou o documento. Nada foi sobrescrito.')
+    } else {
+      setNotice('Creative OS aceitou esta versão. O Board OS preservou o documento e a proveniência.')
+      await loadStrategicSource(active.meeting.id)
     }
     setWorking(false)
   }
@@ -557,6 +667,83 @@ export function AsyncBoardScreen() {
                 >
                   Copiar link reservado
                 </button>
+              )}
+            </Panel>
+          )}
+
+          {active.can_manage && active.meeting.current_phase === 'closed' && (
+            <Panel className="sb-strategic-source">
+              <SectionTitle label="Fonte Estratégica" />
+              {sourceLoading ? (
+                <p className="sb-muted">Reunindo o plano, a conversa, a decisão, e a ata...</p>
+              ) : sourceReadout?.document ? (
+                <>
+                  <p className="sb-strategic-source-title">{sourceReadout.document.title}</p>
+                  <p className="sb-muted">
+                    Uma versão imutável do que foi decidido — pronta para execução sem perder contexto.
+                  </p>
+                  <dl>
+                    <div>
+                      <dt>VERSÃO</dt>
+                      <dd>v{sourceReadout.document.version}</dd>
+                    </div>
+                    <div>
+                      <dt>HASH</dt>
+                      <dd>{sourceReadout.document.immutable_hash.slice(0, 12)}</dd>
+                    </div>
+                    <div>
+                      <dt>STATUS</dt>
+                      <dd>{sourceReadout.document.status === 'handed_off' ? 'Entregue' : 'Pronta'}</dd>
+                    </div>
+                  </dl>
+                  {sourceReadout.document.content.approvedDirection && (
+                    <blockquote>
+                      {sourceReadout.document.content.approvedDirection.decision
+                        || sourceReadout.document.content.approvedDirection.title}
+                    </blockquote>
+                  )}
+                  <div className="sb-strategic-source-actions">
+                    <a
+                      className="btn-secondary"
+                      href={`/api/board/strategic-source?board_session_id=${encodeURIComponent(active.meeting.id)}&download=markdown`}
+                    >
+                      Baixar documento
+                    </a>
+                    {sourceReadout.document.status === 'handed_off' ? (
+                      sourceReadout.handoff?.creative_os_url
+                        ? <a className="btn-primary" href={sourceReadout.handoff.creative_os_url}>Abrir no Creative OS</a>
+                        : <span className="sb-source-delivered">Creative OS aceitou esta versão</span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        disabled={working || !sourceReadout.connector.enabled}
+                        onClick={() => void handoffToCreativeOS()}
+                      >
+                        Continuar no Creative OS
+                      </button>
+                    )}
+                  </div>
+                  {!sourceReadout.connector.enabled && sourceReadout.document.status !== 'handed_off' && (
+                    <p className="sb-connector-protected">
+                      Conexão protegida. O documento está pronto, mas nada será enviado até o contrato receptor e a chave de produção serem ativados.
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="sb-muted">
+                    O Chair transforma o plano, as leituras do board, a decisão, os KPIs, e os riscos em um único handoff.
+                  </p>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    disabled={working}
+                    onClick={() => void generateStrategicSource()}
+                  >
+                    {working ? 'Criando...' : 'Criar Fonte Estratégica'}
+                  </button>
+                </>
               )}
             </Panel>
           )}

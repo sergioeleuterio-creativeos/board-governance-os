@@ -9,6 +9,12 @@ import type {
   StrategyDiagnosis,
 } from '@/lib/decision-room/types'
 import type { CurrentCompany } from '@/lib/shadow-board/current-company-server'
+import {
+  evidenceStatusLabel,
+  normalizeEvidenceStatus,
+  normalizeOutputType,
+  normalizeRoleBrief,
+} from '@/lib/creative-os/contract'
 
 export type CreativeOSMode = 'mock' | 'http' | 'worker'
 
@@ -43,7 +49,7 @@ type CreativeOSPayload = {
   outputs: ExecutionOutput[]
 }
 
-const DEFAULT_TIMEOUT_MS = 45_000
+const DEFAULT_TIMEOUT_MS = 30_000
 
 export type CreativeOSBrandLink = {
   creativeOsBrandId: string
@@ -96,6 +102,10 @@ function creativeOSSyncEnabled() {
   return (process.env.CREATIVE_OS_SYNC_ENABLED ?? 'false').toLowerCase() === 'true'
 }
 
+function legacyCapabilitiesEnabled() {
+  return (process.env.CREATIVE_OS_LEGACY_CAPABILITIES_ENABLED ?? 'false').toLowerCase() === 'true'
+}
+
 function creativeOSConfig() {
   return {
     baseUrl: process.env.CREATIVE_OS_URL?.replace(/\/+$/, ''),
@@ -106,6 +116,7 @@ function creativeOSConfig() {
 export function creativeOSReadiness() {
   const mode = creativeOSMode()
   const syncEnabled = creativeOSSyncEnabled()
+  const capabilitiesEnabled = legacyCapabilitiesEnabled()
   const { baseUrl, apiKey } = creativeOSConfig()
   const missing: string[] = []
 
@@ -115,6 +126,7 @@ export function creativeOSReadiness() {
   return {
     mode,
     syncEnabled,
+    capabilitiesEnabled,
     timeoutMs: timeoutMs(),
     httpConfigured: Boolean(baseUrl && apiKey),
     baseUrlConfigured: Boolean(baseUrl),
@@ -128,7 +140,9 @@ export function creativeOSReadiness() {
           ? 'needs_configuration'
           : syncEnabled
             ? 'ready_with_company_sync'
-            : 'ready_capability_only',
+            : capabilitiesEnabled
+              ? 'ready_legacy_capability_only'
+              : 'ready_handoff_only',
     sourceOfTruth: 'board_os',
     boundary: 'Creative OS enriches strategy, brief, campaign, and room-compression outputs. Board OS remains source of truth for company memory, decisions, board sessions, and follow-ups.',
   }
@@ -336,7 +350,9 @@ function sanitizeDiagnosis(input: Partial<StrategyDiagnosis> | undefined, fallba
       ? input.evidenceMap.map((item, index) => ({
         claim: text(item?.claim, fallback.evidenceMap[index]?.claim ?? 'Evidência a confirmar'),
         source: text(item?.source, fallback.evidenceMap[index]?.source ?? 'Creative OS'),
-        status: item?.status ?? fallback.evidenceMap[index]?.status ?? 'PARCIAL',
+        status: evidenceStatusLabel(normalizeEvidenceStatus(
+          item?.status ?? fallback.evidenceMap[index]?.status ?? 'partial',
+        )),
       })).slice(0, 12)
       : fallback.evidenceMap,
     recommendedQuestion: text(input.recommendedQuestion, fallback.recommendedQuestion),
@@ -348,8 +364,11 @@ function sanitizeDiagnosis(input: Partial<StrategyDiagnosis> | undefined, fallba
 
 function sanitizeRoleBriefs(input: Array<Partial<RoleBrief>> | undefined, fallback: RoleBrief[]) {
   if (!input?.length) return fallback
+  const normalized = input
+    .map(item => normalizeRoleBrief(item))
+    .filter((item): item is NonNullable<ReturnType<typeof normalizeRoleBrief>> => Boolean(item))
   return fallback.map((roleFallback) => {
-    const matched = input.find(item => item.code === roleFallback.code)
+    const matched = normalized.find(item => item.code === roleFallback.code)
     return {
       code: roleFallback.code,
       angle: text(matched?.angle, roleFallback.angle),
@@ -370,7 +389,7 @@ function sanitizeBoardBrief(input: Partial<BoardBrief> | undefined, fallback: Bo
 function sanitizeOutputs(input: Array<Partial<ExecutionOutput>> | undefined, fallback: ExecutionOutput[]) {
   if (!input?.length) return fallback
   return fallback.map((outputFallback) => {
-    const matched = input.find(item => item.type === outputFallback.type)
+    const matched = input.find(item => normalizeOutputType(item.type) === outputFallback.type)
     return {
       type: outputFallback.type,
       title: text(matched?.title, outputFallback.title),
@@ -416,7 +435,7 @@ async function workerCapability(_capability: CapabilityName, _payload: CreativeO
 
 async function runCapability(capability: CapabilityName, payload: CreativeOSPayload) {
   const mode = creativeOSMode()
-  if (mode === 'mock') return null
+  if (mode === 'mock' || !legacyCapabilitiesEnabled()) return null
   if (mode === 'http') return httpCapability(capability, payload)
   return workerCapability(capability, payload)
 }
@@ -480,7 +499,9 @@ export async function compressRoomOutcome(input: CapabilityFallbacks): Promise<E
 }
 
 export async function enrichDecisionRoomReadout(readout: DecisionRoomReadout, context?: { company?: CurrentCompany | null }): Promise<DecisionRoomReadout> {
-  const company = context?.company ? await upsertCreativeOSCompany(creativeOSCompanyContext(context.company)) : undefined
+  // Reading a Board OS page must never create or mutate a Creative OS company.
+  // Company linking and handoff now happen only through explicit founder actions.
+  const company = context?.company ? creativeOSCompanyContext(context.company) : undefined
   const fallback = {
     company,
     diagnosis: readout.diagnosis,
@@ -488,17 +509,21 @@ export async function enrichDecisionRoomReadout(readout: DecisionRoomReadout, co
     outputs: readout.outputs,
   }
 
-  const diagnosis = await runStrategyDiagnosis(fallback)
-  const withDiagnosis = { ...fallback, diagnosis }
-  const [boardBrief, outputs] = await Promise.all([
-    createBoardBrief(withDiagnosis),
-    createCampaignPlan(withDiagnosis),
-  ])
+  // Compatibility window: the legacy connector is opt-in and receives one
+  // consolidated request. Production defaults to the versioned handoff path.
+  const response = await runCapability('runStrategyDiagnosis', {
+    capability: 'runStrategyDiagnosis',
+    ...fallback,
+  })
+  const diagnosis = sanitizeDiagnosis(response?.diagnosis, readout.diagnosis)
+  const boardBrief = sanitizeBoardBrief(response?.boardBrief, readout.boardBrief)
+  const roleBriefs = sanitizeRoleBriefs(response?.roleBriefs, boardBrief.roleBriefs)
+  const outputs = sanitizeOutputs(response?.outputs, readout.outputs)
 
   return {
     ...readout,
     diagnosis,
-    boardBrief,
+    boardBrief: { ...boardBrief, roleBriefs },
     outputs,
   }
 }

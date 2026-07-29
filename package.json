@@ -19,6 +19,8 @@
     "test:sprint2": "node --test tests/sprint-2-source-snapshot.test.mjs",
     "test:sprint3": "node --test tests/sprint-3-chair-ui.test.mjs",
     "test:sprint4": "node --test tests/sprint-4-async-board.test.mjs",
+    "test:sprint5": "node --test tests/sprint-5-strategic-handoff.test.mjs",
+    "test:sprints": "npm run test:sprint1 && npm run test:sprint2 && npm run test:sprint3 && npm run test:sprint4 && npm run test:sprint5",
     "qa:creative-os-connector": "node scripts/check-creative-os-connector.mjs",
     "qa:exports:download": "node scripts/download-latest-exports.mjs",
     "seed:training-packs": "node scripts/seed-training-packs.mjs",
