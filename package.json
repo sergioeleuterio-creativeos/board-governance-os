@@ -18,6 +18,7 @@
     "test:sprint1": "node --test tests/sprint-1-persistence-contract.test.mjs",
     "test:sprint2": "node --test tests/sprint-2-source-snapshot.test.mjs",
     "test:sprint3": "node --test tests/sprint-3-chair-ui.test.mjs",
+    "test:sprint4": "node --test tests/sprint-4-async-board.test.mjs",
     "qa:creative-os-connector": "node scripts/check-creative-os-connector.mjs",
     "qa:exports:download": "node scripts/download-latest-exports.mjs",
     "seed:training-packs": "node scripts/seed-training-packs.mjs",

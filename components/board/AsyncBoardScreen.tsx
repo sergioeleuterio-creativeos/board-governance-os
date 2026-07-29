@@ -1,0 +1,503 @@
+'use client'
+
+import { FormEvent, useEffect, useMemo, useState } from 'react'
+import { AdvisorMark, Panel, SectionTitle, StatusPill } from '@/components/shadow-board/ui'
+
+type Participant = {
+  id: string
+  participant_type: 'human' | 'synthetic'
+  display_name: string
+  role_label: string
+  advisor_key: string | null
+  status: string
+}
+
+type Contribution = {
+  id: string
+  participant_id: string
+  reply_to_id: string | null
+  contribution_type: string
+  phase: string
+  body: string
+  visibility: 'sealed' | 'released'
+  submitted_at: string
+  author_snapshot: {
+    display_name?: string
+    role_label?: string
+    participant_type?: string
+  }
+}
+
+type ActiveBoard = {
+  company: { id: string; name: string }
+  meeting: {
+    id: string
+    status: string
+    meeting_timezone: string
+    current_phase: BoardPhase
+    phase_started_at: string
+    phase_deadline_at: string | null
+    phase_schedule: Array<{ phase: BoardPhase; startsAt: string; endsAt: string | null }>
+    active_question: string
+  }
+  board_pack: {
+    id: string
+    version: number
+    status: string
+    executive_summary: string | null
+    strategic_questions: unknown
+    meeting_agenda: unknown
+    decision_candidates: unknown
+    locked_at: string
+    released_at: string
+    content_hash: string
+    source_snapshot_id: string | null
+  }
+  participants: Participant[]
+  contributions: Contribution[]
+  caller_participant_id: string | null
+  can_manage: boolean
+}
+
+type BoardReadout = {
+  active: ActiveBoard | null
+  available_pack: {
+    id: string
+    version: number
+    executive_summary: string | null
+    strategic_questions: unknown
+    meeting_agenda: unknown
+    decision_candidates: unknown
+  } | null
+  company: { id: string; name: string } | null
+  can_manage: boolean
+  error?: string
+}
+
+type BoardPhase =
+  | 'pack_review'
+  | 'independent_analysis'
+  | 'peer_challenge'
+  | 'final_positions'
+  | 'chair_synthesis'
+  | 'founder_decision'
+  | 'closed'
+
+const PHASE_LABELS: Record<BoardPhase, string> = {
+  pack_review: 'Leitura do pack',
+  independent_analysis: 'Análise independente',
+  peer_challenge: 'Perguntas entre membros',
+  final_positions: 'Posições finais',
+  chair_synthesis: 'Síntese do Chair',
+  founder_decision: 'Decisão do founder',
+  closed: 'Ata encerrada',
+}
+
+const CONTRIBUTION_TYPES: Record<BoardPhase, string> = {
+  pack_review: 'founder_question',
+  independent_analysis: 'independent_analysis',
+  peer_challenge: 'challenge',
+  final_positions: 'final_position',
+  chair_synthesis: 'chair_synthesis',
+  founder_decision: 'decision',
+  closed: 'minutes_note',
+}
+
+const PHASE_PROMPTS: Record<BoardPhase, string> = {
+  pack_review: 'Que pergunta, restrição, ou evidência o board precisa considerar antes de começar?',
+  independent_analysis: 'Qual é a sua leitura independente? Nomeie a recomendação, a evidência, e o principal risco.',
+  peer_challenge: 'Que hipótese de outro membro precisa ser testada? Faça uma pergunta que possa mudar a recomendação.',
+  final_positions: 'Depois das perguntas, qual é sua posição final e sob quais condições?',
+  chair_synthesis: 'O Chair está consolidando as posições.',
+  founder_decision: 'Registre a decisão, o porquê, as condições, o responsável, e a data de revisão.',
+  closed: 'A reunião foi encerrada e registrada em ata.',
+}
+
+const ADVISOR_COLORS: Record<string, string> = {
+  board_brain: '#C4922F',
+  finance: '#3E6B4F',
+  operator: '#4A5A6A',
+  growth: '#2F6E6A',
+  risk: '#A23B2D',
+  customer: '#7A4E63',
+  talent: '#85702F',
+}
+
+function firstQuestion(value: unknown) {
+  if (!Array.isArray(value)) return ''
+  const first = value[0]
+  if (typeof first === 'string') return first
+  if (first && typeof first === 'object') {
+    const record = first as Record<string, unknown>
+    return [record.question, record.title, record.decision].find(item => typeof item === 'string') as string ?? ''
+  }
+  return ''
+}
+
+function participantCode(participant: Participant) {
+  if (participant.participant_type === 'human') {
+    return participant.display_name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()
+  }
+  const codes: Record<string, string> = {
+    board_brain: 'BB',
+    finance: 'CFO',
+    operator: 'COO',
+    growth: 'CMO',
+    risk: 'RK',
+    customer: 'CX',
+    talent: 'PE',
+  }
+  return codes[participant.advisor_key ?? ''] ?? 'AI'
+}
+
+function dateTime(value: string | null, timezone = 'America/Sao_Paulo') {
+  if (!value) return 'Sem prazo'
+  return new Intl.DateTimeFormat('pt-BR', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: timezone,
+  }).format(new Date(value))
+}
+
+export function AsyncBoardScreen() {
+  const [readout, setReadout] = useState<BoardReadout | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [working, setWorking] = useState(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [question, setQuestion] = useState('')
+  const [contribution, setContribution] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteName, setInviteName] = useState('')
+  const [inviteRole, setInviteRole] = useState('Board member')
+  const [invitationUrl, setInvitationUrl] = useState('')
+
+  async function loadBoard() {
+    setLoading(true)
+    setError('')
+    const response = await fetch('/api/board/meetings', { cache: 'no-store' })
+    const payload = await response.json().catch(() => null) as BoardReadout | null
+    if (!response.ok || !payload) {
+      setError(payload?.error ?? 'Não foi possível abrir o board.')
+      setLoading(false)
+      return
+    }
+    setReadout(payload)
+    if (!question) setQuestion(firstQuestion(payload.available_pack?.strategic_questions))
+    setLoading(false)
+  }
+
+  useEffect(() => {
+    void loadBoard()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const active = readout?.active ?? null
+  const participantById = useMemo(
+    () => new Map((active?.participants ?? []).map(participant => [participant.id, participant])),
+    [active?.participants],
+  )
+  const phase = active?.meeting.current_phase ?? null
+  const canContribute = Boolean(
+    active?.caller_participant_id
+    && phase
+    && !['chair_synthesis', 'closed'].includes(phase),
+  )
+
+  async function startBoard(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!readout?.available_pack?.id || question.trim().length < 10) return
+    setWorking(true)
+    setError('')
+    setNotice('')
+    const response = await fetch('/api/board/meetings', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        board_pack_id: readout.available_pack.id,
+        active_question: question.trim(),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Sao_Paulo',
+        starts_at: new Date().toISOString(),
+      }),
+    })
+    const payload = await response.json().catch(() => null) as { error?: string } | null
+    if (!response.ok) setError(payload?.error ?? 'Não foi possível abrir esta reunião.')
+    else {
+      setNotice('Pack travado. O board já pode começar a leitura.')
+      await loadBoard()
+    }
+    setWorking(false)
+  }
+
+  async function inviteHuman(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!active?.meeting.id || !inviteEmail.trim()) return
+    setWorking(true)
+    setError('')
+    setNotice('')
+    setInvitationUrl('')
+    const response = await fetch('/api/board/participants', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        board_session_id: active.meeting.id,
+        email: inviteEmail.trim(),
+        display_name: inviteName.trim(),
+        role_label: inviteRole.trim(),
+      }),
+    })
+    const payload = await response.json().catch(() => null) as {
+      error?: string
+      invitation_url?: string
+      notification?: { sent?: boolean; error?: string }
+    } | null
+    if (!response.ok) setError(payload?.error ?? 'Não foi possível enviar o convite.')
+    else {
+      setInvitationUrl(payload?.invitation_url ?? '')
+      setNotice(payload?.notification?.sent
+        ? 'Convite enviado. Esta pessoa receberá o mesmo pack travado.'
+        : 'Convite criado. Copie o link reservado para compartilhar.')
+      setInviteEmail('')
+      setInviteName('')
+      await loadBoard()
+    }
+    setWorking(false)
+  }
+
+  async function submitContribution(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!active || !phase || !contribution.trim()) return
+    setWorking(true)
+    setError('')
+    setNotice('')
+    const response = await fetch('/api/board/contributions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        board_session_id: active.meeting.id,
+        contribution_type: CONTRIBUTION_TYPES[phase],
+        body: contribution.trim(),
+      }),
+    })
+    const payload = await response.json().catch(() => null) as { error?: string; visibility?: string } | null
+    if (!response.ok) setError(payload?.error ?? 'Não foi possível registrar sua contribuição.')
+    else {
+      setContribution('')
+      setNotice(payload?.visibility === 'sealed'
+        ? 'Sua posição foi registrada e ficará fechada até esta fase terminar.'
+        : 'Sua contribuição entrou na conversa do board.')
+      await loadBoard()
+    }
+    setWorking(false)
+  }
+
+  if (loading) {
+    return <Panel><p className="sb-muted">Abrindo o board...</p></Panel>
+  }
+
+  if (!active) {
+    return (
+      <div className="sb-async-board-shell">
+        <header className="sb-board-opening">
+          <p className="sb-eyebrow">Board</p>
+          <h1>Uma decisão. O mesmo pack. Leituras independentes.</h1>
+          <p>O Chair organiza a sequência. Humanos e advisors entram no próprio tempo, sem perder a conversa.</p>
+        </header>
+
+        {error && <p className="sb-error">{error}</p>}
+
+        <Panel className="sb-board-launch">
+          <SectionTitle label="Próxima reunião" />
+          {readout?.available_pack ? (
+            <form onSubmit={startBoard}>
+              <p className="sb-code">PACK v{readout.available_pack.version}</p>
+              <p className="sb-board-pack-summary">
+                {readout.available_pack.executive_summary || 'O pack está pronto para uma pergunta específica do board.'}
+              </p>
+              <label htmlFor="board-question">Que decisão este board precisa ajudar a tomar?</label>
+              <textarea
+                id="board-question"
+                value={question}
+                onChange={event => setQuestion(event.target.value)}
+                placeholder="Ex.: Devemos concentrar o investimento no plano de aquisição ou preservar caixa até validar retenção?"
+                required
+              />
+              <div className="sb-board-launch-footer">
+                <span>Ao abrir, esta versão do pack e suas fontes ficam travadas.</span>
+                <button className="btn-primary" disabled={working || question.trim().length < 10}>
+                  {working ? 'Abrindo...' : 'Travar pack e abrir o board'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div>
+              <p className="sb-serif-callout">O board precisa de um pack antes de começar.</p>
+              <a href="/rooms" className="btn-primary mt-4">Preparar com o Advisor</a>
+            </div>
+          )}
+        </Panel>
+      </div>
+    )
+  }
+
+  return (
+    <div className="sb-async-board-shell">
+      <header className="sb-board-meeting-header">
+        <div>
+          <p className="sb-eyebrow">{active.company.name} · Board Pack v{active.board_pack.version}</p>
+          <h1>{active.meeting.active_question}</h1>
+          <p>Fase atual: <strong>{PHASE_LABELS[active.meeting.current_phase]}</strong> · até {dateTime(active.meeting.phase_deadline_at, active.meeting.meeting_timezone)}</p>
+        </div>
+        <StatusPill tone={active.meeting.current_phase === 'closed' ? 'positive' : 'caution'}>
+          {PHASE_LABELS[active.meeting.current_phase]}
+        </StatusPill>
+      </header>
+
+      {error && <p className="sb-error">{error}</p>}
+      {notice && <p className="sb-success">{notice}</p>}
+
+      <section className="sb-async-roster" aria-label="Pessoas e advisors neste board">
+        {active.participants.map(participant => (
+          <article key={participant.id}>
+            <AdvisorMark
+              code={participantCode(participant)}
+              color={participant.participant_type === 'human' ? '#655A49' : ADVISOR_COLORS[participant.advisor_key ?? ''] ?? '#4A5A6A'}
+              size="sm"
+            />
+            <div>
+              <strong>{participant.display_name}</strong>
+              <span>{participant.role_label} · {participant.participant_type === 'human' ? 'Humano' : 'Advisor sintético'}</span>
+            </div>
+            <small>{participant.status}</small>
+          </article>
+        ))}
+      </section>
+
+      <section className="sb-board-context-strip">
+        <div>
+          <span>PACK TRAVADO</span>
+          <strong>{active.board_pack.content_hash?.slice(0, 12)}</strong>
+        </div>
+        <div>
+          <span>FONTE</span>
+          <strong>{active.board_pack.source_snapshot_id?.slice(-12) || 'Pack canônico'}</strong>
+        </div>
+        <div>
+          <span>CONTRIBUIÇÕES VISÍVEIS</span>
+          <strong>{active.contributions.filter(item => item.visibility === 'released').length}</strong>
+        </div>
+      </section>
+
+      <div className="sb-async-board-grid">
+        <main className="sb-board-conversation">
+          <div className="sb-board-conversation-heading">
+            <div>
+              <p className="sb-eyebrow">Conversa do board</p>
+              <h2>O que cada pessoa disse</h2>
+            </div>
+            <span>Em ordem de registro</span>
+          </div>
+
+          <div className="sb-mixed-transcript">
+            {active.contributions.map(item => {
+              const participant = participantById.get(item.participant_id)
+              return (
+                <article key={item.id} className={item.visibility === 'sealed' ? 'is-sealed' : ''}>
+                  <div className="sb-mixed-turn-author">
+                    {participant && (
+                      <AdvisorMark
+                        code={participantCode(participant)}
+                        color={participant.participant_type === 'human' ? '#655A49' : ADVISOR_COLORS[participant.advisor_key ?? ''] ?? '#4A5A6A'}
+                        size="sm"
+                      />
+                    )}
+                    <div>
+                      <strong>{item.author_snapshot.display_name || participant?.display_name || 'Board member'}</strong>
+                      <span>{item.author_snapshot.role_label || participant?.role_label} · {PHASE_LABELS[item.phase as BoardPhase] ?? item.phase}</span>
+                    </div>
+                    <small>{item.visibility === 'sealed' ? 'Só você vê até a fase fechar' : dateTime(item.submitted_at, active.meeting.meeting_timezone)}</small>
+                  </div>
+                  <p>{item.body}</p>
+                </article>
+              )
+            })}
+            {!active.contributions.length && (
+              <p className="sb-muted">O pack foi distribuído. As leituras aparecem aqui quando cada fase for liberada.</p>
+            )}
+          </div>
+
+          {canContribute && phase && (
+            <form className="sb-board-composer" onSubmit={submitContribution}>
+              <label htmlFor="board-contribution">{PHASE_PROMPTS[phase]}</label>
+              <textarea
+                id="board-contribution"
+                value={contribution}
+                onChange={event => setContribution(event.target.value)}
+                placeholder="Escreva como você falaria na reunião. O registro preserva autoria, fase, pack, e fontes."
+                required
+              />
+              <div>
+                <span>{['independent_analysis', 'final_positions'].includes(phase) ? 'Fechado até o fim desta fase' : 'Entra na conversa agora'}</span>
+                <button className="btn-primary" disabled={working || !contribution.trim()}>
+                  {working ? 'Registrando...' : 'Registrar minha contribuição'}
+                </button>
+              </div>
+            </form>
+          )}
+        </main>
+
+        <aside className="sb-board-side">
+          <Panel>
+            <SectionTitle label="Ritmo da reunião" />
+            <ol className="sb-board-phases">
+              {active.meeting.phase_schedule.map(item => (
+                <li key={item.phase} className={item.phase === active.meeting.current_phase ? 'is-active' : ''}>
+                  <span>{PHASE_LABELS[item.phase]}</span>
+                  <small>{dateTime(item.endsAt, active.meeting.meeting_timezone)}</small>
+                </li>
+              ))}
+            </ol>
+          </Panel>
+
+          {active.can_manage && (
+            <Panel>
+              <SectionTitle label="Convidar uma pessoa" />
+              <p className="sb-muted">Ela recebe este mesmo pack. Nenhuma Company Brain, rascunho, ou outra empresa fica acessível.</p>
+              <form className="sb-invite-form" onSubmit={inviteHuman}>
+                <input
+                  type="text"
+                  value={inviteName}
+                  onChange={event => setInviteName(event.target.value)}
+                  placeholder="Nome"
+                />
+                <input
+                  type="email"
+                  value={inviteEmail}
+                  onChange={event => setInviteEmail(event.target.value)}
+                  placeholder="email@empresa.com"
+                  required
+                />
+                <input
+                  type="text"
+                  value={inviteRole}
+                  onChange={event => setInviteRole(event.target.value)}
+                  placeholder="Papel no board"
+                />
+                <button className="btn-secondary" disabled={working}>Enviar o mesmo pack</button>
+              </form>
+              {invitationUrl && (
+                <button
+                  type="button"
+                  className="sb-copy-invite"
+                  onClick={() => void navigator.clipboard.writeText(invitationUrl)}
+                >
+                  Copiar link reservado
+                </button>
+              )}
+            </Panel>
+          )}
+        </aside>
+      </div>
+    </div>
+  )
+}

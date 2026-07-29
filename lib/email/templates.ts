@@ -35,6 +35,15 @@ type ReferralRequestEmailInput = {
   appUrl: string
 }
 
+type BoardInvitationEmailInput = {
+  inviteeName: string
+  companyName: string
+  roleLabel: string
+  activeQuestion: string
+  deadlineLabel: string
+  invitationUrl: string
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, '&amp;')
@@ -135,6 +144,28 @@ export function renderReferralRequestEmail({ companyName, requestedBy, recommend
     detail: recommendationContext,
     ctaLabel: 'Abrir triagem de referrals',
     ctaHref: `${appUrl}/admin/referrals`,
+  })
+
+  return { subject, text, html }
+}
+
+export function renderBoardInvitationEmail({
+  inviteeName,
+  companyName,
+  roleLabel,
+  activeQuestion,
+  deadlineLabel,
+  invitationUrl,
+}: BoardInvitationEmailInput) {
+  const subject = `${companyName}: convite para o board`
+  const { text, html } = renderProductEmail({
+    eyebrow: 'Board OS — convite reservado',
+    title: `${inviteeName}, sua leitura foi solicitada`,
+    intro: `Você foi convidado como ${roleLabel} para o board de ${companyName}. Todos recebem o mesmo pack. Cada pessoa contribui no seu tempo, dentro da fase aberta.`,
+    detail: `A decisão em discussão: ${activeQuestion}`,
+    highlight: deadlineLabel,
+    ctaLabel: 'Ler o pack e entrar no board',
+    ctaHref: invitationUrl,
   })
 
   return { subject, text, html }

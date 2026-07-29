@@ -49,7 +49,7 @@ const founderNavGroups = [
     label: 'Board OS',
     items: [
       { href: '/rooms', code: '01', label: 'Advisor' },
-      { href: '/dashboard', code: '02', label: 'Board' },
+      { href: '/board', code: '02', label: 'Board' },
       { href: '/follow-ups', code: '03', label: 'Compromissos' },
     ],
   },
@@ -57,7 +57,7 @@ const founderNavGroups = [
 
 const mobileItems = [
   { href: '/rooms', label: 'Advisor' },
-  { href: '/dashboard', label: 'Board' },
+  { href: '/board', label: 'Board' },
   { href: '/follow-ups', label: 'Compromissos' },
 ]
 
