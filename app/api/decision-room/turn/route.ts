@@ -11,12 +11,18 @@ function parseBody(value: unknown): TurnRequest | null {
   const body = value as Record<string, unknown>
   if (typeof body.sessionId !== 'string' || !validSessionIds.has(body.sessionId as SessionTypeId)) return null
   if (typeof body.index !== 'number' || !Number.isInteger(body.index) || body.index < 0) return null
+  if (typeof body.activeQuestion !== 'string' || body.activeQuestion.trim().length < 10) return null
+  if (body.questionConfirmed !== true) return null
+  if (typeof body.sourceSnapshotId !== 'string' || body.sourceSnapshotId.trim().length < 10) return null
   const sessionId = body.sessionId as SessionTypeId
   if (body.index >= maxTurnsForSession(sessionId)) return null
   return {
     sessionId,
     index: body.index,
     selectedAgents: normalizeSelectedAgents(body.selectedAgents),
+    activeQuestion: body.activeQuestion.trim(),
+    questionConfirmed: true,
+    sourceSnapshotId: body.sourceSnapshotId,
   }
 }
 

@@ -99,6 +99,8 @@ No sprint may create a second source of truth, reintroduce a manual agent consol
 
 **Outcome:** the same decision and evidence survive every handoff.
 
+**Status:** implementation complete locally on 2026-07-29; migration and preview deployment pending.
+
 ### Build
 
 - Persist accepted Chair turns and retain raw messages as evidence.
@@ -144,6 +146,33 @@ Sprint 2 uses the active company established by Sprint 1 and never creates conte
 - Apply reviewed migration to preview.
 - Run an end-to-end QA journey with synthetic numbers and two plan versions.
 - Compare source IDs at each handoff.
+
+### Execution evidence — 2026-07-29
+
+- Added a deterministic source resolver covering:
+  - active company;
+  - selected plan and version;
+  - Company Brain entries;
+  - uploaded documents;
+  - prior decisions;
+  - follow-ups;
+  - latest related board pack;
+  - proposed founder question.
+- Added a source-snapshot ID, SHA-256 hash, compact summary, and source references.
+- Added legacy read compatibility so current Board OS data remains readable before migration.
+- Added founder confirmation as a durable gate before advisor turns, interventions, plan closure, or decision capture.
+- Added continuity validation that rejects an output when it drops the named decision or source lineage.
+- Added a versioned plan API that keeps plans separate by type, business front, and period and records consolidation lineage.
+- Intake now preserves `currentPlan` and `strategicQuestions` as explicit Company Brain plan/question entries.
+- Added the additive `0003_plan_versions_and_source_snapshots.sql` migration.
+- Current-database browser QA confirmed:
+  - the resolver recovered a real named decision from the existing LANCE! plan;
+  - the selected plan, version, snapshot suffix, and source count were visible;
+  - advisor controls stayed disabled before confirmation;
+  - missing migration columns produced no false confirmation and no advisor turn.
+- Cumulative unit tests: 13 passing.
+- TypeScript passed.
+- The migration has not been applied. Sprint 2 must not be deployed as ready until a scoped preview/staging database target is available or the migration is explicitly approved for the currently configured database.
 
 ## Sprint 3 — Chair-led Advisor, Board, and Commitments UI
 

@@ -144,6 +144,13 @@ export const liveDecisionRoomAdapter = {
 
   async nextTurn(input: TurnRequest) {
     const pack = await buildGenericDecisionRoomPack()
+    if (
+      input.sourceSnapshotId
+      && pack.readout.sourceSnapshot?.id
+      && input.sourceSnapshotId !== pack.readout.sourceSnapshot.id
+    ) {
+      throw new Error('O contexto da empresa mudou. Reabra a sessão para confirmar a nova versão das fontes.')
+    }
     const isAdvisory = input.sessionId === 'problem' || input.sessionId === 'reset' || input.sessionId === 'campaign'
     const baseTranscript = pack.advisoryTranscripts[input.sessionId] ?? pack.transcript
     const transcript = selectedTranscript(baseTranscript, input.selectedAgents)
@@ -162,6 +169,8 @@ export const liveDecisionRoomAdapter = {
           : 'Generate the next advisor turn for a live board decision room.',
         sessionId: input.sessionId,
         sessionKind: isAdvisory ? 'advisory' : 'board',
+        activeQuestion: input.activeQuestion,
+        sourceSnapshot: pack.readout.sourceSnapshot,
         turnIndex: input.index,
         advisor: agent,
         selectedAdvisors: selectedBoardAgents(pack.readout, input.selectedAgents),
@@ -186,6 +195,13 @@ export const liveDecisionRoomAdapter = {
 
   async intervention(input: InterventionRequest) {
     const pack = await buildGenericDecisionRoomPack()
+    if (
+      input.sourceSnapshotId
+      && pack.readout.sourceSnapshot?.id
+      && input.sourceSnapshotId !== pack.readout.sourceSnapshot.id
+    ) {
+      throw new Error('O contexto da empresa mudou. Reabra a sessão para confirmar a nova versão das fontes.')
+    }
     const fallback = pack.cannedTurns[input.kind]
     const aiResult = await callJSONAI<LiveTurnOutput>({
       purpose: input.kind === 'challenge' ? 'agent_challenge' : 'advisor_review',
@@ -195,6 +211,8 @@ export const liveDecisionRoomAdapter = {
       prompt: JSON.stringify({
         task: 'Generate a live room intervention grounded in the current decision-room log.',
         interventionKind: input.kind,
+        activeQuestion: input.activeQuestion,
+        sourceSnapshot: pack.readout.sourceSnapshot,
         diagnosis: pack.readout.diagnosis,
         boardAgents: selectedBoardAgents(pack.readout, input.selectedAgents),
         recentLog: compactTurnLog(input.log),
@@ -217,6 +235,13 @@ export const liveDecisionRoomAdapter = {
 
   async captureDecision(input: DecisionCaptureRequest) {
     const pack = await buildGenericDecisionRoomPack()
+    if (
+      input.sourceSnapshotId
+      && pack.readout.sourceSnapshot?.id
+      && input.sourceSnapshotId !== pack.readout.sourceSnapshot.id
+    ) {
+      throw new Error('O contexto da empresa mudou. Reabra a sessão para confirmar a nova versão das fontes.')
+    }
     const fallbackDecision = pack.decisions[0]
     const fallbackQueue = decisionFallbackQueue(input, pack.outputs)
 
@@ -232,6 +257,7 @@ export const liveDecisionRoomAdapter = {
         state: input.state,
         sessionId: input.sessionId,
         activeQuestion: input.activeQuestion,
+        sourceSnapshot: pack.readout.sourceSnapshot,
         sessionKind: input.sessionKind,
         selectedAdvisors: selectedBoardAgents(pack.readout, input.selectedAgents),
         requestedData: input.requestedData,

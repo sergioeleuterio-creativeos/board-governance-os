@@ -12,6 +12,9 @@ function parseBody(value: unknown): InterventionRequest | null {
   const body = value as Record<string, unknown>
   if (typeof body.sessionId !== 'string' || !validSessionIds.has(body.sessionId as SessionTypeId)) return null
   if (typeof body.kind !== 'string' || !kinds.has(body.kind)) return null
+  if (typeof body.activeQuestion !== 'string' || body.activeQuestion.trim().length < 10) return null
+  if (body.questionConfirmed !== true) return null
+  if (typeof body.sourceSnapshotId !== 'string' || body.sourceSnapshotId.trim().length < 10) return null
   const sessionId = body.sessionId as SessionTypeId
   const log = Array.isArray(body.log) ? body.log.filter((item): item is BoardTurn => {
     return !!item && typeof item === 'object' && typeof (item as Record<string, unknown>).text === 'string'
@@ -23,6 +26,9 @@ function parseBody(value: unknown): InterventionRequest | null {
     kind: body.kind as InterventionRequest['kind'],
     log,
     selectedAgents: normalizeSelectedAgents(body.selectedAgents),
+    activeQuestion: body.activeQuestion.trim(),
+    questionConfirmed: true,
+    sourceSnapshotId: body.sourceSnapshotId,
   }
 }
 

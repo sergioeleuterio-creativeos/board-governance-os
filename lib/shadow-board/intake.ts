@@ -219,6 +219,18 @@ export function buildMemoryCandidates(draft: CompanyBrainIntakeDraft): IntakeMem
       sourceType: 'form',
     },
     {
+      category: 'plan',
+      title: 'Current plan',
+      content: draft.strategy.currentPlan,
+      sourceType: 'form',
+    },
+    {
+      category: 'question',
+      title: 'Founder strategic questions',
+      content: draft.strategy.strategicQuestions,
+      sourceType: 'form',
+    },
+    {
       category: 'financial',
       title: 'Financial snapshot',
       content: [

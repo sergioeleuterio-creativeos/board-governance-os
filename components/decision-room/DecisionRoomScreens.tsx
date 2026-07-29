@@ -126,7 +126,7 @@ function advisoryPlanFor(id: string | null | undefined) {
 }
 
 function defaultQuestionForSession(id: SessionTypeId, diagnosis: DecisionRoomReadout['diagnosis']) {
-  return advisoryPlans[id]?.question ?? diagnosis.recommendedQuestion
+  return diagnosis.recommendedQuestion || advisoryPlans[id]?.question || ''
 }
 
 function defaultQueueForSession(id: SessionTypeId) {
@@ -426,6 +426,7 @@ export function BriefingsScreen({ readout }: ScreenProps) {
 
 export function RoomsScreen({ readout }: ScreenProps) {
   const { boardAgents, diagnosis, sessionTypes } = readout
+  const sourceSnapshot = readout.sourceSnapshot
   const [clientRoomId, setClientRoomId] = useState(() => newRoomId())
   const [activeSession, setActiveSession] = useState<string | null>(null)
   const [selectedAgents, setSelectedAgents] = useState<AgentCode[]>(defaultAdvisorSelection)
@@ -439,6 +440,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
   const [decided, setDecided] = useState<'approved' | 'deferred' | null>(null)
   const [queue, setQueue] = useState<string[]>([])
   const [activeQuestion, setActiveQuestion] = useState(diagnosis.recommendedQuestion)
+  const [questionConfirmed, setQuestionConfirmed] = useState(false)
   const [requestedData, setRequestedData] = useState<string[]>([])
   const [bypassedData, setBypassedData] = useState<string[]>([])
   const [founderNotes, setFounderNotes] = useState('')
@@ -478,6 +480,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
     setDecided(null)
     setQueue(defaultQueueForSession(sessionId))
     setActiveQuestion(defaultQuestionForSession(sessionId, diagnosis))
+    setQuestionConfirmed(false)
     setRequestedData([])
     setBypassedData([])
     setFounderNotes('')
@@ -513,6 +516,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
     baseIdx?: number
     baseComplete?: boolean
     decided?: 'approved' | 'deferred' | null
+    questionConfirmed?: boolean
   }) {
     if (!activeSession) return null
     setSaveStatus('saving')
@@ -537,6 +541,9 @@ export function RoomsScreen({ readout }: ScreenProps) {
           sessionKind: activeKind,
           selectedAgents,
           decided: snapshot?.decided ?? decided,
+          questionConfirmed: snapshot?.questionConfirmed ?? questionConfirmed,
+          sourceSnapshotId: sourceSnapshot?.id,
+          sourceSnapshotHash: sourceSnapshot?.hash,
         }),
       })
       const payload = await response.json().catch(() => null) as {
@@ -585,8 +592,26 @@ export function RoomsScreen({ readout }: ScreenProps) {
     }
   }
 
+  async function confirmQuestionAndSources() {
+    if (!sourceSnapshot?.id || activeQuestion.trim().length < 10) return
+    setRoomError('')
+    const persistedSessionId = await saveSession({
+      activeQuestion: activeQuestion.trim(),
+      questionConfirmed: true,
+    })
+    if (persistedSessionId) setQuestionConfirmed(true)
+  }
+
   async function nextTurn() {
     if (!activeSession || thinking) return
+    if (!sourceSnapshot?.id) {
+      setRoomError('Não foi possível congelar as fontes desta sessão. Reabra a sala.')
+      return
+    }
+    if (!questionConfirmed || activeQuestion.trim().length < 10) {
+      setRoomError('Confirme a pergunta que o board deve responder antes de iniciar a análise.')
+      return
+    }
     if (turnLimitReached) {
       setBaseComplete(true)
       setRoomError(`Limite desta sessão atingido: ${turnLimit} turnos de advisor. Encerre com plano, decisão ou pedido de mais contexto.`)
@@ -599,7 +624,14 @@ export function RoomsScreen({ readout }: ScreenProps) {
       const response = await fetch('/api/decision-room/turn', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: activeSession, index: baseIdx, selectedAgents }),
+        body: JSON.stringify({
+          sessionId: activeSession,
+          index: baseIdx,
+          selectedAgents,
+          activeQuestion,
+          questionConfirmed,
+          sourceSnapshotId: sourceSnapshot.id,
+        }),
       })
       const payload = await response.json().catch(() => null) as { turn?: BoardTurn | null; error?: string } | null
       if (!response.ok) throw new Error(payload?.error ?? 'Turno falhou.')
@@ -622,6 +654,10 @@ export function RoomsScreen({ readout }: ScreenProps) {
 
   async function requestIntervention(kind: 'challenge' | 'evidence' | 'invite') {
     if (!activeSession || thinking) return
+    if (!sourceSnapshot?.id || !questionConfirmed) {
+      setRoomError('Confirme a pergunta e as fontes antes de pedir uma intervenção.')
+      return
+    }
     if (turnLimitReached) {
       setRoomError(`Limite desta sessão atingido: ${turnLimit} turnos de advisor. Encerre com plano, decisão ou pedido de mais contexto.`)
       return
@@ -632,7 +668,15 @@ export function RoomsScreen({ readout }: ScreenProps) {
       const response = await fetch('/api/decision-room/intervention', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId: activeSession, kind, log, selectedAgents }),
+        body: JSON.stringify({
+          sessionId: activeSession,
+          kind,
+          log,
+          selectedAgents,
+          activeQuestion,
+          questionConfirmed,
+          sourceSnapshotId: sourceSnapshot.id,
+        }),
       })
       const payload = await response.json().catch(() => null) as { turn?: BoardTurn; error?: string } | null
       if (!response.ok || !payload?.turn) throw new Error(payload?.error ?? 'Intervenção falhou.')
@@ -648,6 +692,10 @@ export function RoomsScreen({ readout }: ScreenProps) {
 
   async function captureDecision(state: 'approved' | 'deferred') {
     if (!activeSession || thinking) return
+    if (!sourceSnapshot?.id || !questionConfirmed) {
+      setRoomError('Confirme a pergunta e as fontes antes de registrar o plano ou a decisão.')
+      return
+    }
     setThinking(true)
     setRoomError('')
     try {
@@ -664,6 +712,9 @@ export function RoomsScreen({ readout }: ScreenProps) {
           requestedData,
           bypassedData,
           selectedAgents,
+          questionConfirmed,
+          sourceSnapshotId: sourceSnapshot.id,
+          sourceSnapshotHash: sourceSnapshot.hash,
         }),
       })
       const payload = await response.json().catch(() => null) as {
@@ -814,7 +865,10 @@ export function RoomsScreen({ readout }: ScreenProps) {
                   key={question}
                   type="button"
                   className={question === activeQuestion ? 'is-active' : ''}
-                  onClick={() => setActiveQuestion(question)}
+                  onClick={() => {
+                    setActiveQuestion(question)
+                    setQuestionConfirmed(false)
+                  }}
                 >
                   <span>Q{index + 1}</span>
                   <strong>{question}</strong>
@@ -838,6 +892,46 @@ export function RoomsScreen({ readout }: ScreenProps) {
         </div>
       </header>
       {exportError && <p className="sb-error">{exportError}</p>}
+      <section className="sb-advisory-overview">
+        <div>
+          <p className="sb-code">PERGUNTA DA SESSÃO</p>
+          <label className="field-label mt-3" htmlFor="active-board-question">O que o board deve responder?</label>
+          <textarea
+            id="active-board-question"
+            className="field-textarea"
+            value={activeQuestion}
+            disabled={questionConfirmed || log.length > 0}
+            onChange={(event) => {
+              setActiveQuestion(event.target.value)
+              setQuestionConfirmed(false)
+            }}
+          />
+        </div>
+        <div>
+          <p className="sb-code">FONTES CONGELADAS</p>
+          <p className="sb-muted mt-2">{sourceSnapshot?.summary ?? 'As fontes ainda não puderam ser resolvidas.'}</p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {sourceSnapshot?.plan && (
+              <StatusPill tone="neutral">
+                {sourceSnapshot.plan.title} · v{sourceSnapshot.plan.version}
+              </StatusPill>
+            )}
+            <StatusPill tone={questionConfirmed ? 'positive' : 'caution'}>
+              {questionConfirmed ? 'Pergunta confirmada' : 'Aguardando confirmação'}
+            </StatusPill>
+          </div>
+          {!questionConfirmed && (
+            <button
+              type="button"
+              className="btn-gold mt-4"
+              disabled={saveStatus === 'saving' || !sourceSnapshot?.id || activeQuestion.trim().length < 10}
+              onClick={() => void confirmQuestionAndSources()}
+            >
+              {saveStatus === 'saving' ? 'Confirmando...' : 'Confirmar pergunta e fontes'}
+            </button>
+          )}
+        </div>
+      </section>
       {isAdvisory && activePlan && (
         <section className="sb-advisory-overview">
           <div>
@@ -902,6 +996,11 @@ export function RoomsScreen({ readout }: ScreenProps) {
                 </article>
               ))}
             </div>
+            {sourceSnapshot && (
+              <p className="sb-muted mt-3">
+                Snapshot {sourceSnapshot.id.slice(-8)} · {sourceSnapshot.sourceRefs.length} fontes
+              </p>
+            )}
           </div>
           <div className="mt-5">
             <p className="sb-code">Dados que a sala pode pedir</p>
@@ -938,10 +1037,10 @@ export function RoomsScreen({ readout }: ScreenProps) {
 
         <main className="sb-room-center">
           <div className="sb-room-transport">
-            <button type="button" className="btn-gold" onClick={() => void nextTurn()} disabled={thinking || baseComplete || turnLimitReached}>{thinking ? 'Rodando...' : baseComplete || turnLimitReached ? 'Limite atingido' : isAdvisory ? 'Pedir conselho' : 'Próximo turno'}</button>
-            <button type="button" className="btn-chamber" disabled={thinking || turnLimitReached} onClick={() => void requestIntervention('challenge')}>{isAdvisory ? 'Aprofundar' : 'Pressionar mais'}</button>
-            <button type="button" className="btn-chamber" disabled={thinking || turnLimitReached} onClick={() => void requestIntervention('evidence')}>Pedir evidência</button>
-            <button type="button" className="btn-chamber" disabled={thinking || turnLimitReached} onClick={() => void requestIntervention('invite')}>{isAdvisory ? 'Adicionar advisor' : 'Convidar papel'}</button>
+            <button type="button" className="btn-gold" onClick={() => void nextTurn()} disabled={!questionConfirmed || thinking || baseComplete || turnLimitReached}>{thinking ? 'Rodando...' : baseComplete || turnLimitReached ? 'Limite atingido' : isAdvisory ? 'Pedir conselho' : 'Próximo turno'}</button>
+            <button type="button" className="btn-chamber" disabled={!questionConfirmed || thinking || turnLimitReached} onClick={() => void requestIntervention('challenge')}>{isAdvisory ? 'Aprofundar' : 'Pressionar mais'}</button>
+            <button type="button" className="btn-chamber" disabled={!questionConfirmed || thinking || turnLimitReached} onClick={() => void requestIntervention('evidence')}>Pedir evidência</button>
+            <button type="button" className="btn-chamber" disabled={!questionConfirmed || thinking || turnLimitReached} onClick={() => void requestIntervention('invite')}>{isAdvisory ? 'Adicionar advisor' : 'Convidar papel'}</button>
             <button type="button" className="btn-chamber" onClick={() => setIsolate(value => !value)}>{isolate ? 'Ver todos' : 'Isolar divergência'}</button>
           </div>
           <p className="sb-code mt-3">{usedAdvisorTurns}/{turnLimit} turnos de advisor</p>
@@ -958,8 +1057,19 @@ export function RoomsScreen({ readout }: ScreenProps) {
               <p className="sb-code">TURNO PAUSADO</p>
               <p>{roomError}</p>
               <div className="mt-3 flex flex-wrap gap-2">
-                <button type="button" className="btn-chamber" onClick={() => void nextTurn()}>Repetir turno</button>
-                <button type="button" className="btn-chamber-muted" onClick={() => { setBaseIdx(current => current + 1); setRoomError('') }}>Pular agente</button>
+                <button
+                  type="button"
+                  className="btn-chamber"
+                  onClick={() => {
+                    if (saveStatus === 'error') void confirmQuestionAndSources()
+                    else void nextTurn()
+                  }}
+                >
+                  {saveStatus === 'error' ? 'Tentar salvar novamente' : 'Repetir turno'}
+                </button>
+                {saveStatus !== 'error' && (
+                  <button type="button" className="btn-chamber-muted" onClick={() => { setBaseIdx(current => current + 1); setRoomError('') }}>Pular agente</button>
+                )}
               </div>
             </div>
           )}
@@ -1011,7 +1121,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
           <SynthesisBlock title="Discorda" items={synth.disagreements} />
           <SynthesisBlock title="Riscos" items={synth.risks} />
           <div className="mt-5 grid gap-2">
-            <button type="button" className="btn-gold" onClick={() => setDecisionOpen(true)}>{isAdvisory && activePlan ? activePlan.closeLabel : 'Ir para decisão'}</button>
+            <button type="button" className="btn-gold" disabled={!questionConfirmed} onClick={() => setDecisionOpen(true)}>{isAdvisory && activePlan ? activePlan.closeLabel : 'Ir para decisão'}</button>
             <button type="button" className="btn-chamber" onClick={() => enqueue(isAdvisory && activePlan ? activePlan.primaryOutput : 'Brief de estratégia')}>{isAdvisory ? '+ Plano' : '+ Brief'}</button>
             <button type="button" className="btn-chamber" onClick={() => enqueue(isAdvisory ? 'Resumo executivo consultivo' : 'Memo do conselho')}>{isAdvisory ? '+ Resumo' : '+ Memo'}</button>
           </div>

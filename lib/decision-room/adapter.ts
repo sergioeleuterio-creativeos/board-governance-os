@@ -24,30 +24,55 @@ export interface DecisionRoomAdapter {
   createOutputs(input?: { queue?: string[] }): Promise<ExecutionOutput[]>
 }
 
+function assertSourceSnapshot(readout: DecisionRoomReadout, sourceSnapshotId: string | undefined) {
+  if (
+    sourceSnapshotId
+    && readout.sourceSnapshot?.id
+    && sourceSnapshotId !== readout.sourceSnapshot.id
+  ) {
+    throw new Error('O contexto da empresa mudou. Reabra a sessão para confirmar a nova versão das fontes.')
+  }
+}
+
 const genericAdapter: DecisionRoomAdapter = {
   async readout() {
     return (await buildGenericDecisionRoomPack()).readout
   },
   async nextTurn(input) {
     const pack = await buildGenericDecisionRoomPack()
+    assertSourceSnapshot(pack.readout, input.sourceSnapshotId)
     const baseTranscript = pack.advisoryTranscripts[input.sessionId] ?? pack.transcript
     const transcript = selectedTranscript(baseTranscript, input.selectedAgents)
     return transcript[input.index] ?? null
   },
   async intervention(input) {
     const pack = await buildGenericDecisionRoomPack()
+    assertSourceSnapshot(pack.readout, input.sourceSnapshotId)
     return pack.cannedTurns[input.kind]
   },
   async captureDecision(input) {
     const pack = await buildGenericDecisionRoomPack()
+    assertSourceSnapshot(pack.readout, input.sourceSnapshotId)
     const approvedQueue = input.sessionKind === 'advisory'
       ? ['Resumo executivo consultivo', 'Plano consultivo', 'Workstreams e KPIs']
       : ['Memo da decisão', 'Plano de validação em 30 dias']
     const queue = input.state === 'approved'
       ? Array.from(new Set([...(input.queue ?? []), ...approvedQueue]))
       : input.queue ?? []
+    const baseDecision = pack.decisions[0]
+    const namedQuestion = input.activeQuestion?.trim()
+    const decision = namedQuestion
+      ? {
+        ...baseDecision,
+        statement: input.sessionKind === 'advisory'
+          ? `Plano consultivo para responder: ${namedQuestion}`
+          : `${input.state === 'approved' ? 'Decisão aprovada' : 'Decisão adiada'}: ${namedQuestion}`,
+        rationale: `A sala avaliou a pergunta “${namedQuestion}” contra as fontes congeladas, as lacunas declaradas e as condições registradas na sessão.`,
+        linked: pack.readout.sourceSnapshot?.sourceRefs.slice(0, 8) ?? baseDecision.linked,
+      }
+      : baseDecision
     return {
-      decision: pack.decisions[0],
+      decision,
       followUps: pack.followUps,
       queue,
     }

@@ -1,3 +1,5 @@
+import type { BoardSourceSnapshotSummary } from '@/lib/board/source-snapshot'
+
 export type AgentCode = 'BB' | 'CEO' | 'CFO' | 'CMO' | 'CRO' | 'PRD' | 'CAT' | 'MDA' | 'CRM' | 'RED'
 export type StudioCode = 'SC' | 'BE' | 'CP' | 'SN' | 'RE' | 'MW' | 'PM'
 export type EvidenceStatus = 'CONFIRMADO' | 'DERIVADO' | 'RISCO ATIVO' | 'FALTANDO' | 'PARCIAL'
@@ -110,6 +112,7 @@ export interface FollowUp {
 
 export interface DecisionRoomReadout {
   mode: 'mock' | 'live'
+  sourceSnapshot?: BoardSourceSnapshotSummary
   boardAgents: BoardAgent[]
   studioAgents: StudioAgent[]
   sessionTypes: SessionType[]
@@ -124,6 +127,9 @@ export interface TurnRequest {
   sessionId: SessionTypeId
   index: number
   selectedAgents?: AgentCode[]
+  activeQuestion?: string
+  questionConfirmed?: boolean
+  sourceSnapshotId?: string
 }
 
 export interface InterventionRequest {
@@ -131,6 +137,9 @@ export interface InterventionRequest {
   kind: 'challenge' | 'evidence' | 'invite'
   log?: BoardTurn[]
   selectedAgents?: AgentCode[]
+  activeQuestion?: string
+  questionConfirmed?: boolean
+  sourceSnapshotId?: string
 }
 
 export interface DecisionCaptureRequest {
@@ -144,6 +153,9 @@ export interface DecisionCaptureRequest {
   requestedData?: string[]
   bypassedData?: string[]
   selectedAgents?: AgentCode[]
+  questionConfirmed?: boolean
+  sourceSnapshotId?: string
+  sourceSnapshotHash?: string
 }
 
 export interface DecisionRoomSessionSaveRequest {
@@ -159,4 +171,7 @@ export interface DecisionRoomSessionSaveRequest {
   sessionKind?: SessionKind
   selectedAgents?: AgentCode[]
   decided?: DecisionState | null
+  questionConfirmed?: boolean
+  sourceSnapshotId?: string
+  sourceSnapshotHash?: string
 }

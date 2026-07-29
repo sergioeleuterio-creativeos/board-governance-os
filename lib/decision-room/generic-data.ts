@@ -1,6 +1,8 @@
 import 'server-only'
 
-import { getSessionUser, serviceClient } from '@/lib/auth-server'
+import { getSessionUser } from '@/lib/auth-server'
+import { resolveBoardSourceSnapshot } from '@/lib/board/source-resolver'
+import { summarizeSourceSnapshot, type BoardSourceSnapshot } from '@/lib/board/source-snapshot'
 import { getCurrentCompanyForUser, type CurrentCompany } from '@/lib/shadow-board/current-company-server'
 import type {
   BoardAgent,
@@ -180,7 +182,12 @@ function companyLabel(company: CurrentCompany | null) {
   return company?.name ?? 'esta empresa'
 }
 
-function buildEvidenceMap(company: CurrentCompany | null, entries: MemoryEntry[], documents: UploadedDocument[]): StrategyDiagnosis['evidenceMap'] {
+function buildEvidenceMap(
+  company: CurrentCompany | null,
+  entries: MemoryEntry[],
+  documents: UploadedDocument[],
+  snapshot?: BoardSourceSnapshot,
+): StrategyDiagnosis['evidenceMap'] {
   const evidence: StrategyDiagnosis['evidenceMap'] = entries.slice(0, 5).map(entry => ({
     claim: compact(entry.content, entry.title),
     source: entry.source_document_id ? 'Company Brain / documento enviado' : `Company Brain / ${entry.source_type}`,
@@ -194,6 +201,14 @@ function buildEvidenceMap(company: CurrentCompany | null, entries: MemoryEntry[]
       status: document.status === 'processed' ? 'CONFIRMADO' : 'PARCIAL',
     })
   })
+
+  if (snapshot?.plan) {
+    evidence.unshift({
+      claim: `${snapshot.plan.title}, versão ${snapshot.plan.version}: ${compact(snapshot.plan.diagnosis, 'plano selecionado para esta sessão')}`,
+      source: `Plano / ${snapshot.plan.id} / v${snapshot.plan.version}`,
+      status: snapshot.plan.status === 'approved' ? 'CONFIRMADO' : 'PARCIAL',
+    })
+  }
 
   if (!evidence.length) {
     evidence.push({
@@ -216,10 +231,16 @@ function missingContext(entries: MemoryEntry[]) {
   return missing.length ? missing : ['Registrar evidências novas que mudariam a recomendação antes da próxima revisão.']
 }
 
-function buildDiagnosis(company: CurrentCompany | null, entries: MemoryEntry[], documents: UploadedDocument[]): StrategyDiagnosis {
+function buildDiagnosis(
+  company: CurrentCompany | null,
+  entries: MemoryEntry[],
+  documents: UploadedDocument[],
+  snapshot?: BoardSourceSnapshot,
+): StrategyDiagnosis {
   const name = companyLabel(company)
   const goal = firstContent(entries, ['goal', 'plan'], `Definir qual decisão estratégica de ${name} precisa virar ação nos próximos 30 dias.`)
-  const challenge = firstContent(entries, ['question', 'risk'], `A decisão central ainda precisa ser nomeada com clareza antes da sala avançar.`)
+  const challenge = snapshot?.founderQuestion
+    ?? firstContent(entries, ['question', 'risk'], 'A decisão central ainda precisa ser nomeada com clareza antes da sala avançar.')
   const financialSignal = shortList(byCategory(entries, 'financial').map(entry => entry.title), 'dados financeiros ainda não estruturados')
   const customerSignal = shortList(byCategory(entries, 'customer').map(entry => entry.title), 'evidências de cliente ainda não estruturadas')
 
@@ -236,10 +257,12 @@ function buildDiagnosis(company: CurrentCompany | null, entries: MemoryEntry[], 
       { title: 'Rodar piloto controlado', detail: 'Reduzir risco com um teste de 30 dias antes de comprometer escala.', selected: false },
       { title: 'Reformular o problema', detail: 'Voltar para Problem Build se a pergunta ainda mistura muitos assuntos.', selected: false },
     ],
-    evidenceMap: buildEvidenceMap(company, entries, documents),
-    recommendedQuestion: `Qual decisão ${name} deve tomar agora, e quais condições precisam ser registradas para avançar com segurança?`,
+    evidenceMap: buildEvidenceMap(company, entries, documents, snapshot),
+    recommendedQuestion: snapshot?.founderQuestion
+      ?? `Qual decisão ${name} deve tomar agora, e quais condições precisam ser registradas para avançar com segurança?`,
     decisionQuestions: [
-      `Qual decisão ${name} deve tomar agora, e quais condições precisam ser registradas para avançar com segurança?`,
+      snapshot?.founderQuestion
+        ?? `Qual decisão ${name} deve tomar agora, e quais condições precisam ser registradas para avançar com segurança?`,
       'Que evidência mínima mudaria a recomendação da sala?',
       'Quais riscos aceitamos agora e quais precisam virar gate de revisão?',
       'Quem deve ser o dono real da decisão e do próximo ponto de prova?',
@@ -548,42 +571,53 @@ function buildFollowUps(diagnosis: StrategyDiagnosis): FollowUp[] {
 
 async function loadCurrentCompanyBrain() {
   const user = await getSessionUser()
-  if (!user) return { company: null, entries: [] as MemoryEntry[], documents: [] as UploadedDocument[] }
+  if (!user) {
+    return {
+      company: null,
+      entries: [] as MemoryEntry[],
+      documents: [] as UploadedDocument[],
+      snapshot: null as BoardSourceSnapshot | null,
+    }
+  }
 
   const company = await getCurrentCompanyForUser(user)
-  if (!company) return { company: null, entries: [] as MemoryEntry[], documents: [] as UploadedDocument[] }
-
-  const service = serviceClient()
-  const [entriesResult, documentsResult] = await Promise.all([
-    service
-      .from('company_brain_entries')
-      .select('id, category, source_type, title, content, confidence_score, source_document_id, created_at')
-      .eq('company_id', company.id)
-      .eq('status', 'active')
-      .order('created_at', { ascending: false })
-      .limit(80),
-    service
-      .from('uploaded_documents')
-      .select('id, original_filename, document_type, status, summary, created_at')
-      .eq('company_id', company.id)
-      .neq('status', 'archived')
-      .order('created_at', { ascending: false })
-      .limit(12),
-  ])
-
-  if (entriesResult.error) throw new Error(entriesResult.error.message)
-  if (documentsResult.error) throw new Error(documentsResult.error.message)
+  if (!company) {
+    return {
+      company: null,
+      entries: [] as MemoryEntry[],
+      documents: [] as UploadedDocument[],
+      snapshot: null as BoardSourceSnapshot | null,
+    }
+  }
+  const snapshot = await resolveBoardSourceSnapshot({ company })
 
   return {
     company,
-    entries: (entriesResult.data ?? []) as MemoryEntry[],
-    documents: (documentsResult.data ?? []) as UploadedDocument[],
+    entries: snapshot.brainEntries.map(entry => ({
+      id: entry.id,
+      category: entry.category,
+      source_type: entry.sourceType,
+      title: entry.title,
+      content: entry.content,
+      confidence_score: entry.confidenceScore,
+      source_document_id: entry.sourceDocumentId,
+      created_at: entry.createdAt,
+    })),
+    documents: snapshot.documents.map(document => ({
+      id: document.id,
+      original_filename: document.filename,
+      document_type: document.documentType,
+      status: document.status,
+      summary: document.summary,
+      created_at: document.createdAt,
+    })),
+    snapshot,
   }
 }
 
 export async function buildGenericDecisionRoomPack(): Promise<DecisionRoomPack> {
-  const { company, entries, documents } = await loadCurrentCompanyBrain()
-  const diagnosis = buildDiagnosis(company, entries, documents)
+  const { company, entries, documents, snapshot } = await loadCurrentCompanyBrain()
+  const diagnosis = buildDiagnosis(company, entries, documents, snapshot ?? undefined)
   const boardBrief = buildBrief(diagnosis)
   const decisions = [buildDecision(company, diagnosis)]
   const outputs = buildOutputs(company)
@@ -593,6 +627,7 @@ export async function buildGenericDecisionRoomPack(): Promise<DecisionRoomPack> 
   return {
     readout: {
       mode: 'mock',
+      sourceSnapshot: snapshot ? summarizeSourceSnapshot(snapshot) : undefined,
       boardAgents: genericBoardAgents,
       studioAgents: genericStudioAgents,
       sessionTypes: genericSessionTypes,

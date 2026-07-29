@@ -60,6 +60,9 @@ type RoomMetadataInput = {
   baseIdx?: number
   baseComplete?: boolean
   decided?: string | null
+  questionConfirmed?: boolean
+  sourceSnapshotId?: string
+  sourceSnapshotHash?: string
 }
 
 function compactLog(log: BoardTurn[] | undefined) {
@@ -86,6 +89,9 @@ function roomMetadata(request: RoomMetadataInput) {
     decision_room_base_idx: request.baseIdx ?? null,
     decision_room_base_complete: request.baseComplete ?? false,
     decision_room_decided: request.decided ?? null,
+    decision_room_question_confirmed: request.questionConfirmed ?? false,
+    decision_room_source_snapshot_id: request.sourceSnapshotId ?? null,
+    decision_room_source_snapshot_hash: request.sourceSnapshotHash ?? null,
     decision_room_log: compactLog(request.log),
   }
 }
@@ -107,6 +113,13 @@ async function persistAdvisoryBusinessPlan(
   }
 ) {
   const { company, cycle, userId, request, decision, followUps } = input
+  const planType = request.sessionId === 'campaign'
+    ? 'marketing'
+    : request.sessionId === 'reset' ? 'strategic' : 'diagnostic'
+  const businessFront = request.sessionId === 'campaign'
+    ? 'marketing'
+    : request.sessionId === 'reset' ? 'company' : 'diagnosis'
+  const period = String(new Date().getUTCFullYear())
   const metadata = {
     source: 'advisory-session',
     adapter: process.env.DECISION_ROOM_ADAPTER ?? 'mock',
@@ -116,12 +129,85 @@ async function persistAdvisoryBusinessPlan(
     requested_data: request.requestedData ?? [],
     bypassed_data: request.bypassedData ?? [],
     output_queue: request.queue ?? [],
+    plan_type: planType,
+    business_front: businessFront,
+    period,
+    source_snapshot_id: request.sourceSnapshotId ?? null,
+    source_snapshot_hash: request.sourceSnapshotHash ?? null,
+    question_confirmed: request.questionConfirmed ?? false,
     created_by: userId,
+  }
+
+  const { data: existing, error: lookupError } = request.clientRoomId
+    ? await service
+      .from('business_plans')
+      .select('id, version')
+      .eq('company_id', company.id)
+      .eq('metadata->>decision_room_client_id', request.clientRoomId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    : { data: null, error: null }
+
+  if (lookupError) throw new Error(lookupError.message)
+
+  const { data: previousPlan, error: previousPlanError } = existing?.id
+    ? { data: null, error: null }
+    : await service
+      .from('business_plans')
+      .select('id, version')
+      .eq('company_id', company.id)
+      .eq('plan_type', planType)
+      .eq('business_front', businessFront)
+      .eq('period', period)
+      .neq('status', 'archived')
+      .order('version', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+  if (previousPlanError) throw new Error(previousPlanError.message)
+
+  const version = existing?.version
+    ?? ((typeof previousPlan?.version === 'number' ? previousPlan.version : 0) + 1)
+  const title = request.activeQuestion?.trim()
+    ? request.activeQuestion.trim().slice(0, 160)
+    : `${planType === 'marketing' ? 'Plano de marketing' : 'Plano consultivo'} ${period}`
+  const normalizedContent = {
+    question: request.activeQuestion ?? null,
+    decision: {
+      statement: decision.statement,
+      rationale: decision.rationale,
+      conditions: decision.conditions,
+      rejectedOptions: decision.rejectedOptions,
+      confidence: decision.confidence,
+      owner: decision.owner,
+      reviewDate: decision.reviewDate,
+    },
+    followUps,
   }
   const payload = {
     organization_id: company.organization_id,
     company_id: company.id,
     governance_cycle_id: cycle.id,
+    title,
+    plan_type: planType,
+    period,
+    business_front: businessFront,
+    version,
+    parent_plan_id: existing?.id ? null : previousPlan?.id ?? null,
+    source_type: 'advisory_session',
+    source_document_ids: [],
+    source_input_ids: [],
+    raw_source: {
+      active_question: request.activeQuestion ?? null,
+      transcript: compactLog(request.log),
+      requested_data: request.requestedData ?? [],
+      bypassed_data: request.bypassedData ?? [],
+    },
+    normalized_content: normalizedContent,
+    consolidation_lineage: previousPlan?.id
+      ? [{ plan_id: previousPlan.id, relationship: 'previous_version' }]
+      : [],
     status: 'ready_for_review',
     diagnosis: decision.rationale,
     priorities: decision.conditions.map((condition, index) => ({
@@ -152,21 +238,13 @@ async function persistAdvisoryBusinessPlan(
     ],
     completeness_score: decision.confidence,
     quality_score: decision.confidence,
-    metadata,
+    metadata: {
+      ...metadata,
+      title,
+      version,
+      parent_plan_id: previousPlan?.id ?? null,
+    },
   }
-
-  const { data: existing, error: lookupError } = request.clientRoomId
-    ? await service
-      .from('business_plans')
-      .select('id')
-      .eq('company_id', company.id)
-      .eq('metadata->>decision_room_client_id', request.clientRoomId)
-      .order('updated_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
-    : { data: null, error: null }
-
-  if (lookupError) throw new Error(lookupError.message)
 
   if (existing?.id) {
     const { error: updateError } = await service
@@ -277,6 +355,10 @@ export async function persistDecisionRoomCapture(input: PersistDecisionRoomCaptu
         session_type: isAdvisory ? 'diagnostic' : 'virtual_review',
         status: 'awaiting_founder',
         opened_at: now,
+        source_snapshot_id: request.sourceSnapshotId ?? null,
+        source_snapshot_hash: request.sourceSnapshotHash ?? null,
+        active_question: request.activeQuestion ?? null,
+        question_confirmed_at: request.questionConfirmed ? now : null,
         closure_recommendation: closureRecommendation,
         closure_summary: decision.rationale,
         metadata: {
@@ -299,6 +381,10 @@ export async function persistDecisionRoomCapture(input: PersistDecisionRoomCaptu
     .update({
       closure_recommendation: closureRecommendation,
       closure_summary: decision.rationale,
+      source_snapshot_id: request.sourceSnapshotId ?? null,
+      source_snapshot_hash: request.sourceSnapshotHash ?? null,
+      active_question: request.activeQuestion ?? null,
+      question_confirmed_at: request.questionConfirmed ? now : null,
       metadata: {
         source: 'decision-room',
         adapter: process.env.DECISION_ROOM_ADAPTER ?? 'mock',
@@ -445,6 +531,10 @@ export async function persistDecisionRoomSession(input: {
     session_type: state.sessionKind === 'advisory' ? 'diagnostic' : 'live_facilitated',
     status: state.decided ? 'awaiting_founder' : 'open',
     opened_at: now,
+    source_snapshot_id: state.sourceSnapshotId ?? null,
+    source_snapshot_hash: state.sourceSnapshotHash ?? null,
+    active_question: state.activeQuestion ?? null,
+    question_confirmed_at: state.questionConfirmed ? now : null,
     closure_summary: closureSummaryFromLog(state.log),
     metadata,
   }
@@ -455,6 +545,10 @@ export async function persistDecisionRoomSession(input: {
       .update({
         status: sessionPayload.status,
         closure_summary: sessionPayload.closure_summary,
+        source_snapshot_id: sessionPayload.source_snapshot_id,
+        source_snapshot_hash: sessionPayload.source_snapshot_hash,
+        active_question: sessionPayload.active_question,
+        question_confirmed_at: sessionPayload.question_confirmed_at,
         metadata,
       })
       .eq('id', existing.id)

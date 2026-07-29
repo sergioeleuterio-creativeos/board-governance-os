@@ -21,6 +21,7 @@ export type CurrentCompany = {
   revenue_range?: string | null
   stage?: string | null
   jurisdiction?: string | null
+  main_challenge?: string | null
   metadata?: Record<string, unknown> | null
 }
 
@@ -58,7 +59,7 @@ export async function getCurrentCompanyForUser(user: User): Promise<CurrentCompa
   if (companyIds.length) {
     const { data: companies, error } = await service
       .from('companies')
-      .select('id, organization_id, name, slug, status, industry, business_model, revenue_range, stage, jurisdiction, metadata')
+      .select('id, organization_id, name, slug, status, industry, business_model, revenue_range, stage, jurisdiction, main_challenge, metadata')
       .in('id', companyIds)
 
     if (error) throw new Error(error.message)
@@ -82,7 +83,7 @@ export async function getCurrentCompanyForUser(user: User): Promise<CurrentCompa
 
   const { data: companies, error } = await service
     .from('companies')
-    .select('id, organization_id, name, slug, status, industry, business_model, revenue_range, stage, jurisdiction, metadata')
+    .select('id, organization_id, name, slug, status, industry, business_model, revenue_range, stage, jurisdiction, main_challenge, metadata')
     .eq('organization_id', organizationMembership.organization_id)
     .eq('status', 'active')
     .order('created_at', { ascending: false })
