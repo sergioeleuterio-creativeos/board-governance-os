@@ -456,12 +456,26 @@ export function RoomsScreen({ readout }: ScreenProps) {
   const needsIntake = lowContext(diagnosis)
   const advisorySessions = sessionTypes.filter(session => session.kind === 'advisory')
   const boardSessions = sessionTypes.filter(session => session.kind !== 'advisory')
+  const recommendedAdvisorSession = advisorySessions.find(session => session.id === (needsIntake ? 'problem' : 'reset'))
+    ?? advisorySessions[0]
+  const recommendedBoardSession = boardSessions.find(session => session.primary)
+    ?? boardSessions.find(session => session.id === 'hotseat')
+    ?? boardSessions[0]
   const activeKind = sessionTypes.find(session => session.id === activeSession)?.kind ?? 'board'
   const isAdvisory = activeKind === 'advisory'
   const activePlan = advisoryPlanFor(activeSession)
   const turnLimit = active?.maxTurns ?? (activeKind === 'advisory' ? 6 : 8)
   const usedAdvisorTurns = advisorTurnCount(log)
   const turnLimitReached = usedAdvisorTurns >= turnLimit
+  const chairPrimaryLabel = !questionConfirmed
+    ? 'Confirmar pergunta e começar'
+    : decided
+      ? 'Sessão registrada'
+      : founderNotes.trim()
+        ? 'Enviar ao Advisor'
+        : baseComplete || turnLimitReached
+          ? isAdvisory && activePlan ? activePlan.closeLabel : 'Ver recomendação'
+          : thinking ? 'Advisor pensando...' : 'Ouvir próximo advisor'
   const logView = isolate
     ? log.filter(turn => /DISCORDA|ATACA|PARCIAL|PRESSIONA|CONDICIONA|DADOS|RISCO/.test(turn.tag))
     : log
@@ -494,19 +508,6 @@ export function RoomsScreen({ readout }: ScreenProps) {
     })
   }
 
-  function toggleAgent(code: AgentCode) {
-    setSelectedAgents(current => {
-      if (code === 'BB') return current.includes('BB') ? current : ['BB', ...current]
-      return current.includes(code)
-        ? current.filter(item => item !== code)
-        : [...current, code]
-    })
-  }
-
-  function pushTurn(turn: BoardTurn) {
-    setLog(current => [...current, turn])
-  }
-
   async function saveSession(snapshot?: {
     log?: BoardTurn[]
     queue?: string[]
@@ -521,9 +522,6 @@ export function RoomsScreen({ readout }: ScreenProps) {
     if (!activeSession) return null
     setSaveStatus('saving')
     try {
-      const noteTurn: BoardTurn | null = founderNotes.trim()
-        ? { code: 'BB', tag: 'NOTAS DO FOUNDER', text: founderNotes.trim(), studio: true }
-        : null
       const persistedLog = snapshot?.log ?? log
       const response = await fetch('/api/decision-room/session', {
         method: 'POST',
@@ -533,7 +531,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
           sessionId: activeSession,
           activeQuestion: snapshot?.activeQuestion ?? activeQuestion,
           queue: snapshot?.queue ?? queue,
-          log: noteTurn ? [...persistedLog, noteTurn] : persistedLog,
+          log: persistedLog,
           requestedData: snapshot?.requestedData ?? requestedData,
           bypassedData: snapshot?.bypassedData ?? bypassedData,
           baseIdx: snapshot?.baseIdx ?? baseIdx,
@@ -652,44 +650,6 @@ export function RoomsScreen({ readout }: ScreenProps) {
     }
   }
 
-  async function requestIntervention(kind: 'challenge' | 'evidence' | 'invite') {
-    if (!activeSession || thinking) return
-    if (!sourceSnapshot?.id || !questionConfirmed) {
-      setRoomError('Confirme a pergunta e as fontes antes de pedir uma intervenção.')
-      return
-    }
-    if (turnLimitReached) {
-      setRoomError(`Limite desta sessão atingido: ${turnLimit} turnos de advisor. Encerre com plano, decisão ou pedido de mais contexto.`)
-      return
-    }
-    setThinking(true)
-    setRoomError('')
-    try {
-      const response = await fetch('/api/decision-room/intervention', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId: activeSession,
-          kind,
-          log,
-          selectedAgents,
-          activeQuestion,
-          questionConfirmed,
-          sourceSnapshotId: sourceSnapshot.id,
-        }),
-      })
-      const payload = await response.json().catch(() => null) as { turn?: BoardTurn; error?: string } | null
-      if (!response.ok || !payload?.turn) throw new Error(payload?.error ?? 'Intervenção falhou.')
-      const nextLog = [...log, payload.turn]
-      setLog(nextLog)
-      void saveSession({ log: nextLog })
-    } catch (error) {
-      setRoomError(error instanceof Error ? error.message : 'Intervenção falhou. A síntese foi preservada.')
-    } finally {
-      setThinking(false)
-    }
-  }
-
   async function captureDecision(state: 'approved' | 'deferred') {
     if (!activeSession || thinking) return
     if (!sourceSnapshot?.id || !questionConfirmed) {
@@ -738,10 +698,37 @@ export function RoomsScreen({ readout }: ScreenProps) {
     }
   }
 
-  function enqueue(item: string) {
-    const nextQueue = Array.from(new Set([...queue, item]))
-    setQueue(nextQueue)
-    void saveSession({ queue: nextQueue })
+  function sendFounderMessage() {
+    const text = founderNotes.trim()
+    if (!text) return
+    const founderTurn: BoardTurn = {
+      code: 'BB',
+      role: 'Founder',
+      tag: 'FOUNDER',
+      text,
+      studio: true,
+    }
+    const nextLog = [...log, founderTurn]
+    setLog(nextLog)
+    setFounderNotes('')
+    void saveSession({ log: nextLog })
+  }
+
+  function runChairPrimaryAction() {
+    if (decided || thinking) return
+    if (!questionConfirmed) {
+      void confirmQuestionAndSources()
+      return
+    }
+    if (founderNotes.trim()) {
+      sendFounderMessage()
+      return
+    }
+    if (baseComplete || turnLimitReached) {
+      setDecisionOpen(true)
+      return
+    }
+    void nextTurn()
   }
 
   function requestData(item: string) {
@@ -781,63 +768,58 @@ export function RoomsScreen({ readout }: ScreenProps) {
 
   if (!activeSession) {
     return (
-      <div className="space-y-6">
-        <PageHeader
-          eyebrow="Sessões"
-          title="Escolha que tipo de ajuda você precisa"
-          description="Comece por diagnóstico e conselho quando o problema ainda está aberto. Use uma sessão de board quando já existe uma decisão para revisar."
-        />
-        <section className="grid gap-4 lg:grid-cols-[1fr_0.7fr]">
-          <Panel>
-            <SectionTitle label="Estado do contexto" />
-            <div className="flex flex-wrap gap-2">
-              <StatusPill tone={needsIntake ? 'critical' : 'positive'}>
-                {diagnosis.confidence}% confiança
-              </StatusPill>
+      <div className="sb-advisor-home">
+        <header>
+          <p className="sb-code">BOARD OS ADVISOR</p>
+          <h1>O que precisa de clareza agora?</h1>
+          <p>Comece pela conversa. O Advisor reúne o contexto, escolhe quem precisa entrar e conduz até uma recomendação ou uma reunião de board.</p>
+        </header>
+
+        <section className="sb-chair-welcome">
+          <div className="sb-chair-message">
+            <div className="sb-chair-identity">
+              <AdvisorMark code="BB" color="#C4922F" />
+              <div>
+                <strong>Board Brain</strong>
+                <span>Chair e advisor permanente</span>
+              </div>
             </div>
-            <p className="sb-muted mt-3">
+            <blockquote>{diagnosis.recommendedQuestion}</blockquote>
+            <p>
               {needsIntake
-                ? 'A sessão pode começar, mas a recomendação deve registrar lacunas e perguntas abertas.'
-                : 'O contexto atual já sustenta uma conversa útil com advisors e próximos passos claros.'}
+                ? 'Ainda há lacunas. Eu começo pelo diagnóstico e registro o que precisamos confirmar.'
+                : 'Já existe contexto suficiente para transformar esta pergunta em direção, plano e compromissos.'}
             </p>
-          </Panel>
-          <Panel>
-            <SectionTitle label="Melhor próximo passo" />
-            <p className="sb-muted">
-              {needsIntake
-                ? 'Conte mais sobre a empresa, envie arquivos ou rode uma sessão consultiva para nomear o problema.'
-                : 'Escolha uma sessão consultiva para transformar contexto em plano, ou uma sessão de board para pressionar uma decisão.'}
-            </p>
-            <div className="mt-4 flex flex-wrap gap-2">
-              <Link href="/company/intake" className="btn-secondary">Contar o que está acontecendo</Link>
+            <div className="sb-chair-actions">
+              {recommendedAdvisorSession && (
+                <button type="button" className="btn-primary" onClick={() => startSession(recommendedAdvisorSession.id)}>
+                  Conversar com o Advisor
+                </button>
+              )}
+              {recommendedBoardSession && (
+                <button type="button" className="btn-secondary" onClick={() => startSession(recommendedBoardSession.id)}>
+                  Levar uma decisão ao Board
+                </button>
+              )}
+              <Link href="/company/intake" className="btn-secondary">Atualizar contexto</Link>
             </div>
-          </Panel>
-        </section>
-        <Panel>
-          <SectionTitle label="Advisors desta conversa" />
-          <div className="sb-agent-picker">
-            {boardAgents.map(agent => (
-              <button
-                key={agent.code}
-                type="button"
-                className={selectedAgents.includes(agent.code) ? 'is-selected' : ''}
-                onClick={() => toggleAgent(agent.code)}
-              >
-                <AdvisorMark code={agent.code} color={agent.color} size="sm" />
-                <span>{agent.short}</span>
-              </button>
-            ))}
           </div>
-        </Panel>
-        <section className="grid gap-5 xl:grid-cols-2">
-          <Panel>
-            <SectionTitle label="Preciso entender o problema" />
-            <SessionGrid sessions={advisorySessions} onStart={startSession} />
-          </Panel>
-          <Panel>
-            <SectionTitle label="Preciso decidir" />
-            <SessionGrid sessions={boardSessions} onStart={startSession} />
-          </Panel>
+
+          <aside className="sb-visible-board">
+            <div>
+              <p className="sb-code">SEU BOARD</p>
+              <span>{selectedAgents.length} advisors preparados pelo Chair</span>
+            </div>
+            <div className="sb-board-roster">
+              {boardAgents.filter(agent => selectedAgents.includes(agent.code)).map(agent => (
+                <div key={agent.code} title={agent.role}>
+                  <AdvisorMark code={agent.code} color={agent.color} size="sm" />
+                  <span>{agent.short}</span>
+                </div>
+              ))}
+            </div>
+            <p>Você verá quem fala, o que cada advisor defende e como o Chair fecha a recomendação.</p>
+          </aside>
         </section>
       </div>
     )
@@ -891,6 +873,18 @@ export function RoomsScreen({ readout }: ScreenProps) {
           <button type="button" className="btn-chamber-muted" onClick={() => { void saveSession(); setActiveSession(null) }}>Sair da sala</button>
         </div>
       </header>
+      <section className="sb-meeting-roster" aria-label="Board visível nesta conversa">
+        <div>
+          <AdvisorMark code="BB" color="#C4922F" size="sm" />
+          <span><strong>Board Brain</strong><small>Chair</small></span>
+        </div>
+        {boardAgents.filter(agent => selectedAgents.includes(agent.code) && agent.code !== 'BB').map(agent => (
+          <div key={agent.code}>
+            <AdvisorMark code={agent.code} color={agent.color} size="sm" />
+            <span><strong>{agent.short}</strong><small>{agent.role}</small></span>
+          </div>
+        ))}
+      </section>
       {exportError && <p className="sb-error">{exportError}</p>}
       <section className="sb-advisory-overview">
         <div>
@@ -920,20 +914,10 @@ export function RoomsScreen({ readout }: ScreenProps) {
               {questionConfirmed ? 'Pergunta confirmada' : 'Aguardando confirmação'}
             </StatusPill>
           </div>
-          {!questionConfirmed && (
-            <button
-              type="button"
-              className="btn-gold mt-4"
-              disabled={saveStatus === 'saving' || !sourceSnapshot?.id || activeQuestion.trim().length < 10}
-              onClick={() => void confirmQuestionAndSources()}
-            >
-              {saveStatus === 'saving' ? 'Confirmando...' : 'Confirmar pergunta e fontes'}
-            </button>
-          )}
         </div>
       </section>
       {isAdvisory && activePlan && (
-        <section className="sb-advisory-overview">
+        <section className="sb-advisory-overview sb-expected-output">
           <div>
             <p className="sb-code">SAÍDA ESPERADA</p>
             <h2>{activePlan.primaryOutput}</h2>
@@ -1036,14 +1020,15 @@ export function RoomsScreen({ readout }: ScreenProps) {
         </aside>
 
         <main className="sb-room-center">
-          <div className="sb-room-transport">
-            <button type="button" className="btn-gold" onClick={() => void nextTurn()} disabled={!questionConfirmed || thinking || baseComplete || turnLimitReached}>{thinking ? 'Rodando...' : baseComplete || turnLimitReached ? 'Limite atingido' : isAdvisory ? 'Pedir conselho' : 'Próximo turno'}</button>
-            <button type="button" className="btn-chamber" disabled={!questionConfirmed || thinking || turnLimitReached} onClick={() => void requestIntervention('challenge')}>{isAdvisory ? 'Aprofundar' : 'Pressionar mais'}</button>
-            <button type="button" className="btn-chamber" disabled={!questionConfirmed || thinking || turnLimitReached} onClick={() => void requestIntervention('evidence')}>Pedir evidência</button>
-            <button type="button" className="btn-chamber" disabled={!questionConfirmed || thinking || turnLimitReached} onClick={() => void requestIntervention('invite')}>{isAdvisory ? 'Adicionar advisor' : 'Convidar papel'}</button>
-            <button type="button" className="btn-chamber" onClick={() => setIsolate(value => !value)}>{isolate ? 'Ver todos' : 'Isolar divergência'}</button>
+          <div className="sb-thread-heading">
+            <div>
+              <p className="sb-code">CONVERSA DO BOARD</p>
+              <span>{usedAdvisorTurns}/{turnLimit} contribuições de advisor</span>
+            </div>
+            <button type="button" className="btn-chamber-muted" onClick={() => setIsolate(value => !value)}>
+              {isolate ? 'Ver conversa completa' : 'Ver só divergências'}
+            </button>
           </div>
-          <p className="sb-code mt-3">{usedAdvisorTurns}/{turnLimit} turnos de advisor</p>
 
           {thinking && (
             <div className="sb-room-loading">
@@ -1091,13 +1076,43 @@ export function RoomsScreen({ readout }: ScreenProps) {
                     <AdvisorMark code={turn.code} color={agent?.color ?? '#51789B'} />
                     <div>
                       <p className="sb-code">{turn.tag}</p>
-                      <h3>{turn.studio ? 'Research / Evidence' : agent?.role}</h3>
+                      <h3>{turn.role ?? (turn.studio ? 'Research / Evidence' : agent?.role)}</h3>
                       <p>{turn.text}</p>
                     </div>
                   </div>
                 </article>
               )
             })}
+          </div>
+
+          <div className="sb-chair-composer">
+            <label htmlFor="chair-message">Fale com o Advisor</label>
+            <textarea
+              id="chair-message"
+              value={founderNotes}
+              disabled={Boolean(decided)}
+              onChange={event => setFounderNotes(event.target.value)}
+              placeholder={questionConfirmed
+                ? 'Faça uma pergunta, acrescente contexto ou deixe em branco para ouvir o próximo advisor.'
+                : 'Ajuste e confirme a pergunta acima antes de começar.'}
+            />
+            <div>
+              <span>
+                {saveStatus === 'saving'
+                  ? 'Salvando conversa…'
+                  : saveStatus === 'error'
+                    ? 'A conversa continua aqui. Tente novamente.'
+                    : 'Tudo o que entra nesta conversa fica registrado.'}
+              </span>
+              <button
+                type="button"
+                className="btn-gold"
+                disabled={thinking || Boolean(decided) || (!questionConfirmed && (!sourceSnapshot?.id || activeQuestion.trim().length < 10))}
+                onClick={runChairPrimaryAction}
+              >
+                {chairPrimaryLabel}
+              </button>
+            </div>
           </div>
         </main>
 
@@ -1120,11 +1135,6 @@ export function RoomsScreen({ readout }: ScreenProps) {
           <SynthesisBlock title="Concorda" items={synth.agreements} />
           <SynthesisBlock title="Discorda" items={synth.disagreements} />
           <SynthesisBlock title="Riscos" items={synth.risks} />
-          <div className="mt-5 grid gap-2">
-            <button type="button" className="btn-gold" disabled={!questionConfirmed} onClick={() => setDecisionOpen(true)}>{isAdvisory && activePlan ? activePlan.closeLabel : 'Ir para decisão'}</button>
-            <button type="button" className="btn-chamber" onClick={() => enqueue(isAdvisory && activePlan ? activePlan.primaryOutput : 'Brief de estratégia')}>{isAdvisory ? '+ Plano' : '+ Brief'}</button>
-            <button type="button" className="btn-chamber" onClick={() => enqueue(isAdvisory ? 'Resumo executivo consultivo' : 'Memo do conselho')}>{isAdvisory ? '+ Resumo' : '+ Memo'}</button>
-          </div>
           <div className="mt-5">
             <p className="sb-code">Fila de entregáveis</p>
             <div className="mt-3 grid gap-2">
@@ -1160,22 +1170,6 @@ export function RoomsScreen({ readout }: ScreenProps) {
           </div>
         </div>
       )}
-    </div>
-  )
-}
-
-function SessionGrid({ sessions, onStart }: { sessions: ScreenProps['readout']['sessionTypes']; onStart: (id: ScreenProps['readout']['sessionTypes'][number]['id']) => void }) {
-  return (
-    <div className="mt-4 grid gap-3">
-      {sessions.map(session => (
-        <button key={session.id} type="button" className={`sb-session-card ${session.primary ? 'is-primary' : ''}`} onClick={() => onStart(session.id)}>
-          <span>{session.code}</span>
-          <strong>{session.name}</strong>
-          <em>{session.tag}</em>
-          <p>{session.desc}</p>
-          <small>{session.outputs.join(' · ')}</small>
-        </button>
-      ))}
     </div>
   )
 }

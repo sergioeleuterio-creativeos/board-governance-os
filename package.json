@@ -17,6 +17,7 @@
     "qa:decision-room": "node scripts/check-decision-room-readiness.mjs",
     "test:sprint1": "node --test tests/sprint-1-persistence-contract.test.mjs",
     "test:sprint2": "node --test tests/sprint-2-source-snapshot.test.mjs",
+    "test:sprint3": "node --test tests/sprint-3-chair-ui.test.mjs",
     "qa:creative-os-connector": "node scripts/check-creative-os-connector.mjs",
     "qa:exports:download": "node scripts/download-latest-exports.mjs",
     "seed:training-packs": "node scripts/seed-training-packs.mjs",

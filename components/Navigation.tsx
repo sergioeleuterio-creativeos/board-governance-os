@@ -43,11 +43,22 @@ const navGroups = [
   },
 ]
 
+const founderNavGroups = [
+  {
+    key: 'founderCore',
+    label: 'Board OS',
+    items: [
+      { href: '/rooms', code: '01', label: 'Advisor' },
+      { href: '/dashboard', code: '02', label: 'Board' },
+      { href: '/follow-ups', code: '03', label: 'Compromissos' },
+    ],
+  },
+]
+
 const mobileItems = [
-  { href: '/dashboard', key: 'home' },
-  { href: '/company-brain', key: 'context' },
-  { href: '/rooms', key: 'rooms' },
-  { href: '/follow-ups', key: 'followUps' },
+  { href: '/rooms', label: 'Advisor' },
+  { href: '/dashboard', label: 'Board' },
+  { href: '/follow-ups', label: 'Compromissos' },
 ]
 
 function userMetadataName(user: ReturnType<typeof useAuth>['user']): string | null {
@@ -92,7 +103,7 @@ export default function Navigation() {
       fallback: 'Usuario',
     })
   const displayRole = user ? (isAdmin ? 'Admin' : tShell('founderRole')) : 'Visitante'
-  const visibleNavGroups = isAdmin ? navGroups : navGroups.filter(group => group.key !== 'operations')
+  const visibleNavGroups = isAdmin ? navGroups : founderNavGroups
 
   async function handleCompanyChange(companyId: string) {
     if (!companyId || companyId === workspace?.company?.id) return
@@ -127,13 +138,13 @@ export default function Navigation() {
         <nav className="sb-rail-nav" aria-label={`${PRODUCT.name} navigation`}>
           {visibleNavGroups.map(group => (
             <div key={group.key} className="sb-nav-group">
-              <p>{tNav(`groups.${group.key}`)}</p>
+              <p>{'label' in group ? group.label : tNav(`groups.${group.key}`)}</p>
               {group.items.map(item => {
                 const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
                 return (
                   <Link key={item.href} href={item.href} className={`sb-nav-link ${active ? 'is-active' : ''}`}>
                     <span>{item.code}</span>
-                    {tNav(`items.${item.key}`)}
+                    {'label' in item ? item.label : tNav(`items.${item.key}`)}
                   </Link>
                 )
               })}
@@ -180,9 +191,19 @@ export default function Navigation() {
       <nav className="sb-mobile-tabs" aria-label="Mobile navigation">
         {mobileItems.map(item => {
           const active = pathname === item.href || pathname.startsWith(`${item.href}/`)
-          return <Link key={item.href} href={item.href} className={active ? 'is-active' : ''}>{tNav(`mobile.${item.key}`)}</Link>
+          return <Link key={item.href} href={item.href} className={active ? 'is-active' : ''}>{item.label}</Link>
         })}
       </nav>
+
+      {user && !isAdmin && pathname !== '/rooms' && !pathname.startsWith('/rooms/') && (
+        <Link href="/rooms" className="sb-chair-dock" aria-label="Abrir o Board OS Advisor">
+          <span>BB</span>
+          <div>
+            <strong>Board OS Advisor</strong>
+            <small>Continuar a conversa</small>
+          </div>
+        </Link>
+      )}
     </>
   )
 }

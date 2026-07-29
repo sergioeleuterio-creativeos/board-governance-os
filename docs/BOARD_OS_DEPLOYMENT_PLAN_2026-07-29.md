@@ -194,6 +194,8 @@ Sprint 2 uses the active company established by Sprint 1 and never creates conte
 
 **Outcome:** the founder experiences a meeting, not a control room.
 
+**Status:** implementation complete locally on 2026-07-29; preview and production QA pending.
+
 ### Build
 
 - Reduce founder navigation to Advisor, Board, and Commitments.
@@ -233,6 +235,25 @@ The UI is a projection of Sprint 1 durable state and Sprint 2 canonical artifact
 
 - Founder usability pass: complete a hot seat without opening a selector, queue, evidence console, or manual turn control.
 - Verify the visible board never disappears during the session.
+
+### Execution evidence — 2026-07-29
+
+- Reduced founder navigation to Advisor, Board, and Commitments while preserving the complete operations navigation for admins.
+- Added an always-available Board OS Advisor dock outside the Advisor route.
+- Replaced the session-type grid and agent picker with two Chair-led choices:
+  - continue the Advisor conversation;
+  - take a named decision to the Board.
+- Made the selected synthetic board continuously visible before and during the meeting.
+- Reworked the active room around:
+  - one chronological transcript;
+  - one founder composer;
+  - one phase-aware primary action;
+  - one compact Chair synthesis.
+- Removed the manual intervention toolbar and artifact-add buttons from the founder flow.
+- Kept Sprint 1 durable-success validation and Sprint 2 source-snapshot ID/hash in every session and decision write.
+- Added five Sprint 3 interaction-contract tests; cumulative suite is 19 passing tests.
+- TypeScript, production build, and diff validation pass.
+- Desktop browser QA confirmed the new entry and active-meeting layouts. Responsive CSS collapses the Chair entry and meeting transcript to one column below 900px.
 
 ## Sprint 4 — Mixed human and synthetic asynchronous board
 

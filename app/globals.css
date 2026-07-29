@@ -2350,3 +2350,325 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Sprint 3: the founder experiences one continuing board conversation. */
+.sb-advisor-home {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 28px 0 48px;
+}
+
+.sb-advisor-home > header {
+  max-width: 760px;
+}
+
+.sb-advisor-home > header h1 {
+  margin-top: 10px;
+  color: var(--ink-900);
+  font-family: Spectral, Georgia, serif;
+  font-size: clamp(38px, 5vw, 64px);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.sb-advisor-home > header > p:last-child {
+  max-width: 700px;
+  margin-top: 16px;
+  color: var(--ink-600);
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.sb-chair-welcome {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(260px, 0.72fr);
+  gap: 18px;
+  margin-top: 34px;
+}
+
+.sb-chair-message,
+.sb-visible-board {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface-panel);
+  padding: clamp(22px, 3vw, 34px);
+  box-shadow: 0 18px 45px rgba(31, 27, 22, 0.06);
+}
+
+.sb-chair-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sb-chair-identity strong,
+.sb-chair-identity span {
+  display: block;
+}
+
+.sb-chair-identity strong {
+  color: var(--ink-900);
+  font-size: 14px;
+}
+
+.sb-chair-identity span {
+  margin-top: 2px;
+  color: var(--ink-400);
+  font-size: 12px;
+}
+
+.sb-chair-message blockquote {
+  max-width: 760px;
+  margin-top: 26px;
+  color: var(--ink-900);
+  font-family: Spectral, Georgia, serif;
+  font-size: clamp(22px, 2.2vw, 29px);
+  font-weight: 600;
+  line-height: 1.28;
+}
+
+.sb-chair-message > p,
+.sb-visible-board > p {
+  margin-top: 16px;
+  color: var(--ink-600);
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.sb-chair-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 26px;
+}
+
+.sb-visible-board > div:first-child {
+  display: grid;
+  gap: 5px;
+}
+
+.sb-visible-board > div:first-child > span {
+  color: var(--ink-600);
+  font-size: 12px;
+}
+
+.sb-board-roster {
+  display: grid;
+  gap: 8px;
+  margin-top: 20px;
+}
+
+.sb-board-roster > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-bottom: 1px solid var(--line-soft);
+  padding-bottom: 8px;
+  color: var(--ink-700);
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.sb-chair-dock {
+  position: fixed;
+  z-index: 55;
+  right: 22px;
+  bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(196, 146, 47, 0.45);
+  border-radius: 999px;
+  background: #211d16;
+  color: #f4f2ed;
+  padding: 9px 16px 9px 9px;
+  box-shadow: 0 14px 42px rgba(20, 18, 13, 0.25);
+}
+
+.sb-chair-dock > span {
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--brass);
+  color: #17140f;
+  font-family: "IBM Plex Mono", Consolas, monospace;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.sb-chair-dock strong,
+.sb-chair-dock small {
+  display: block;
+}
+
+.sb-chair-dock strong {
+  font-size: 12px;
+}
+
+.sb-chair-dock small {
+  margin-top: 1px;
+  color: #b9ad98;
+  font-size: 10px;
+}
+
+.sb-meeting-roster {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  border-bottom: 1px solid rgba(244, 242, 237, 0.12);
+  padding: 12px 0;
+}
+
+.sb-meeting-roster > div {
+  min-width: 142px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(244, 242, 237, 0.1);
+  border-radius: 999px;
+  background: rgba(244, 242, 237, 0.04);
+  padding: 6px 10px 6px 6px;
+}
+
+.sb-meeting-roster strong,
+.sb-meeting-roster small {
+  display: block;
+}
+
+.sb-meeting-roster strong {
+  color: #f4f2ed;
+  font-size: 11px;
+}
+
+.sb-meeting-roster small {
+  max-width: 105px;
+  margin-top: 1px;
+  overflow: hidden;
+  color: #a8a192;
+  font-size: 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sb-room-shell {
+  max-width: 1320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.sb-room-output-strip,
+.sb-expected-output {
+  display: none;
+}
+
+.sb-room-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(270px, 0.4fr);
+  max-width: 1180px;
+  margin: 0 auto;
+}
+
+.sb-room-grid > .sb-room-panel:first-child {
+  display: none;
+}
+
+.sb-room-center {
+  padding: clamp(16px, 2.5vw, 26px);
+}
+
+.sb-thread-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  border-bottom: 1px solid rgba(244, 242, 237, 0.1);
+  padding-bottom: 14px;
+  margin-bottom: 16px;
+}
+
+.sb-thread-heading span {
+  display: block;
+  margin-top: 4px;
+  color: #a8a192;
+  font-size: 11px;
+}
+
+.sb-turn-card {
+  border: 0;
+  border-left: 2px solid rgba(196, 146, 47, 0.5);
+  border-radius: 0 10px 10px 0;
+  background: rgba(244, 242, 237, 0.035);
+  padding: 16px 18px;
+}
+
+.sb-chair-composer {
+  display: grid;
+  gap: 9px;
+  border: 1px solid rgba(196, 146, 47, 0.34);
+  border-radius: 12px;
+  background: #17140f;
+  padding: 14px;
+  margin-top: 18px;
+}
+
+.sb-chair-composer label {
+  color: #f4f2ed;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.sb-chair-composer textarea {
+  min-height: 90px;
+  resize: vertical;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #ede8dc;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.sb-chair-composer textarea::placeholder {
+  color: #7f786b;
+}
+
+.sb-chair-composer > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-top: 1px solid rgba(244, 242, 237, 0.08);
+  padding-top: 10px;
+}
+
+.sb-chair-composer > div > span {
+  color: #8f8778;
+  font-size: 10px;
+}
+
+@media (max-width: 900px) {
+  .sb-chair-welcome,
+  .sb-room-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .sb-chair-dock {
+    right: 12px;
+    bottom: 76px;
+  }
+
+  .sb-room-header {
+    align-items: flex-start;
+  }
+
+  .sb-advisory-overview {
+    grid-template-columns: 1fr;
+  }
+
+  .sb-chair-composer > div {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
