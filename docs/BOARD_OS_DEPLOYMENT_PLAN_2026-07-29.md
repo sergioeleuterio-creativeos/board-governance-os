@@ -26,7 +26,7 @@ No sprint may create a second source of truth, reintroduce a manual agent consol
 
 **Outcome:** Board OS tells the truth about what is durable.
 
-**Status:** implemented locally on 2026-07-29; preview deployment pending.
+**Status:** released cumulatively with Sprint 2 to production on 2026-07-29.
 
 ### Build
 
@@ -99,7 +99,7 @@ No sprint may create a second source of truth, reintroduce a manual agent consol
 
 **Outcome:** the same decision and evidence survive every handoff.
 
-**Status:** implementation complete locally on 2026-07-29; migration and preview deployment pending.
+**Status:** released to production on 2026-07-29.
 
 ### Build
 
@@ -172,7 +172,23 @@ Sprint 2 uses the active company established by Sprint 1 and never creates conte
   - missing migration columns produced no false confirmation and no advisor turn.
 - Cumulative unit tests: 13 passing.
 - TypeScript passed.
-- The migration has not been applied. Sprint 2 must not be deployed as ready until a scoped preview/staging database target is available or the migration is explicitly approved for the currently configured database.
+- Hardened the migration so legacy plans receive stable versions before the unique scope index is created, and wrapped it in a transaction.
+- Verified the Board Governance OS Supabase project is distinct from the Creative OS project.
+- Repaired migration history for the already-present foundation migrations, dry-ran the release, and applied only migration `0003`.
+- Verified all plan-version and source-snapshot columns through the live Supabase API schema.
+- Locked the production Creative OS connector to `mock` mode with synchronization disabled.
+- Deployed and verified preview `dpl_H4Xa9oRYC7rQ36MqxssGMinxNrB2`.
+- Promoted Sprint 2 to production and retained the prior production deployment as a rollback point.
+- Production QA with `QA Test — Atlas Growth Software` confirmed:
+  - founder question and source confirmation;
+  - durable source-snapshot ID and SHA-256 hash;
+  - one visible and persisted Chair turn;
+  - one versioned strategic plan with source provenance.
+- Production QA exposed a post-write autosave mismatch: saving the plan correctly evolved live company context, then the same room was incorrectly compared with that new context.
+- Fixed the mismatch by validating existing rooms against their immutable stored snapshot while retaining current-context validation for new rooms.
+- Added the frozen-snapshot regression test, bringing the cumulative suite to 14 passing tests.
+- Deployed the verified hotfix to preview `dpl_H4QyVb71jEc6Ze9s6jkLF2Xv7d8u` and production `dpl_CBfFveHbkaW69oxkKeGvADtqkBcM`.
+- Final production QA confirmed the session is `awaiting_founder`, the snapshot is stable, the plan is `ready_for_review`, the adapter provenance is `mock`, and retry persistence succeeds without duplication.
 
 ## Sprint 3 — Chair-led Advisor, Board, and Commitments UI
 
