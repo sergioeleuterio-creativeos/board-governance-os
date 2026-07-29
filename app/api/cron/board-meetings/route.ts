@@ -9,6 +9,11 @@ import {
   type BoardPhase,
   type PhaseScheduleEntry,
 } from '@/lib/board/meeting-schedule'
+import { renderBoardPhaseEmail } from '@/lib/email/templates'
+import { sendProductEmail } from '@/lib/email/send'
+import { getPublicAppUrl } from '@/lib/shadow-board/site-url'
+
+export const maxDuration = 60
 
 type SessionRow = {
   id: string
@@ -17,9 +22,20 @@ type SessionRow = {
   governance_cycle_id: string
   board_pack_id: string
   current_phase: BoardPhase
+  meeting_timezone: string
   phase_schedule: PhaseScheduleEntry[]
   active_question: string | null
   metadata: Record<string, unknown>
+}
+
+const PHASE_LABELS: Record<BoardPhase, string> = {
+  pack_review: 'leitura do pack',
+  independent_analysis: 'análise independente',
+  peer_challenge: 'perguntas entre membros',
+  final_positions: 'posições finais',
+  chair_synthesis: 'síntese do Chair',
+  founder_decision: 'decisão do founder',
+  closed: 'ata encerrada',
 }
 
 type ParticipantRow = {
@@ -261,6 +277,72 @@ async function generatePhaseContributions(
   }
 }
 
+async function notifyHumanParticipants(
+  service: SupabaseClient,
+  session: SessionRow,
+  phase: PhaseScheduleEntry,
+) {
+  if (!process.env.RESEND_API_KEY) return
+  const [{ data: company, error: companyError }, { data: participants, error: participantError }] = await Promise.all([
+    service.from('companies').select('name').eq('id', session.company_id).single(),
+    service
+      .from('board_participants')
+      .select('id, email, display_name')
+      .eq('board_session_id', session.id)
+      .eq('participant_type', 'human')
+      .in('status', ['accepted', 'active'])
+      .not('email', 'is', null),
+  ])
+  if (companyError) throw new Error(companyError.message)
+  if (participantError) throw new Error(participantError.message)
+
+  for (const participant of participants ?? []) {
+    const now = new Date().toISOString()
+    let status: 'sent' | 'failed' = 'sent'
+    let errorMessage: string | null = null
+    try {
+      const deadlineLabel = phase.endsAt
+        ? `Contribua até ${new Intl.DateTimeFormat('pt-BR', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+          timeZone: session.meeting_timezone,
+        }).format(new Date(phase.endsAt))}`
+        : 'A ata e as decisões já estão disponíveis.'
+      const message = renderBoardPhaseEmail({
+        participantName: participant.display_name,
+        companyName: company.name,
+        phaseLabel: PHASE_LABELS[phase.phase],
+        activeQuestion: session.active_question || 'Qual decisão o board deve recomendar?',
+        deadlineLabel,
+        appUrl: getPublicAppUrl(),
+      })
+      await sendProductEmail({ to: participant.email!, ...message })
+      await service
+        .from('board_participants')
+        .update({ last_notified_at: now })
+        .eq('id', participant.id)
+    } catch (error) {
+      status = 'failed'
+      errorMessage = error instanceof Error ? error.message : 'phase_notification_failed'
+    }
+
+    await service.from('audit_events').insert({
+      organization_id: session.organization_id,
+      company_id: session.company_id,
+      actor_user_id: null,
+      event_type: 'board.phase_notification',
+      entity_type: 'board_participant',
+      entity_id: participant.id,
+      metadata: {
+        board_session_id: session.id,
+        phase: phase.phase,
+        notification_status: status,
+        error: errorMessage,
+      },
+    })
+  }
+}
+
 async function handle(request: NextRequest) {
   if (!authorized(request)) {
     return NextResponse.json({ error: 'Unauthorized cron request' }, { status: 401 })
@@ -270,7 +352,7 @@ async function handle(request: NextRequest) {
   const now = new Date()
   const { data, error } = await service
     .from('board_sessions')
-    .select('id, organization_id, company_id, governance_cycle_id, board_pack_id, current_phase, phase_schedule, active_question, metadata')
+    .select('id, organization_id, company_id, governance_cycle_id, board_pack_id, current_phase, meeting_timezone, phase_schedule, active_question, metadata')
     .eq('metadata->>async_board', 'true')
     .neq('current_phase', 'closed')
     .lte('phase_deadline_at', now.toISOString())
@@ -330,6 +412,8 @@ async function handle(request: NextRequest) {
       .eq('id', session.id)
       .eq('current_phase', session.current_phase)
     if (updateError) throw new Error(updateError.message)
+
+    await notifyHumanParticipants(service, session, target)
 
     results.push({
       id: session.id,

@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
       service.from('companies').select('name').eq('id', session.company_id).single(),
       service
         .from('board_participants')
-        .select('id, status')
+        .select('id, status, user_id')
         .eq('board_session_id', session.id)
         .eq('email', email)
         .maybeSingle(),
@@ -62,6 +62,12 @@ export async function POST(request: NextRequest) {
 
     if (companyError) throw new Error(companyError.message)
     if (existingError) throw new Error(existingError.message)
+    if (existing && ['accepted', 'active'].includes(existing.status)) {
+      return NextResponse.json(
+        { error: 'This person already holds an active seat in the meeting' },
+        { status: 409 },
+      )
+    }
 
     const rawToken = randomBytes(32).toString('base64url')
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
@@ -72,6 +78,7 @@ export async function POST(request: NextRequest) {
       board_session_id: session.id,
       board_pack_id: session.board_pack_id,
       participant_type: 'human',
+      user_id: null,
       email,
       display_name: displayName,
       role_label: roleLabel,
@@ -175,6 +182,67 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Could not invite this board member' },
+      { status: 500 },
+    )
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  const user = await getSessionUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+
+  const body = await request.json().catch(() => null) as Record<string, unknown> | null
+  const participantId = typeof body?.participant_id === 'string' ? body.participant_id : ''
+  if (!participantId || body?.action !== 'revoke') {
+    return NextResponse.json({ error: 'participant_id and action=revoke are required' }, { status: 400 })
+  }
+
+  try {
+    const service = serviceClient()
+    const { data: participant, error: participantError } = await service
+      .from('board_participants')
+      .select('id, organization_id, company_id, board_session_id, board_pack_id, participant_type, role_label, status')
+      .eq('id', participantId)
+      .maybeSingle()
+
+    if (participantError || !participant) {
+      return NextResponse.json({ error: participantError?.message || 'Board participant not found' }, { status: 404 })
+    }
+    if (participant.participant_type !== 'human' || participant.role_label === 'Founder') {
+      return NextResponse.json({ error: 'Only invited human seats can be revoked here' }, { status: 409 })
+    }
+
+    const access = await requireCompanyAdmin(participant.company_id)
+    if (isAuthError(access)) return access
+    const now = new Date().toISOString()
+    const { error: updateError } = await service
+      .from('board_participants')
+      .update({
+        status: 'revoked',
+        revoked_at: now,
+        access_token_hash: null,
+      })
+      .eq('id', participant.id)
+    if (updateError) throw new Error(updateError.message)
+
+    await service.from('audit_events').insert({
+      organization_id: participant.organization_id,
+      company_id: participant.company_id,
+      actor_user_id: user.id,
+      event_type: 'board.participant_revoked',
+      entity_type: 'board_participant',
+      entity_id: participant.id,
+      metadata: {
+        board_session_id: participant.board_session_id,
+        board_pack_id: participant.board_pack_id,
+        previous_status: participant.status,
+      },
+    })
+
+    return NextResponse.json({ persisted: true, participant_id: participant.id, status: 'revoked' })
+  } catch (error) {
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Could not revoke this board seat' },
       { status: 500 },
     )
   }

@@ -1626,6 +1626,16 @@
   text-transform: uppercase;
 }
 
+.sb-revoke-seat {
+  grid-column: 2;
+  justify-self: start;
+  color: var(--critical);
+  font-size: 8px;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 .sb-async-roster strong,
 .sb-async-roster span {
   display: block;

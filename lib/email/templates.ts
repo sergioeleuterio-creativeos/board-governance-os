@@ -44,6 +44,15 @@ type BoardInvitationEmailInput = {
   invitationUrl: string
 }
 
+type BoardPhaseEmailInput = {
+  participantName: string
+  companyName: string
+  phaseLabel: string
+  activeQuestion: string
+  deadlineLabel: string
+  appUrl: string
+}
+
 function escapeHtml(value: string) {
   return value
     .replace(/&/g, '&amp;')
@@ -166,6 +175,28 @@ export function renderBoardInvitationEmail({
     highlight: deadlineLabel,
     ctaLabel: 'Ler o pack e entrar no board',
     ctaHref: invitationUrl,
+  })
+
+  return { subject, text, html }
+}
+
+export function renderBoardPhaseEmail({
+  participantName,
+  companyName,
+  phaseLabel,
+  activeQuestion,
+  deadlineLabel,
+  appUrl,
+}: BoardPhaseEmailInput) {
+  const subject = `${companyName}: ${phaseLabel}`
+  const { text, html } = renderProductEmail({
+    eyebrow: 'Board OS — nova fase',
+    title: `${participantName}, o board avançou para ${phaseLabel}`,
+    intro: `A decisão continua a mesma: ${activeQuestion}`,
+    detail: 'Leia as contribuições já liberadas e registre apenas o que esta fase pede. O Chair preserva a ordem, a autoria, e o pack de referência.',
+    highlight: deadlineLabel,
+    ctaLabel: 'Voltar à conversa do board',
+    ctaHref: `${appUrl}/board`,
   })
 
   return { subject, text, html }

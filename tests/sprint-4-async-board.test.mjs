@@ -10,6 +10,7 @@ import {
   phasesReleasedBetween,
 } from '../lib/board/meeting-schedule.ts'
 import { readableRecommendation } from '../lib/board/contribution-text.ts'
+import { renderBoardPhaseEmail } from '../lib/email/templates.ts'
 
 const migrationUrl = new URL('../supabase/migrations/0004_mixed_async_board.sql', import.meta.url)
 const boardScreenUrl = new URL('../components/board/AsyncBoardScreen.tsx', import.meta.url)
@@ -121,6 +122,10 @@ test('invitation links store only a hash, expire, and require the invited email'
   assert.doesNotMatch(participant, /access_token:\s*rawToken/)
   assert.match(invite, /user\.email\.toLowerCase\(\) !== participant\.email\?\.toLowerCase\(\)/)
   assert.match(invite, /status: 'expired'/)
+  assert.match(participant, /export async function PATCH/)
+  assert.match(participant, /status: 'revoked'/)
+  assert.match(participant, /access_token_hash: null/)
+  assert.match(participant, /already holds an active seat/)
 })
 
 test('the phase cron is authenticated and uses a compare-and-set update for idempotency', async () => {
@@ -130,6 +135,23 @@ test('the phase cron is authenticated and uses a compare-and-set update for idem
   assert.match(cron, /generatedAlready/)
   assert.match(cron, /visibility: 'released'/)
   assert.match(cron, /metadata->>generated_by/)
+  assert.match(cron, /notifyHumanParticipants/)
+  assert.match(cron, /board\.phase_notification/)
+})
+
+test('phase notifications name the decision, phase, and contribution deadline', () => {
+  const message = renderBoardPhaseEmail({
+    participantName: 'Ana',
+    companyName: 'Atlas',
+    phaseLabel: 'posições finais',
+    activeQuestion: 'Devemos preservar caixa?',
+    deadlineLabel: 'Contribua até 30 jul, 18:00',
+    appUrl: 'https://www.board-os.ai',
+  })
+  assert.match(message.subject, /Atlas: posições finais/)
+  assert.match(message.text, /Devemos preservar caixa\?/)
+  assert.match(message.text, /Contribua até 30 jul, 18:00/)
+  assert.match(message.text, /https:\/\/www\.board-os\.ai\/board/)
 })
 
 test('the Chair is mandatory and direct pack preparation writes a valid versioned plan', async () => {

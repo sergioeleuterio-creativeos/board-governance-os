@@ -312,6 +312,24 @@ export function AsyncBoardScreen() {
     setWorking(false)
   }
 
+  async function revokeParticipant(participantId: string) {
+    setWorking(true)
+    setError('')
+    setNotice('')
+    const response = await fetch('/api/board/participants', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ participant_id: participantId, action: 'revoke' }),
+    })
+    const payload = await response.json().catch(() => null) as { error?: string } | null
+    if (!response.ok) setError(payload?.error ?? 'Não foi possível revogar este assento.')
+    else {
+      setNotice('Assento revogado. O acesso à reunião foi encerrado.')
+      await loadBoard()
+    }
+    setWorking(false)
+  }
+
   if (loading) {
     return <Panel><p className="sb-muted">Abrindo o board...</p></Panel>
   }
@@ -401,6 +419,20 @@ export function AsyncBoardScreen() {
               <span>{participant.role_label} · {participant.participant_type === 'human' ? 'Humano' : 'Advisor sintético'}</span>
             </div>
             <small>{participant.status}</small>
+            {active.can_manage
+              && participant.participant_type === 'human'
+              && participant.role_label !== 'Founder'
+              && !['revoked', 'expired', 'declined'].includes(participant.status)
+              && (
+                <button
+                  type="button"
+                  className="sb-revoke-seat"
+                  disabled={working}
+                  onClick={() => void revokeParticipant(participant.id)}
+                >
+                  Revogar
+                </button>
+              )}
           </article>
         ))}
       </section>
