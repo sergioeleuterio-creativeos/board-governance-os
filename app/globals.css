@@ -198,6 +198,10 @@
     background: rgba(244, 242, 237, 0.04);
   }
 
+  .sb-admin-entry {
+    flex: 0 0 auto;
+  }
+
   .sb-avatar,
   .sb-advisor-mark {
     display: inline-flex;
@@ -244,6 +248,10 @@
     border-bottom: 1px solid var(--line);
     background: rgba(244, 242, 237, 0.86);
     backdrop-filter: blur(16px);
+  }
+
+  .sb-topbar.is-founder {
+    grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .sb-company-switcher,
@@ -622,6 +630,49 @@
     color: var(--ink-900);
   }
 
+  .sb-intake-simple-nav {
+    display: flex;
+    gap: 22px;
+    overflow-x: auto;
+    margin: -4px 0 24px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .sb-intake-simple-nav button {
+    flex: 0 0 auto;
+    border-bottom: 2px solid transparent;
+    padding: 10px 0 12px;
+    color: var(--ink-400);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .sb-intake-simple-nav button.is-active {
+    border-color: var(--brass);
+    color: var(--ink-900);
+  }
+
+  .sb-intake-detail-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: -8px 0 22px;
+  }
+
+  .sb-intake-detail-nav button {
+    border-radius: 999px;
+    background: var(--surface-field);
+    padding: 7px 11px;
+    color: var(--ink-600);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .sb-intake-detail-nav button.is-active {
+    background: var(--ink-900);
+    color: var(--surface-base);
+  }
+
   .sb-intake-chat {
     display: grid;
     gap: 10px;
@@ -694,6 +745,22 @@
     font-family: "IBM Plex Mono", Consolas, monospace;
     font-size: 11px;
     white-space: pre-wrap;
+  }
+
+  .sb-intake-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 24px;
+    border-top: 1px solid var(--line);
+    padding-top: 18px;
+  }
+
+  .sb-intake-footer p {
+    flex-basis: 100%;
+    text-align: right;
   }
 
   .sb-memory-item {

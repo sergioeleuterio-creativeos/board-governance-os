@@ -89,7 +89,7 @@
   },
   "shell": {
     "search": "Buscar decisões, fatos, evidências...",
-    "brainActive": "Board Brain ativo",
+    "brainActive": "Board OS Advisor disponível",
     "founderRole": "Fundador e CEO"
   },
   "companyBrain": {
@@ -102,7 +102,7 @@
   "intake": {
     "eyebrow": "Contexto",
     "title": "Conte o que está acontecendo",
-    "description": "Comece com conversa, documentos ou WhatsApp. O Board Brain transforma isso em contexto, lacunas e próximos passos.",
+    "description": "Comece pela conversa. O Board OS Advisor organiza o contexto, identifica lacunas e conduz o próximo passo.",
     "saveDraft": "Salvar rascunho",
     "sendToBrain": "Salvar contexto",
     "reviewContext": "Revisar contexto",
@@ -167,13 +167,13 @@
       "talentRisks": "Riscos de talento"
     },
     "chat": {
-      "title": "Chat com o Board Brain",
-      "description": "Comece pela conversa. O Board Brain transforma contexto solto em perguntas melhores, lacunas e memória para a sessão.",
+      "title": "Conversa com o Board OS Advisor",
+      "description": "Conte o que está acontecendo. O Advisor faz perguntas, organiza o contexto e registra o que precisa ser confirmado.",
       "prompt": "O que está acontecendo e que ajuda você precisa?",
       "add": "Adicionar nota",
       "open": "Abrir chat de intake",
-      "send": "Enviar ao Board Brain",
-      "thinking": "Board Brain pensando...",
+      "send": "Enviar ao Advisor",
+      "thinking": "Advisor pensando...",
       "placeholder": "Digite o problema, dúvida, conversa com cliente, decisão em aberto ou contexto solto...",
       "emptyTitle": "Comece com uma conversa. Os campos estruturados podem vir depois.",
       "starters": {

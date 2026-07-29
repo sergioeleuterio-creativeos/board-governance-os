@@ -1,5 +1,5 @@
-import { DashboardLiveScreen } from '@/components/shadow-board/DashboardLiveScreen'
+import { redirect } from 'next/navigation'
 
 export default function DashboardPage() {
-  return <DashboardLiveScreen />
+  redirect('/rooms')
 }

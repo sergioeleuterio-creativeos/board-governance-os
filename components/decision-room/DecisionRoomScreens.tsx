@@ -458,7 +458,6 @@ export function RoomsScreen({ readout }: ScreenProps) {
   const boardSessions = sessionTypes.filter(session => session.kind !== 'advisory')
   const recommendedAdvisorSession = advisorySessions.find(session => session.id === (needsIntake ? 'problem' : 'reset'))
     ?? advisorySessions[0]
-  const recommendedBoardSession = boardSessions.find(session => session.primary)
     ?? boardSessions.find(session => session.id === 'hotseat')
     ?? boardSessions[0]
   const activeKind = sessionTypes.find(session => session.id === activeSession)?.kind ?? 'board'
@@ -780,7 +779,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
             <div className="sb-chair-identity">
               <AdvisorMark code="BB" color="#C4922F" />
               <div>
-                <strong>Board Brain</strong>
+                <strong>Board OS Advisor</strong>
                 <span>Chair e advisor permanente</span>
               </div>
             </div>
@@ -796,12 +795,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
                   Conversar com o Advisor
                 </button>
               )}
-              {recommendedBoardSession && (
-                <button type="button" className="btn-secondary" onClick={() => startSession(recommendedBoardSession.id)}>
-                  Levar uma decisão ao Board
-                </button>
-              )}
-              <Link href="/company/intake" className="btn-secondary">Atualizar contexto</Link>
+              <Link href="/company/intake" className="sb-text-link">Atualizar contexto</Link>
             </div>
           </div>
 
@@ -876,7 +870,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
       <section className="sb-meeting-roster" aria-label="Board visível nesta conversa">
         <div>
           <AdvisorMark code="BB" color="#C4922F" size="sm" />
-          <span><strong>Board Brain</strong><small>Chair</small></span>
+          <span><strong>Board OS Advisor</strong><small>Chair</small></span>
         </div>
         {boardAgents.filter(agent => selectedAgents.includes(agent.code) && agent.code !== 'BB').map(agent => (
           <div key={agent.code}>
@@ -1033,7 +1027,7 @@ export function RoomsScreen({ readout }: ScreenProps) {
           {thinking && (
             <div className="sb-room-loading">
               <p className="sb-code">CARREGANDO TURNO</p>
-              <p>{isAdvisory ? 'Board Brain está coordenando o próximo advisor e puxando a conversa para um plano útil.' : 'Board Brain está coordenando o próximo agente e checando as evidências da sala.'}</p>
+              <p>{isAdvisory ? 'O Board OS Advisor está coordenando o próximo advisor e puxando a conversa para um plano útil.' : 'O Board OS Advisor está coordenando o próximo agente e checando as evidências da sala.'}</p>
             </div>
           )}
 

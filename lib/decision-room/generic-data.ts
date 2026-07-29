@@ -52,8 +52,8 @@ export type DecisionRoomPack = {
 const genericBoardAgents: BoardAgent[] = [
   {
     code: 'BB',
-    short: 'Board Brain',
-    role: 'Board Brain / Presidente da sala',
+    short: 'Board OS Advisor',
+    role: 'Board OS Advisor / Chair',
     color: '#C4922F',
     angle: 'Transforma contexto incompleto em decisão, condições, riscos e memória.',
     evidence: 'Company Brain, documentos enviados, decisões anteriores e lacunas declaradas.',

@@ -86,6 +86,7 @@ export default function Navigation() {
   const [switchingCompany, setSwitchingCompany] = useState(false)
   if (pathname === '/' || pathname === '/login' || pathname === '/reset-password' || pathname === '/board-pack/presentation') return null
 
+  const isAdminArea = pathname === '/admin' || pathname.startsWith('/admin/')
   const companyName = workspace?.company?.name ?? workspace?.organization?.name ?? 'Board OS'
   const companyInitials = initialsFor(companyName)
   const selectableCompanies = workspace?.companies?.length
@@ -103,7 +104,7 @@ export default function Navigation() {
       fallback: 'Usuario',
     })
   const displayRole = user ? (isAdmin ? 'Admin' : tShell('founderRole')) : 'Visitante'
-  const visibleNavGroups = isAdmin ? navGroups : founderNavGroups
+  const visibleNavGroups = isAdmin && isAdminArea ? navGroups : founderNavGroups
 
   async function handleCompanyChange(companyId: string) {
     if (!companyId || companyId === workspace?.company?.id) return
@@ -120,7 +121,7 @@ export default function Navigation() {
   return (
     <>
       <aside className="sb-rail">
-        <Link href="/dashboard" className="sb-brand">
+        <Link href={isAdminArea ? '/admin' : '/rooms'} className="sb-brand">
           <Image
             src="/brand/mark.png"
             alt=""
@@ -152,6 +153,16 @@ export default function Navigation() {
           ))}
         </nav>
 
+        {isAdmin && !isAdminArea && (
+          <div className="sb-nav-group sb-admin-entry">
+            <p>Operações</p>
+            <Link href="/admin" className="sb-nav-link">
+              <span>AD</span>
+              Administração
+            </Link>
+          </div>
+        )}
+
         <div className="sb-user-card">
           <div className="sb-avatar">{initialsFor(displayName)}</div>
           <div>
@@ -161,7 +172,7 @@ export default function Navigation() {
         </div>
       </aside>
 
-      <header className="sb-topbar">
+      <header className={`sb-topbar ${isAdminArea ? '' : 'is-founder'}`}>
         <div className="sb-company-switcher">
           <span>{companyInitials}</span>
           <select
@@ -178,13 +189,15 @@ export default function Navigation() {
           </select>
           <small>{periodLabel}</small>
         </div>
-        <div className="sb-search">
-          <span>{tShell('search')}</span>
-          <kbd>Cmd K</kbd>
-        </div>
+        {isAdminArea && (
+          <div className="sb-search">
+            <span>{tShell('search')}</span>
+            <kbd>Cmd K</kbd>
+          </div>
+        )}
         <div className="sb-brain-status">
           <span />
-          {tShell('brainActive')}
+          Board OS Advisor disponível
         </div>
       </header>
 
@@ -195,7 +208,7 @@ export default function Navigation() {
         })}
       </nav>
 
-      {user && !isAdmin && pathname !== '/rooms' && !pathname.startsWith('/rooms/') && (
+      {user && !isAdminArea && pathname !== '/rooms' && !pathname.startsWith('/rooms/') && (
         <Link href="/rooms" className="sb-chair-dock" aria-label="Abrir o Board OS Advisor">
           <span>BB</span>
           <div>

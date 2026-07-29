@@ -9,9 +9,9 @@ import {
   type CompanyBrainIntakeDraft,
   type IntakeSectionKey,
 } from '@/lib/shadow-board/intake'
-import { Meter, PageHeader, Panel, SectionTitle, StatusPill } from './ui'
+import { PageHeader, Panel, StatusPill } from './ui'
 
-const tabs: IntakeSectionKey[] = ['chat', 'files', 'company', 'strategy', 'finance', 'team', 'review']
+const detailTabs: IntakeSectionKey[] = ['company', 'strategy', 'finance', 'team']
 const acceptedFileTypes = [
   '.pdf',
   '.pptx',
@@ -125,27 +125,6 @@ export function CompanyBrainIntakeScreen() {
       },
       updatedAt: new Date().toISOString(),
     }))
-  }
-
-  function addChatNote(mode: 'chat' | 'voice' = 'chat') {
-    const content = mode === 'voice' ? draft.voiceTranscript.trim() : chatNote.trim()
-    if (!content) return
-
-    setDraft(current => ({
-      ...current,
-      notes: [
-        ...current.notes,
-        {
-          id: id('note'),
-          mode,
-          content,
-          createdAt: new Date().toISOString(),
-        },
-      ],
-      voiceTranscript: mode === 'voice' ? '' : current.voiceTranscript,
-      updatedAt: new Date().toISOString(),
-    }))
-    if (mode === 'chat') setChatNote('')
   }
 
   async function sendChatMessage() {
@@ -333,33 +312,40 @@ export function CompanyBrainIntakeScreen() {
         eyebrow={t('eyebrow')}
         title={t('title')}
         description={t('description')}
-        action={<StatusPill tone="positive">{t('liveMode')}</StatusPill>}
       />
 
-      <section className="grid gap-5 xl:grid-cols-[260px_1fr_320px]">
-        <Panel className="h-fit">
-          <SectionTitle label={t('completeness')} />
-          <p className="sb-big-number">{quality.total}</p>
-          <Meter value={quality.total} tone={quality.readyForGovernanceRun ? 'positive' : 'caution'} />
-          <p className="sb-muted mt-3">
-            {t('sectionsComplete', { complete: quality.completeSections, total: quality.totalSections })}
-          </p>
-          <div className="sb-intake-tabs mt-5">
-            {tabs.map(tab => (
-              <button
-                key={tab}
-                type="button"
-                className={activeTab === tab ? 'is-active' : ''}
-                onClick={() => setActiveTab(tab)}
-              >
-                <span>{Math.round(quality.sectionScores[tab])}</span>
-                {t(`tabs.${tab}`)}
-              </button>
-            ))}
-          </div>
-        </Panel>
-
+      <section className="mx-auto max-w-5xl">
         <Panel>
+          <div className="sb-intake-simple-nav" aria-label="Intake">
+            <button type="button" className={activeTab === 'chat' ? 'is-active' : ''} onClick={() => setActiveTab('chat')}>
+              {t('tabs.chat')}
+            </button>
+            <button type="button" className={activeTab === 'files' ? 'is-active' : ''} onClick={() => setActiveTab('files')}>
+              {t('tabs.files')}{draft.files.length ? ` · ${draft.files.length}` : ''}
+            </button>
+            <button type="button" className={detailTabs.includes(activeTab) ? 'is-active' : ''} onClick={() => setActiveTab('company')}>
+              {t('tabs.company')}
+            </button>
+            <button type="button" className={activeTab === 'review' ? 'is-active' : ''} onClick={() => setActiveTab('review')}>
+              {t('tabs.review')}
+            </button>
+          </div>
+
+          {detailTabs.includes(activeTab) && (
+            <div className="sb-intake-detail-nav">
+              {detailTabs.map(tab => (
+                <button
+                  key={tab}
+                  type="button"
+                  className={activeTab === tab ? 'is-active' : ''}
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {t(`tabs.${tab}`)}
+                </button>
+              ))}
+            </div>
+          )}
+
           {activeTab === 'company' && (
             <FieldGroup title={t('company.title')} description={t('company.description')}>
               <TextField label={t('company.name')} value={draft.company.name} onChange={value => updateGroup('company', 'name', value)} />
@@ -422,25 +408,18 @@ export function CompanyBrainIntakeScreen() {
                 )}
                 {chatTimeline.map(turn => (
                   <article key={turn.id} className={turn.role === 'board_brain' ? 'is-brain' : ''}>
-                    <p className="sb-code">{turn.role === 'board_brain' ? 'BOARD BRAIN' : 'FOUNDER'}</p>
+                    <p className="sb-code">{turn.role === 'board_brain' ? 'BOARD OS ADVISOR' : 'FOUNDER'}</p>
                     <p className="whitespace-pre-line">{turn.content}</p>
                   </article>
                 ))}
               </div>
               <TextArea label={t('chat.prompt')} value={chatNote} placeholder={t('chat.placeholder')} onChange={setChatNote} />
-              <button type="button" className="btn-secondary" onClick={() => void sendChatMessage()} disabled={chatSending}>
+              <button type="button" className="btn-primary" onClick={() => void sendChatMessage()} disabled={chatSending}>
                 {chatSending ? t('chat.thinking') : t('chat.send')}
               </button>
-              <TextArea label={t('voice.title')} value={draft.voiceTranscript} placeholder={t('voice.placeholder')} onChange={value => setDraft(current => ({ ...current, voiceTranscript: value }))} />
-              <p className="sb-muted">{t('voice.description')}</p>
-              <button type="button" className="btn-secondary" onClick={() => addChatNote('voice')}>{t('chat.add')}</button>
-              <TextArea
-                label={t('whatsapp.title')}
-                value={draft.whatsAppTranscript ?? ''}
-                placeholder={t('whatsapp.placeholder')}
-                onChange={value => setDraft(current => ({ ...current, whatsAppTranscript: value, updatedAt: new Date().toISOString() }))}
-              />
-              <p className="sb-muted">{t('whatsapp.description')}</p>
+              <p className="sb-muted md:col-span-2">
+                Você também pode colar nesta conversa uma transcrição de voz ou mensagens do WhatsApp. O Advisor registra tudo como contexto.
+              </p>
             </FieldGroup>
           )}
 
@@ -505,23 +484,9 @@ export function CompanyBrainIntakeScreen() {
               </div>
             </FieldGroup>
           )}
-        </Panel>
 
-        <Panel className="h-fit">
-          <SectionTitle label={t('score')} />
-          <p className="sb-big-number">{quality.total}</p>
-          <Meter value={quality.total} tone={quality.readyForGovernanceRun ? 'positive' : 'caution'} />
-          <div className="mt-5 space-y-3">
-            <p className="sb-code">{t('review.missing')}</p>
-            {quality.missing.length === 0
-              ? <p className="sb-muted">{t('review.ready')}</p>
-              : quality.missing.map(item => <StatusPill key={item} tone="caution">{t(`tabs.${item}`)}</StatusPill>)}
-          </div>
-          <div className="mt-6 grid gap-2">
-            <button type="button" className="btn-secondary" onClick={() => setActiveTab('chat')}>
-              {t('chat.open')}
-            </button>
-            <button type="button" className="btn-secondary" onClick={saveLocalDraft} disabled={saveState === 'saving'}>
+          <div className="sb-intake-footer">
+            <button type="button" className="sb-text-link" onClick={saveLocalDraft} disabled={saveState === 'saving'}>
               {t('saveDraft')}
             </button>
             <button

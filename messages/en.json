@@ -89,7 +89,7 @@
   },
   "shell": {
     "search": "Search decisions, facts, evidence...",
-    "brainActive": "Board Brain active",
+    "brainActive": "Board OS Advisor available",
     "founderRole": "Founder & CEO"
   },
   "companyBrain": {
@@ -102,7 +102,7 @@
   "intake": {
     "eyebrow": "Context",
     "title": "Tell us what is happening",
-    "description": "Start with conversation, documents, or WhatsApp. Board Brain turns that into context, gaps, and next steps.",
+    "description": "Start with the conversation. The Board OS Advisor organizes context, identifies gaps, and guides the next step.",
     "saveDraft": "Save draft",
     "sendToBrain": "Save context",
     "reviewContext": "Review context",
@@ -167,13 +167,13 @@
       "talentRisks": "Talent risks"
     },
     "chat": {
-      "title": "Board Brain chat",
-      "description": "Start with the conversation. Board Brain turns loose context into better questions, gaps, and session memory.",
+      "title": "Conversation with the Board OS Advisor",
+      "description": "Explain what is happening. The Advisor asks questions, organizes context, and records what still needs confirmation.",
       "prompt": "What is happening, and what help do you need?",
       "add": "Add note",
       "open": "Open intake chat",
-      "send": "Send to Board Brain",
-      "thinking": "Board Brain thinking...",
+      "send": "Send to Advisor",
+      "thinking": "Advisor thinking...",
       "placeholder": "Type the problem, question, customer conversation, open decision, or loose context...",
       "emptyTitle": "Start with a conversation. Structured fields can come later.",
       "starters": {
