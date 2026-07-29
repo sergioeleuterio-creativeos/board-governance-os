@@ -269,6 +269,8 @@ The UI is a projection of Sprint 1 durable state and Sprint 2 canonical artifact
 
 **Outcome:** invited humans and synthetic advisors deliberate against the same locked pack on a schedule.
 
+**Status:** released to production on 2026-07-29.
+
 ### Build
 
 - Add `board_participants` as participant record and session-scoped access grant.
@@ -314,6 +316,52 @@ Participants receive Sprint 2 immutable snapshots through the Sprint 3 Board tra
 - Preview migration and RLS review.
 - Authorized email QA recipients only.
 - One compressed scheduled meeting in preview, followed by one normal-duration dry run.
+
+### Execution evidence — 2026-07-29
+
+- Added additive migration `0004_mixed_async_board.sql` with:
+  - immutable board-pack release fields and trigger;
+  - scheduled session phases and timezone;
+  - session-scoped human and synthetic participants;
+  - one immutable mixed contribution stream;
+  - RLS for released packs, released contributions, and an author’s own sealed contribution;
+  - expiring hashed invitation tokens and audit fields.
+- Applied migration `0004` to Supabase project `jzmwrwzrmpjftuirqljc`; remote history is aligned through `0004`.
+- Added the founder Board route with:
+  - one direct action to prepare a pack from existing Company Brain context;
+  - one named board question;
+  - one locked pack and source hash;
+  - a continuously visible human/synthetic roster;
+  - one chronological transcript and one phase-aware composer;
+  - human invitation, resend, expiry, and revocation controls.
+- Added an authenticated ten-minute phase cron covering:
+  - pack review;
+  - sealed independent analysis;
+  - released peer challenges;
+  - sealed revised positions;
+  - Chair synthesis;
+  - founder decision;
+  - minutes closure;
+  - phase/deadline email notifications and audit events.
+- Made the Board OS Advisor a mandatory Chair seat and normalized structured advisor recommendations before immutable persistence.
+- Fixed the existing governance-run handoff so a founder can generate a valid titled and versioned plan after the Sprint 2 schema.
+- Added 11 Sprint 4 tests; the cumulative suite is 30 passing tests.
+- TypeScript, production build with 89 routes, and diff validation pass.
+- Full compressed QA meeting confirmed:
+  - one immutable pack and stable Sprint 2 source snapshot;
+  - two humans and seven synthetic members, including the Chair;
+  - wrong-email invitation acceptance denied;
+  - invited human acceptance and session-only access;
+  - founder and invited-human contributions in the same transcript;
+  - sealed human analysis hidden from the founder until phase release;
+  - seven generated peer challenges and seven final positions;
+  - one Chair synthesis, one founder decision, one completed meeting, and one durable minutes record;
+  - all 26 released contributions retain immutable hashes.
+- Invitation delivery used preview mode during QA, so no test invitation email was sent externally.
+- Production revocation was exercised against the QA seat, denied further access, and the QA fixture was restored afterward.
+- Deployed final preview `dpl_uiLoXr2nuFW327qvrCKxyCxR5q1j`.
+- Promoted production deployment `dpl_5tNzUkY9rg1woRHXqo78YcmxJi2c` to `https://www.board-os.ai`.
+- Final production checks confirmed authenticated mixed-board rendering, public home 200, protected Board redirect, unauthenticated Board API 401, deployment `Ready`, and no recent 5xx logs.
 
 ## Sprint 5 — Strategic Source Document, Creative OS handoff, and production release
 
