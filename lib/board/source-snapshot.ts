@@ -135,6 +135,14 @@ export function canonicalSnapshotHash(value: unknown): string {
     .digest('hex')
 }
 
+export function sourceSnapshotIdentityMatches(
+  provided: { id?: string | null; hash?: string | null },
+  expected: { id?: string | null; hash?: string | null },
+): boolean {
+  if (!provided.id || !expected.id || provided.id !== expected.id) return false
+  return !provided.hash || provided.hash === expected.hash
+}
+
 export function chooseFounderQuestion(input: {
   explicitQuestion?: string | null
   plan?: SnapshotPlan | null

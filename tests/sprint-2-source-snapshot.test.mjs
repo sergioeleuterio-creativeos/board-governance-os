@@ -3,6 +3,7 @@ import test from 'node:test'
 import {
   canonicalSnapshotHash,
   chooseFounderQuestion,
+  sourceSnapshotIdentityMatches,
   summarizeSourceSnapshot,
 } from '../lib/board/source-snapshot.ts'
 import { validateDecisionContinuity } from '../lib/board/artifact-invariants.ts'
@@ -37,6 +38,27 @@ test('snapshot hashes are stable across object key order', () => {
   assert.equal(
     canonicalSnapshotHash({ plan, company }),
     canonicalSnapshotHash({ company, plan }),
+  )
+})
+
+test('a frozen session snapshot remains valid after live company context evolves', () => {
+  const frozen = {
+    id: 'source-snapshot-original',
+    hash: 'original-hash',
+  }
+  const liveAfterPlanSave = {
+    id: 'source-snapshot-after-plan-save',
+    hash: 'new-hash',
+  }
+
+  assert.equal(sourceSnapshotIdentityMatches(frozen, frozen), true)
+  assert.equal(sourceSnapshotIdentityMatches(frozen, liveAfterPlanSave), false)
+  assert.equal(
+    sourceSnapshotIdentityMatches(
+      { id: frozen.id },
+      frozen,
+    ),
+    true,
   )
 })
 

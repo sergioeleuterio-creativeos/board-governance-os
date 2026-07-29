@@ -5,6 +5,7 @@ import type { CurrentCompany } from '@/lib/shadow-board/current-company-server'
 import {
   canonicalSnapshotHash,
   chooseFounderQuestion,
+  sourceSnapshotIdentityMatches,
   type BoardSourceSnapshot,
   type SnapshotBoardPack,
   type SnapshotBrainEntry,
@@ -13,6 +14,43 @@ import {
   type SnapshotFollowUp,
   type SnapshotPlan,
 } from './source-snapshot'
+
+export async function validateDecisionRoomSourceSnapshot(input: {
+  company: CurrentCompany
+  clientRoomId?: string | null
+  sourceSnapshotId: string
+  sourceSnapshotHash?: string | null
+}): Promise<boolean> {
+  const service = serviceClient()
+
+  if (input.clientRoomId) {
+    const { data: existingSession, error } = await service
+      .from('board_sessions')
+      .select('source_snapshot_id, source_snapshot_hash')
+      .eq('company_id', input.company.id)
+      .eq('metadata->>decision_room_client_id', input.clientRoomId)
+      .order('updated_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (error) throw new Error(error.message)
+    if (existingSession?.source_snapshot_id) {
+      return sourceSnapshotIdentityMatches(
+        { id: input.sourceSnapshotId, hash: input.sourceSnapshotHash },
+        {
+          id: existingSession.source_snapshot_id,
+          hash: existingSession.source_snapshot_hash,
+        },
+      )
+    }
+  }
+
+  const currentSnapshot = await resolveBoardSourceSnapshot({ company: input.company })
+  return sourceSnapshotIdentityMatches(
+    { id: input.sourceSnapshotId, hash: input.sourceSnapshotHash },
+    currentSnapshot,
+  )
+}
 
 function record(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)

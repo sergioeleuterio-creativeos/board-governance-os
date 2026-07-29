@@ -3,7 +3,7 @@ import { getSessionUser, isAuthError, requireCompanyAdmin } from '@/lib/auth-ser
 import { persistDecisionRoomSession } from '@/lib/decision-room/persistence'
 import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
 import { normalizeSelectedAgents, sessionIds, sessionKindFor } from '@/lib/decision-room/session-config'
-import { resolveBoardSourceSnapshot } from '@/lib/board/source-resolver'
+import { validateDecisionRoomSourceSnapshot } from '@/lib/board/source-resolver'
 import type { BoardTurn, DecisionRoomSessionSaveRequest, DecisionState, SessionTypeId } from '@/lib/decision-room/types'
 
 const validSessionIds = sessionIds()
@@ -72,13 +72,14 @@ export async function POST(req: Request) {
 
     const access = await requireCompanyAdmin(company.id)
     if (isAuthError(access)) return access
-    const sourceSnapshot = await resolveBoardSourceSnapshot({ company })
     if (
       input.sourceSnapshotId
-      && (
-        input.sourceSnapshotId !== sourceSnapshot.id
-        || (input.sourceSnapshotHash && input.sourceSnapshotHash !== sourceSnapshot.hash)
-      )
+      && !await validateDecisionRoomSourceSnapshot({
+        company,
+        clientRoomId: input.clientRoomId,
+        sourceSnapshotId: input.sourceSnapshotId,
+        sourceSnapshotHash: input.sourceSnapshotHash,
+      })
     ) {
       return NextResponse.json(
         { error: 'Company context changed. Reopen the session before saving.' },
