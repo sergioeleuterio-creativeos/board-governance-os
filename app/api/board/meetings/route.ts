@@ -3,6 +3,7 @@ import { canonicalSnapshotHash } from '@/lib/board/source-snapshot'
 import { buildPhaseSchedule, isValidTimezone } from '@/lib/board/meeting-schedule'
 import { getSessionUser, isAuthError, requireCompanyAdmin, serviceClient } from '@/lib/auth-server'
 import { getCurrentCompanyForUser } from '@/lib/shadow-board/current-company-server'
+import { readableRecommendation } from '@/lib/board/contribution-text'
 
 type ParticipantRow = {
   id: string
@@ -154,8 +155,10 @@ export async function GET() {
         .limit(1)
         .maybeSingle()
       if (error) throw new Error(error.message)
-      sessionId = participant?.board_session_id ?? null
-      canManage = false
+      if (participant?.board_session_id) {
+        sessionId = participant.board_session_id
+        canManage = false
+      }
     }
 
     const active = sessionId ? await loadMeeting(user.id, sessionId, canManage) : null
@@ -221,6 +224,32 @@ export async function POST(request: NextRequest) {
 
     if (existingError) throw new Error(existingError.message)
     if (existing?.id) {
+      const { data: existingChair, error: existingChairError } = await service
+        .from('board_participants')
+        .select('id')
+        .eq('board_session_id', existing.id)
+        .eq('advisor_key', 'board_brain')
+        .maybeSingle()
+      if (existingChairError) throw new Error(existingChairError.message)
+      if (!existingChair) {
+        const now = new Date().toISOString()
+        const { error: chairError } = await service.from('board_participants').insert({
+          organization_id: pack.organization_id,
+          company_id: pack.company_id,
+          board_session_id: existing.id,
+          board_pack_id: pack.id,
+          participant_type: 'synthetic',
+          display_name: 'Board OS Advisor',
+          role_label: 'Chair',
+          advisor_key: 'board_brain',
+          status: 'active',
+          accepted_at: now,
+          invited_by: user.id,
+          invited_at: now,
+          metadata: { code: 'BB', mandatory_chair: true },
+        })
+        if (chairError) throw new Error(chairError.message)
+      }
       return NextResponse.json({
         persisted: true,
         board_session_id: existing.id,
@@ -321,7 +350,25 @@ export async function POST(request: NextRequest) {
       .order('created_at', { ascending: true })
     if (reviewsError) throw new Error(reviewsError.message)
 
-    for (const review of reviews ?? []) {
+    const reviewRows = [...(reviews ?? [])]
+    if (!reviewRows.some(review => review.advisor_key === 'board_brain')) {
+      reviewRows.unshift({
+        advisor_key: 'board_brain',
+        advisor_name: 'Board OS Advisor',
+        perspective: `Como Chair, vou preservar a pergunta central, a independência das primeiras leituras, e as condições que precisam aparecer na decisão: ${question}`,
+        recommendations: [
+          'Separar fatos, hipóteses, e preferências.',
+          'Registrar o que faria cada membro mudar de posição.',
+          'Fechar com responsável, evidência, limite, e data de revisão.',
+        ],
+        source_references: [
+          `board_pack:${pack.id}:${contentHash}`,
+          sourceSession?.source_snapshot_id ? `source_snapshot:${sourceSession.source_snapshot_id}` : 'board_pack:canonical',
+        ],
+      })
+    }
+
+    for (const review of reviewRows) {
       const label = ADVISOR_LABELS[review.advisor_key] ?? { code: review.advisor_key.toUpperCase(), role: 'Advisor' }
       const { data: participant, error: participantError } = await service
         .from('board_participants')
@@ -345,7 +392,7 @@ export async function POST(request: NextRequest) {
       if (participantError || !participant) throw new Error(participantError?.message || 'Could not add a synthetic advisor')
 
       const recommendations = Array.isArray(review.recommendations)
-        ? review.recommendations.map(String).join('\n')
+        ? review.recommendations.map(readableRecommendation).filter(Boolean).join('\n')
         : ''
       const bodyText = [review.perspective, recommendations].filter(Boolean).join('\n\n')
       if (!bodyText.trim()) continue

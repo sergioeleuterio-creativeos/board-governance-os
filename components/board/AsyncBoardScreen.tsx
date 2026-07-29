@@ -229,6 +229,26 @@ export function AsyncBoardScreen() {
     setWorking(false)
   }
 
+  async function prepareBoardPack() {
+    if (!readout?.company?.id) return
+    setWorking(true)
+    setError('')
+    setNotice('')
+    const response = await fetch('/api/governance/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ company_id: readout.company.id }),
+    })
+    const payload = await response.json().catch(() => null) as { error?: string } | null
+    if (!response.ok) {
+      setError(payload?.error ?? 'Não foi possível preparar o pack.')
+    } else {
+      setNotice('O Advisor preparou o pack. Agora nomeie a decisão e abra o board.')
+      await loadBoard()
+    }
+    setWorking(false)
+  }
+
   async function inviteHuman(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     if (!active?.meeting.id || !inviteEmail.trim()) return
@@ -244,6 +264,7 @@ export function AsyncBoardScreen() {
         email: inviteEmail.trim(),
         display_name: inviteName.trim(),
         role_label: inviteRole.trim(),
+        delivery_mode: window.location.hostname === 'localhost' ? 'preview' : 'email',
       }),
     })
     const payload = await response.json().catch(() => null) as {
@@ -331,8 +352,19 @@ export function AsyncBoardScreen() {
             </form>
           ) : (
             <div>
-              <p className="sb-serif-callout">O board precisa de um pack antes de começar.</p>
-              <a href="/rooms" className="btn-primary mt-4">Preparar com o Advisor</a>
+              <p className="sb-serif-callout">O board precisa transformar o contexto atual em um pack antes de começar.</p>
+              {readout?.company && readout.can_manage ? (
+                <button
+                  type="button"
+                  className="btn-primary mt-4"
+                  onClick={() => void prepareBoardPack()}
+                  disabled={working}
+                >
+                  {working ? 'Preparando...' : 'Pedir ao Advisor para preparar o pack'}
+                </button>
+              ) : (
+                <a href="/rooms" className="btn-primary mt-4">Preparar com o Advisor</a>
+              )}
             </div>
           )}
         </Panel>

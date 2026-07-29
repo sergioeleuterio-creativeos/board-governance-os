@@ -9,6 +9,7 @@ import { renderBoardPackReadyEmail } from '@/lib/email/templates'
 import { sendProductEmail } from '@/lib/email/send'
 import { recordNotificationAudit } from '@/lib/email/audit'
 import { checkRateLimit, rateLimitKey, rateLimitResponse } from '@/lib/rate-limit'
+import { nextPlanVersion } from '@/lib/board/plan-versioning'
 
 export const maxDuration = 60
 
@@ -211,12 +212,37 @@ async function saveCanonicalRun({
     proof_point: priority.evidence ?? priority.rationale,
   }))
 
+  const { data: planVersions, error: planVersionsError } = await service
+    .from('business_plans')
+    .select('version')
+    .eq('company_id', company.id)
+    .eq('plan_type', 'governance')
+    .eq('business_front', 'company')
+    .eq('period', input.period)
+    .neq('status', 'archived')
+  if (planVersionsError) throw new Error(planVersionsError.message)
+  const planVersion = nextPlanVersion((planVersions ?? []).map(row => Number(row.version)))
+
   const { data: businessPlan, error: businessPlanError } = await service
     .from('business_plans')
     .insert({
       organization_id: company.organization_id,
       company_id: company.id,
       governance_cycle_id: governanceCycleId,
+      title: output.run.title || `${company.name} board plan`,
+      plan_type: 'governance',
+      period: input.period,
+      business_front: 'company',
+      version: planVersion,
+      source_type: 'advisory_session',
+      raw_source: input,
+      normalized_content: {
+        diagnosis: output.run.summary,
+        priorities,
+        kpis: output.governance_score,
+        workstreams,
+        risks: output.board_pack.risk_map,
+      },
       status: 'ready_for_review',
       diagnosis: output.run.summary,
       priorities,
@@ -238,6 +264,17 @@ async function saveCanonicalRun({
       ],
       completeness_score: output.governance_score.total,
       quality_score: output.run.confidence_score,
+      metadata: {
+        source: 'governance-run-api',
+        created_by: userId,
+        provider,
+        model,
+        plan_scope: {
+          plan_type: 'governance',
+          business_front: 'company',
+          period: input.period,
+        },
+      },
     })
     .select('id')
     .single()

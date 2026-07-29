@@ -9,6 +9,7 @@ import {
   phaseAt,
   phasesReleasedBetween,
 } from '../lib/board/meeting-schedule.ts'
+import { readableRecommendation } from '../lib/board/contribution-text.ts'
 
 const migrationUrl = new URL('../supabase/migrations/0004_mixed_async_board.sql', import.meta.url)
 const boardScreenUrl = new URL('../components/board/AsyncBoardScreen.tsx', import.meta.url)
@@ -16,6 +17,8 @@ const navigationUrl = new URL('../components/Navigation.tsx', import.meta.url)
 const invitationRouteUrl = new URL('../app/api/board/invitations/[token]/route.ts', import.meta.url)
 const participantRouteUrl = new URL('../app/api/board/participants/route.ts', import.meta.url)
 const cronRouteUrl = new URL('../app/api/cron/board-meetings/route.ts', import.meta.url)
+const meetingsRouteUrl = new URL('../app/api/board/meetings/route.ts', import.meta.url)
+const governanceRouteUrl = new URL('../app/api/governance/run/route.ts', import.meta.url)
 
 test('a normal meeting has ordered, non-overlapping phases and a terminal close', () => {
   const schedule = buildPhaseSchedule('2026-07-29T15:00:00.000Z')
@@ -63,6 +66,19 @@ test('independent and final positions are sealed; open phases accept only their 
   assert.deepEqual(contributionTypeForPhase('founder_decision'), ['decision'])
 })
 
+test('structured advisor recommendations become readable contribution text', () => {
+  assert.equal(
+    readableRecommendation({
+      title: 'Runway gate',
+      recommendation: 'Preserve twelve months of cash',
+      owner: 'CFO',
+    }),
+    'Runway gate — Preserve twelve months of cash — CFO',
+  )
+  assert.equal(readableRecommendation({ value: 42 }), '')
+  assert.notEqual(readableRecommendation({ title: 'Evidence first' }), '[object Object]')
+})
+
 test('the Sprint 4 migration scopes access and makes contribution content immutable', async () => {
   const sql = await readFile(migrationUrl, 'utf8')
   assert.match(sql, /create table if not exists public\.board_participants/i)
@@ -87,6 +103,9 @@ test('the Board UI keeps human and synthetic personas visible in one transcript 
   assert.match(screen, /className="sb-mixed-transcript"/)
   assert.equal((screen.match(/className="sb-board-composer"/g) ?? []).length, 1)
   assert.match(screen, /Só você vê até a fase fechar/)
+  assert.match(screen, /fetch\('\/api\/governance\/run'/)
+  assert.match(screen, /Pedir ao Advisor para preparar o pack/)
+  assert.match(screen, /window\.location\.hostname === 'localhost' \? 'preview' : 'email'/)
   assert.match(navigation, /\{ href: '\/board', code: '02', label: 'Board' \}/)
 })
 
@@ -111,4 +130,20 @@ test('the phase cron is authenticated and uses a compare-and-set update for idem
   assert.match(cron, /generatedAlready/)
   assert.match(cron, /visibility: 'released'/)
   assert.match(cron, /metadata->>generated_by/)
+})
+
+test('the Chair is mandatory and direct pack preparation writes a valid versioned plan', async () => {
+  const [meetings, governance] = await Promise.all([
+    readFile(meetingsRouteUrl, 'utf8'),
+    readFile(governanceRouteUrl, 'utf8'),
+  ])
+  assert.match(meetings, /advisor_key: 'board_brain'/)
+  assert.match(meetings, /mandatory_chair: true/)
+  assert.match(meetings, /readableRecommendation/)
+  assert.doesNotMatch(meetings, /recommendations\.map\(String\)/)
+  assert.match(governance, /title: output\.run\.title/)
+  assert.match(governance, /plan_type: 'governance'/)
+  assert.match(governance, /version: planVersion/)
+  assert.match(governance, /source_type: 'advisory_session'/)
+  assert.match(governance, /normalized_content:/)
 })
