@@ -194,7 +194,7 @@ Sprint 2 uses the active company established by Sprint 1 and never creates conte
 
 **Outcome:** the founder experiences a meeting, not a control room.
 
-**Status:** implementation complete locally on 2026-07-29; preview and production QA pending.
+**Status:** released to production on 2026-07-29.
 
 ### Build
 
@@ -254,6 +254,16 @@ The UI is a projection of Sprint 1 durable state and Sprint 2 canonical artifact
 - Added five Sprint 3 interaction-contract tests; cumulative suite is 19 passing tests.
 - TypeScript, production build, and diff validation pass.
 - Desktop browser QA confirmed the new entry and active-meeting layouts. Responsive CSS collapses the Chair entry and meeting transcript to one column below 900px.
+- Deployed preview `dpl_2AuUAbsfHZfHZtWeBzocLLRWRUCQ` and promoted production deployment `dpl_B129J5kpNL9qAgxbxTtypnjKKy3n` to `https://www.board-os.ai`.
+- Production founder QA confirmed:
+  - the founder navigation contains only Advisor, Board, and Commitments;
+  - the Advisor remains accessible from the Board view;
+  - the board roster stays visible before and during the meeting;
+  - the meeting uses one transcript, one founder composer, and one phase-aware primary action;
+  - a founder contribution and a synthetic Board Brain contribution appear visibly in the same chronological transcript.
+- Production persistence QA in Supabase project `jzmwrwzrmpjftuirqljc` confirmed two durable transcript turns, founder and advisor attribution, a confirmed question, an unchanged source-snapshot ID/hash, and `mock` connector provenance.
+- Vercel reported the production deployment `Ready` with no recent 5xx logs.
+- Final public smoke tests returned 200 for the home page and 401 for the unauthenticated business-plans endpoint.
 
 ## Sprint 4 — Mixed human and synthetic asynchronous board
 
