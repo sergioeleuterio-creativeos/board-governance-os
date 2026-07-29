@@ -367,6 +367,18 @@ Participants receive Sprint 2 immutable snapshots through the Sprint 3 Board tra
 
 **Outcome:** Board OS governs decisions; Creative OS executes from an explicit, versioned handoff.
 
+**Status:** released to production on 2026-07-29.
+
+### Release evidence
+
+- Added immutable `strategic_source_documents` and idempotent `creative_os_handoffs`; migration `0005` is applied to Board OS Supabase.
+- Added the Creative OS v1 receiver and immutable `integration_handoff_documents`; its migration is applied to the separate Creative OS Supabase project.
+- Preserved the older Creative OS connector credential and isolated the new contract behind dedicated v1 credentials.
+- Kept legacy capability mutations and automatic synchronization disabled. Only an explicit founder-confirmed handoff can create/link a Creative OS company.
+- Passed all 38 Board OS sprint tests, 6 Creative OS contract tests, Board OS typecheck, both production builds, and an authenticated QA handoff.
+- QA produced one Strategic Source Document, one accepted Creative OS artifact, and an idempotent replay of the same handoff with no duplicate.
+- Creative OS was promoted first. Its authenticated production health contract reports `ready`, immutable handoffs, idempotency, signed requests, and read-only analysis.
+
 ### Build
 
 - Generate the Strategic Source Document from the selected plan, frozen context, hot-seat transcript, Chair synthesis, direction, risks, KPIs, and open questions.

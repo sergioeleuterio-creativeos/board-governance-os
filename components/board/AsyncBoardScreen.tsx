@@ -170,6 +170,15 @@ function firstQuestion(value: unknown) {
   return ''
 }
 
+function readableContributionBody(value: string) {
+  const cleaned = value
+    .replace(/\s*\[object Object\]\s*/g, ' ')
+    .replace(/\s+([,.;:!?])/g, '$1')
+    .replace(/\s{2,}/g, ' ')
+    .trim()
+  return cleaned || 'Contribuição registrada sem texto legível.'
+}
+
 function participantCode(participant: Participant) {
   if (participant.participant_type === 'human') {
     return participant.display_name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()
@@ -591,7 +600,7 @@ export function AsyncBoardScreen() {
                     </div>
                     <small>{item.visibility === 'sealed' ? 'Só você vê até a fase fechar' : dateTime(item.submitted_at, active.meeting.meeting_timezone)}</small>
                   </div>
-                  <p>{item.body}</p>
+                  <p>{readableContributionBody(item.body)}</p>
                 </article>
               )
             })}

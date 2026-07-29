@@ -4,9 +4,9 @@ Last updated: 2026-07-29
 
 ## Decision
 
-Keep the deployed Board OS connector in local/fallback mode and keep company sync disabled.
+Enable only the explicit v1 Strategic Source Document handoff. Keep automatic company sync and legacy capability mutations disabled.
 
-The products are currently isolated enough that Board OS development will not damage the deployed Creative OS. The existing HTTP bridge, however, should not be enabled for clients until the authorization secret is rotated and the contract conflicts below are corrected.
+Sprint 5 resolves the blocking contract and write-isolation issues identified below. Board OS remains the governance source of truth; Creative OS receives one immutable, founder-confirmed derivative source document and returns durable artifact references with provenance.
 
 Status:
 
@@ -14,10 +14,12 @@ Status:
 - infrastructure isolation: verified;
 - public route availability: verified;
 - unauthenticated authorization behavior: verified;
-- live authenticated capability path: not authorized in this environment;
-- schema compatibility: failed;
-- write isolation: failed by design;
-- observability and evolution safety: incomplete.
+- live authenticated v1 handoff: passed in production with an isolated QA company;
+- schema compatibility: passed through the runtime-validated `1.0` envelope;
+- write isolation: passed; analysis is read-only and linking/import requires an explicit operation;
+- observability and evolution safety: request IDs, immutable hashes, idempotency, provenance, timeout, retry, circuit breaker, and kill switches are active.
+
+The findings later in this document describe the legacy bridge as originally reviewed. They remain relevant historical evidence, but that bridge is disabled in the shipped Board OS path.
 
 ## What was verified
 

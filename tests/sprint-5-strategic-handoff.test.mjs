@@ -256,4 +256,6 @@ test('page reads cannot mutate Creative OS and the founder sees one explicit han
   assert.match(screen, /Continuar no Creative OS/)
   assert.match(screen, /confirm_handoff: true/)
   assert.match(screen, /Conexão protegida/)
+  assert.match(screen, /readableContributionBody\(item\.body\)/)
+  assert.match(screen, /object Object/)
 })

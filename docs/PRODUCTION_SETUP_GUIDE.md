@@ -58,48 +58,43 @@ Creative OS must be connected server-side. Do not expose Creative OS keys, URLs 
 Use these env vars locally and in Vercel:
 
 ```bash
-CREATIVE_OS_MODE="mock"
-CREATIVE_OS_URL=""
+CREATIVE_OS_MODE="http"
+CREATIVE_OS_URL="https://www.creative-os.ai"
 CREATIVE_OS_API_KEY=""
-CREATIVE_OS_TIMEOUT_MS="45000"
+CREATIVE_OS_SIGNING_SECRET=""
+CREATIVE_OS_TIMEOUT_MS="30000"
+CREATIVE_OS_HANDOFF_ENABLED="true"
+CREATIVE_OS_LEGACY_CAPABILITIES_ENABLED="false"
 CREATIVE_OS_SYNC_ENABLED="false"
 ```
 
 Modes:
 
-- `CREATIVE_OS_MODE="mock"` keeps Board OS using its local Strategy Core, Brief Engine, Campaign Planner, and Execution Studio fallbacks. This is the current safe production default.
-- `CREATIVE_OS_MODE="http"` calls a deployed Creative OS service from Board OS server routes. This requires `CREATIVE_OS_URL` and `CREATIVE_OS_API_KEY`.
+- `CREATIVE_OS_MODE="mock"` disables the outbound service and leaves the immutable source document ready in Board OS.
+- `CREATIVE_OS_MODE="http"` enables the signed v1 server-to-server handoff. It requires the URL, API key, and signing secret.
 - `CREATIVE_OS_MODE="worker"` is reserved for an in-process server-side Creative OS worker/package. Until that worker is deliberately added to the Board OS server bundle, this mode falls back to Board OS output.
 
-Recommended Vercel setup for now:
+Production and preview use separate credentials. In both environments:
 
-- Production:
-  - `CREATIVE_OS_MODE="mock"`
-  - `CREATIVE_OS_SYNC_ENABLED="false"`
-- Preview, when a Creative OS service exists:
-  - `CREATIVE_OS_MODE="http"`
-  - `CREATIVE_OS_URL="https://<creative-os-service-domain>"`
-  - `CREATIVE_OS_API_KEY="<server-only shared secret>"`
-  - `CREATIVE_OS_TIMEOUT_MS="45000"`
-  - `CREATIVE_OS_SYNC_ENABLED="false"`
+- keep `CREATIVE_OS_LEGACY_CAPABILITIES_ENABLED="false"`;
+- keep `CREATIVE_OS_SYNC_ENABLED="false"`;
+- rotate the API and HMAC secrets together;
+- use `CREATIVE_OS_HANDOFF_ENABLED` as the immediate kill switch.
 
-The first HTTP service endpoint expected by Board OS is:
+The explicit handoff endpoint is:
 
 ```text
-POST {CREATIVE_OS_URL}/api/board-os/capabilities
+POST {CREATIVE_OS_URL}/api/integrations/board-os/v1/handoffs
 Authorization: Bearer {CREATIVE_OS_API_KEY}
+X-Board-OS-Contract: 1.0
+X-Board-OS-Timestamp: <ISO timestamp>
+X-Board-OS-Content-SHA256: <body hash>
+X-Board-OS-Signature: <HMAC-SHA256>
+X-Idempotency-Key: <immutable document key>
 Content-Type: application/json
 ```
 
-The request includes a `capability` value:
-
-- `runStrategyDiagnosis`
-- `createBoardBrief`
-- `createRoleBriefs`
-- `createCampaignPlan`
-- `compressRoomOutcome`
-
-If Creative OS times out, returns an error, or is not configured, Board OS keeps using its local/fallback output. Board OS remains the source of truth for companies, Company Brain, board sessions, decisions, and follow-ups unless `CREATIVE_OS_SYNC_ENABLED` is later implemented and intentionally enabled.
+If Creative OS times out, rejects the signature, or is disabled, Board OS keeps the immutable source document and reports a truthful degraded/failed handoff. It never reports delivery without a durable Creative OS artifact ID and provenance. Board OS remains the source of truth for companies, Company Brain, board sessions, decisions, minutes, and follow-ups.
 
 Data sync recommendation:
 
