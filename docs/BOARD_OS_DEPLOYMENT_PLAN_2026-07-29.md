@@ -1,0 +1,318 @@
+# Board OS — Deployment Plan
+
+Last updated: 2026-07-29
+
+## Shipping decision
+
+Ship one cumulative product, not a sequence of disconnected features.
+
+The invariant across every sprint is:
+
+> founder input → durable company context → named decision → selected plan version → released pack → visible deliberation → Chair synthesis → decision → commitments
+
+No sprint may create a second source of truth, reintroduce a manual agent console, or make Board OS responsible for Creative OS campaign production.
+
+## Release model
+
+- Work on a dedicated `codex/` branch.
+- Deploy every completed sprint to Board OS preview first.
+- Keep Board OS production in Creative OS fallback mode with automatic company sync disabled until Sprint 5.
+- Promote a sprint only when its acceptance tests and every prior sprint's regression suite pass.
+- Apply database migrations before application code only when the new application remains backward compatible with the previous schema.
+- Keep a rollback point at the last promoted sprint.
+- Production promotion and outbound email require explicit approval.
+
+## Sprint 1 — Trustworthy persistence and entry gates
+
+**Outcome:** Board OS tells the truth about what is durable.
+
+**Status:** implemented locally on 2026-07-29; preview deployment pending.
+
+### Build
+
+- Replace the misleading intake actions with:
+  - local text-draft save;
+  - review action;
+  - one primary `Create company context` action that persists.
+- Set the newly created company as the active-company cookie in the same successful response.
+- Require durable IDs before displaying context, session, or decision success.
+- Return non-2xx responses when a session or decision cannot persist.
+- Preserve the room transcript in client state when persistence fails and show a retryable error.
+- Block `/rooms` until an authenticated user has an active company.
+- Add a reusable client-side persistence-envelope validator.
+
+### Sprint 1 tests
+
+- Unit:
+  - accept a persisted session only with `persisted: true` and `boardSessionId`;
+  - accept a decision only with `persisted: true`, `boardSessionId`, and `decisionId`;
+  - reject missing IDs, `persisted: false`, malformed payloads, and server reasons.
+- Static/type:
+  - TypeScript;
+  - production build;
+  - lint where supported by the installed Next.js version.
+- API:
+  - unauthenticated intake/session/decision return 401;
+  - no-active-company session/decision return 409;
+  - successful intake returns company and governance-cycle IDs and sets the current-company cookie.
+- Browser:
+  - local draft survives refresh without claiming server persistence;
+  - primary action first opens Review, then creates context;
+  - successful create lands in Company Brain with the new company active;
+  - a user without a company is redirected from Rooms to Intake;
+  - failed room persistence does not show `Session saved` or approved state.
+
+### Integration with the existing product
+
+- Existing Company Brain persistence remains the storage path.
+- Existing board-session, decision, business-plan, and follow-up records remain unchanged.
+- No migration, outbound email, or Creative OS call is introduced.
+- The Sprint 1 regression suite becomes a mandatory gate for every later sprint.
+
+### Deployment gate
+
+- Preview smoke test with a new QA founder and one existing founder.
+- Confirm no production Creative OS traffic.
+- Promote only after explicit production approval.
+
+### Execution evidence — 2026-07-29
+
+- Added a local-only intake draft with explicit copy that it has not reached Board OS.
+- Changed the primary intake path to `Review context` → `Create company context`.
+- The intake response now requires company and governance-cycle IDs and sets the current-company cookie.
+- Session and decision APIs now return 409 without an active company and 500 when durable persistence cannot be confirmed.
+- Session success requires a board-session ID.
+- Decision success requires board-session and decision IDs.
+- Room state remains on screen and displays a retryable error after failure.
+- `/rooms` and `/rooms/[id]` now redirect users without an active company to intake.
+- Added four persistence-contract tests.
+- Verification passed:
+  - `npm run test:sprint1`;
+  - `npm run typecheck`;
+  - `npm run build`;
+  - `git diff --check`;
+  - browser check for local-draft truthfulness, reload recovery, and Review → Create transition.
+- The existing `npm run lint` command did not run a lint pass because the repository has no ESLint configuration and Next.js opened its interactive setup prompt. This is a tooling gap, not a reported lint pass.
+- No database migration, production deployment, outbound email, Creative OS request, or production data write was made.
+
+## Sprint 2 — Canonical context, decision, and plan versions
+
+**Outcome:** the same decision and evidence survive every handoff.
+
+### Build
+
+- Persist accepted Chair turns and retain raw messages as evidence.
+- Extract proposed company, strategy, financial, team, plan, and decision facts for founder confirmation.
+- Extend `business_plans` for type, period, front, version, parent, source, normalized content, and consolidation lineage.
+- Add one source resolver that freezes:
+  - company;
+  - selected plan/version;
+  - Company Brain entries and documents;
+  - prior decisions and follow-ups;
+  - pack version;
+  - founder question.
+- Require a founder-confirmed active question before analysis.
+- Pass the same source-snapshot ID and hash to readout, advisor turns, outputs, and persistence.
+- Reject an artifact that drops the named decision, alternatives, material numbers, plan version, or source IDs.
+
+### Sprint 2 tests
+
+- Unit:
+  - fact extraction normalization;
+  - plan-version lineage;
+  - deterministic source-snapshot hashing;
+  - artifact invariant validation.
+- Migration:
+  - forward migration on an empty database;
+  - forward migration with existing plans;
+  - existing plan reads remain valid;
+  - RLS still isolates companies.
+- Integration:
+  - intake message → confirmed fact → source snapshot;
+  - two plan years stay separate unless the founder consolidates them;
+  - plan → board pack retains decision, alternatives, numbers, and sources.
+- Regression:
+  - rerun all Sprint 1 tests;
+  - verify every durable-success state still requires IDs.
+
+### Integration with Sprint 1
+
+Sprint 2 uses the active company established by Sprint 1 and never creates context from page rendering. Every new artifact inherits Sprint 1 persistence envelopes.
+
+### Deployment gate
+
+- Apply reviewed migration to preview.
+- Run an end-to-end QA journey with synthetic numbers and two plan versions.
+- Compare source IDs at each handoff.
+
+## Sprint 3 — Chair-led Advisor, Board, and Commitments UI
+
+**Outcome:** the founder experiences a meeting, not a control room.
+
+### Build
+
+- Reduce founder navigation to Advisor, Board, and Commitments.
+- Make the Chair conversation persistent and available from every founder view.
+- Replace agent selection and manual turn controls with Chair orchestration.
+- Keep the board roster continuously visible.
+- Render human and synthetic contributions in one chronological transcript.
+- Keep one composer and one phase-aware primary action.
+- Show plan, source snapshot, pack, synthesis, decision, and minutes inline.
+- Automate independent analysis, targeted challenges, revised positions, and Chair synthesis.
+
+### Sprint 3 tests
+
+- Component:
+  - roster visibility;
+  - human/synthetic labels;
+  - transcript ordering and reply targets;
+  - one primary action per phase;
+  - keyboard and screen-reader behavior.
+- Integration:
+  - Chair selects advisors from the confirmed question and plan;
+  - every contribution cites the Sprint 2 snapshot;
+  - disagreement triggers bounded challenge and final position;
+  - commitments link back to transcript and sources.
+- Visual:
+  - desktop and mobile screenshots;
+  - long contribution, empty state, loading, error, and retry states.
+- Regression:
+  - all Sprint 1 and Sprint 2 suites;
+  - legacy records remain readable through the new views.
+
+### Integration with previous sprints
+
+The UI is a projection of Sprint 1 durable state and Sprint 2 canonical artifacts. It does not add parallel storage or silently regenerate source snapshots.
+
+### Deployment gate
+
+- Founder usability pass: complete a hot seat without opening a selector, queue, evidence console, or manual turn control.
+- Verify the visible board never disappears during the session.
+
+## Sprint 4 — Mixed human and synthetic asynchronous board
+
+**Outcome:** invited humans and synthetic advisors deliberate against the same locked pack on a schedule.
+
+### Build
+
+- Add `board_participants` as participant record and session-scoped access grant.
+- Add `board_contributions` as the canonical mixed transcript.
+- Extend board sessions with timezone, phase, and phase deadlines.
+- Add founder-facing meeting invite, accept, and join flow.
+- Lock and release one immutable pack version to all participants.
+- Seal synthetic independent analyses until the first-read phase closes.
+- Schedule human readout, bounded exchanges, Chair synthesis, founder decision, and minutes closure.
+- Add reminders, expiry, revocation, and audit events.
+
+### Sprint 4 tests
+
+- RLS/security:
+  - invited human sees only the invited session and released pack;
+  - no draft pack or unrelated Company Brain access;
+  - sealed contributions remain sealed;
+  - revoked and expired access is denied;
+  - attribution cannot be rewritten.
+- Schedule:
+  - timezone and daylight-boundary cases;
+  - idempotent cron replay;
+  - late human contribution behavior;
+  - no endless advisor loop.
+- Email:
+  - invite, pack release, reminder, and deadline templates;
+  - link expiry and resend;
+  - delivery/audit status.
+- Integration:
+  - same pack version for humans and synthetic advisors;
+  - human question → selected advisor reply → Chair synthesis;
+  - mixed-attendee minutes and actions.
+- Regression:
+  - full Sprint 1–3 journey with a synthetic-only board;
+  - full journey with one human participant.
+
+### Integration with previous sprints
+
+Participants receive Sprint 2 immutable snapshots through the Sprint 3 Board transcript. Sprint 4 extends the transcript; it does not fork it.
+
+### Deployment gate
+
+- Preview migration and RLS review.
+- Authorized email QA recipients only.
+- One compressed scheduled meeting in preview, followed by one normal-duration dry run.
+
+## Sprint 5 — Strategic Source Document, Creative OS handoff, and production release
+
+**Outcome:** Board OS governs decisions; Creative OS executes from an explicit, versioned handoff.
+
+### Build
+
+- Generate the Strategic Source Document from the selected plan, frozen context, hot-seat transcript, Chair synthesis, direction, risks, KPIs, and open questions.
+- Add a versioned, runtime-validated connector envelope.
+- Align language-neutral evidence enums, role briefs, and output types.
+- Make Creative OS analysis read-only and one-call-per-snapshot.
+- Add authenticated health, analyze, explicit company-link, and immutable handoff endpoints.
+- Add request ID, idempotency key, input hash, cache, timeout, circuit breaker, provenance, and visible degraded status.
+- Keep company link and handoff behind explicit founder actions.
+- Rotate the exposed connector credential and separate preview/production keys.
+
+### Sprint 5 tests
+
+- Contract:
+  - valid and invalid envelope;
+  - enum and schema compatibility;
+  - response provenance;
+  - backward-compatibility window.
+- Security:
+  - missing/invalid/stale signature;
+  - replay and duplicate idempotency key;
+  - secret never appears in logs or payloads.
+- Integration:
+  - analysis creates no Creative OS company;
+  - repeated analysis hash returns cached artifact;
+  - explicit company link is idempotent;
+  - one handoff version imports once;
+  - Creative OS derivative references return to Board OS without overwriting governance memory.
+- Resilience:
+  - timeout, 4xx, 5xx, schema mismatch, circuit breaker, fallback provenance, and kill switch.
+- End-to-end:
+  - intake → plan versions → hot seat → Strategic Source Document → Creative OS handoff → recurring mixed board → minutes and commitments.
+- Regression:
+  - complete Sprint 1–4 suites with the connector off;
+  - repeat with preview connector on.
+
+### Integration with previous sprints
+
+The handoff is generated only from Sprint 2 canonical sources and Sprint 3/4 deliberation. Sprint 1 durability rules apply to connector artifacts: no success without an artifact ID and provenance.
+
+### Deployment gate
+
+- Creative OS deploys the backward-compatible contract first.
+- Board OS preview enables authenticated analysis with linking off.
+- After preview QA, enable explicit linking and handoff.
+- Production stays on fallback until keys, logs, health, and rollback are verified.
+- Production promotion requires explicit approval.
+
+## Final release acceptance
+
+The product is ready when a founder can:
+
+1. create durable context through one truthful action;
+2. consolidate or separate plan versions;
+3. confirm the exact question and sources;
+4. watch a visible synthetic and human board deliberate;
+5. read every released contribution and ask follow-ups;
+6. receive a sourced Chair recommendation;
+7. record the decision, minutes, owners, and review date;
+8. explicitly hand one immutable Strategic Source Document to Creative OS;
+9. continue the Chair relationship between meetings;
+10. recover cleanly from connector, scheduling, or persistence failure without false success.
+
+## Approval map
+
+Sprint 1 can be completed and tested locally without new authority.
+
+Before later deployment steps:
+
+- Sprint 2: Board OS preview/staging migration authority.
+- Sprint 4: approved email recipients and permission to send invitation/reminder tests.
+- Sprint 5: restored Vercel project access, connector-key rotation, isolated Creative OS QA company, and preview environment authorization.
+- Production: explicit merge/deploy approval after the preview evidence is reviewed.

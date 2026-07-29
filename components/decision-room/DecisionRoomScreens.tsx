@@ -3,6 +3,11 @@
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 import type { AgentCode, BoardTurn, DecisionRoomReadout, SessionTypeId } from '@/lib/decision-room/types'
+import {
+  validateDecisionPersistence,
+  validateSessionPersistence,
+  type PersistenceEnvelope,
+} from '@/lib/decision-room/persistence-contract'
 import { AdvisorMark, Meter, PageHeader, Panel, SectionTitle, StatusPill } from '@/components/shadow-board/ui'
 
 type ScreenProps = {
@@ -534,13 +539,22 @@ export function RoomsScreen({ readout }: ScreenProps) {
           decided: snapshot?.decided ?? decided,
         }),
       })
-      if (!response.ok) throw new Error('save_failed')
-      const payload = await response.json().catch(() => null) as { persistence?: { boardSessionId?: string } } | null
-      if (payload?.persistence?.boardSessionId) setBoardSessionId(payload.persistence.boardSessionId)
+      const payload = await response.json().catch(() => null) as {
+        error?: string
+        persistence?: PersistenceEnvelope
+      } | null
+      const validation = validateSessionPersistence(payload?.persistence)
+      if (!response.ok || !validation.ok) {
+        throw new Error(payload?.error || (validation.ok ? 'Não foi possível salvar a sessão.' : validation.message))
+      }
+      setBoardSessionId(validation.boardSessionId)
       setSaveStatus('saved')
-      return payload?.persistence?.boardSessionId ?? boardSessionId
-    } catch {
+      return validation.boardSessionId
+    } catch (error) {
       setSaveStatus('error')
+      setRoomError(error instanceof Error
+        ? error.message
+        : 'Não foi possível confirmar a gravação. Seu conteúdo continua nesta tela.')
       return null
     }
   }
@@ -655,12 +669,15 @@ export function RoomsScreen({ readout }: ScreenProps) {
       const payload = await response.json().catch(() => null) as {
         queue?: string[]
         error?: string
-        persistence?: { boardSessionId?: string }
+        persistence?: PersistenceEnvelope
       } | null
-      if (!response.ok) throw new Error(payload?.error ?? 'Não foi possível registrar a decisão.')
+      const validation = validateDecisionPersistence(payload?.persistence)
+      if (!response.ok || !validation.ok) {
+        throw new Error(payload?.error || (validation.ok ? 'Não foi possível registrar a decisão.' : validation.message))
+      }
       setDecided(state)
       setDecisionOpen(false)
-      if (payload?.persistence?.boardSessionId) setBoardSessionId(payload.persistence.boardSessionId)
+      setBoardSessionId(validation.boardSessionId)
       if (payload?.queue) setQueue(payload.queue)
       void saveSession({ queue: payload?.queue ?? queue, decided: state })
     } catch (error) {

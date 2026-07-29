@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   buildIntakeResult,
@@ -29,6 +29,8 @@ const acceptedFileTypes = [
 
 interface IntakeSaveResponse {
   error?: string
+  persisted?: boolean
+  companyName?: string
   persistence?: {
     companyId: string
     governanceCycleId: string
@@ -41,6 +43,8 @@ interface IntakeFileUploadResponse {
   uploaded?: Array<{ clientFileId: string | null }>
   errors?: Array<{ clientFileId: string | null; error: string }>
 }
+
+const LOCAL_DRAFT_KEY = 'board-os:company-intake-draft:v1'
 
 type IntakeChatTurn = {
   id: string
@@ -90,6 +94,23 @@ export function CompanyBrainIntakeScreen() {
     })),
     ...assistantTurns,
   ].sort((a, b) => a.createdAt.localeCompare(b.createdAt))), [assistantTurns, draft.notes])
+
+  useEffect(() => {
+    try {
+      const stored = window.localStorage.getItem(LOCAL_DRAFT_KEY)
+      if (!stored) return
+      const parsed = JSON.parse(stored) as Partial<CompanyBrainIntakeDraft>
+      if (!parsed.id || !parsed.company || !parsed.strategy || !parsed.finance || !parsed.team) return
+      setDraft({
+        ...createEmptyIntakeDraft(),
+        ...parsed,
+        files: [],
+        updatedAt: new Date().toISOString(),
+      })
+    } catch {
+      window.localStorage.removeItem(LOCAL_DRAFT_KEY)
+    }
+  }, [])
 
   function updateGroup<GroupKey extends 'company' | 'strategy' | 'finance' | 'team'>(
     groupKey: GroupKey,
@@ -250,7 +271,18 @@ export function CompanyBrainIntakeScreen() {
     }
   }
 
-  async function saveDraft() {
+  function saveLocalDraft() {
+    const localDraft = {
+      ...draft,
+      files: [],
+      updatedAt: new Date().toISOString(),
+    }
+    window.localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify(localDraft))
+    setSaveState('saved')
+    setSaveMessage(t('draftSavedLocally'))
+  }
+
+  async function createCompanyContext() {
     setSaveState('saving')
     setSaveMessage('')
     try {
@@ -264,31 +296,30 @@ export function CompanyBrainIntakeScreen() {
         throw new Error(payload?.error || 'save_failed')
       }
       const persistence = payload?.persistence
-      if (persistence) {
-        const fileSummary = await uploadQueuedFiles(persistence)
-        if (fileSummary.uploaded > 0 || fileSummary.errors > 0) {
-          setSaveMessage(fileSummary.errors > 0
-            ? t('savedLiveWithFileErrors', {
-                inputs: persistence.inputsCreated ?? 0,
-                entries: persistence.memoryEntriesCreated ?? 0,
-                files: fileSummary.uploaded,
-                errors: fileSummary.errors,
-              })
-            : t('savedLiveWithFiles', {
-                inputs: persistence.inputsCreated ?? 0,
-                entries: persistence.memoryEntriesCreated ?? 0,
-                files: fileSummary.uploaded,
-              }))
-        } else {
-          setSaveMessage(t('savedLiveDetail', {
+      if (
+        payload?.persisted !== true
+        || !persistence?.companyId
+        || !persistence.governanceCycleId
+      ) {
+        throw new Error(payload?.error || 'persistence_not_confirmed')
+      }
+
+      const fileSummary = await uploadQueuedFiles(persistence)
+      setSaveMessage(fileSummary.errors > 0
+        ? t('savedLiveWithFileErrors', {
+            inputs: persistence.inputsCreated ?? 0,
+            entries: persistence.memoryEntriesCreated ?? 0,
+            files: fileSummary.uploaded,
+            errors: fileSummary.errors,
+          })
+        : t('contextCreated', {
+            company: payload.companyName || draft.company.name || t('review.emptyCompany'),
             inputs: persistence.inputsCreated ?? 0,
             entries: persistence.memoryEntriesCreated ?? 0,
           }))
-        }
-      } else {
-        setSaveMessage(t('savedLive'))
-      }
       setSaveState('saved')
+      window.localStorage.removeItem(LOCAL_DRAFT_KEY)
+      window.location.assign('/company-brain')
     } catch (error) {
       const message = error instanceof Error ? error.message : 'save_failed'
       setSaveMessage(message === 'Unauthorised' ? t('signInRequired') : t('saveFailed'))
@@ -490,11 +521,26 @@ export function CompanyBrainIntakeScreen() {
             <button type="button" className="btn-secondary" onClick={() => setActiveTab('chat')}>
               {t('chat.open')}
             </button>
-            <button type="button" className="btn-secondary" onClick={saveDraft}>
-              {saveState === 'saving' ? '...' : t('saveDraft')}
+            <button type="button" className="btn-secondary" onClick={saveLocalDraft} disabled={saveState === 'saving'}>
+              {t('saveDraft')}
             </button>
-            <button type="button" className="btn-primary" onClick={() => setActiveTab('review')}>
-              {t('sendToBrain')}
+            <button
+              type="button"
+              className="btn-primary"
+              disabled={saveState === 'saving'}
+              onClick={() => {
+                if (activeTab !== 'review') {
+                  setActiveTab('review')
+                  setSaveState('idle')
+                  setSaveMessage('')
+                  return
+                }
+                void createCompanyContext()
+              }}
+            >
+              {saveState === 'saving'
+                ? t('creatingContext')
+                : activeTab === 'review' ? t('createContext') : t('reviewContext')}
             </button>
             {saveState === 'saved' && <p className="sb-code text-positive">{saveMessage || t('savedLive')}</p>}
             {saveState === 'error' && <p className="sb-code text-critical">{saveMessage || t('saveFailed')}</p>}

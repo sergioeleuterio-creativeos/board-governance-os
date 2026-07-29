@@ -53,8 +53,9 @@ export async function POST(req: Request) {
     if (!company) {
       return NextResponse.json({
         ...result,
+        error: 'Create or select a company before recording a decision.',
         persistence: { persisted: false, reason: 'no_active_company' },
-      })
+      }, { status: 409 })
     }
 
     const access = await requireCompanyAdmin(company.id)
@@ -68,16 +69,30 @@ export async function POST(req: Request) {
         decision: result.decision,
         followUps: result.followUps,
       })
+      if (!persistence.persisted || !persistence.boardSessionId || !persistence.decisionId) {
+        return NextResponse.json(
+          {
+            ...result,
+            error: 'Decision persistence could not be confirmed.',
+            persistence,
+          },
+          { status: 500 },
+        )
+      }
 
       return NextResponse.json({ ...result, persistence })
     } catch (persistenceError) {
-      return NextResponse.json({
-        ...result,
-        persistence: {
-          persisted: false,
+      return NextResponse.json(
+        {
+          ...result,
           error: persistenceError instanceof Error ? persistenceError.message : 'Failed to persist decision-room capture',
+          persistence: {
+            persisted: false,
+            error: persistenceError instanceof Error ? persistenceError.message : 'Failed to persist decision-room capture',
+          },
         },
-      })
+        { status: 500 },
+      )
     }
   } catch (error) {
     return NextResponse.json(

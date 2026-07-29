@@ -53,8 +53,9 @@ export async function POST(req: Request) {
     const company = await getCurrentCompanyForUser(user)
     if (!company) {
       return NextResponse.json({
+        error: 'Create or select a company before saving a session.',
         persistence: { persisted: false, reason: 'no_active_company' },
-      })
+      }, { status: 409 })
     }
 
     const access = await requireCompanyAdmin(company.id)
@@ -65,6 +66,15 @@ export async function POST(req: Request) {
       userId: user.id,
       state: input,
     })
+    if (!persistence.persisted || !persistence.boardSessionId) {
+      return NextResponse.json(
+        {
+          error: 'Session persistence could not be confirmed.',
+          persistence,
+        },
+        { status: 500 },
+      )
+    }
 
     return NextResponse.json({ persistence })
   } catch (error) {

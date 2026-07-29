@@ -15,6 +15,7 @@
     "qa:exports": "node scripts/qa-export-artifacts.mjs",
     "qa:security": "node scripts/qa-security-local.mjs",
     "qa:decision-room": "node scripts/check-decision-room-readiness.mjs",
+    "test:sprint1": "node --test tests/sprint-1-persistence-contract.test.mjs",
     "qa:creative-os-connector": "node scripts/check-creative-os-connector.mjs",
     "qa:exports:download": "node scripts/download-latest-exports.mjs",
     "seed:training-packs": "node scripts/seed-training-packs.mjs",
